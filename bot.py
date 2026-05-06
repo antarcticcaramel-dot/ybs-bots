@@ -3786,8 +3786,11 @@ async def slash_fish(interaction: discord.Interaction):
     elif min_coins < 0:
         loss = abs(random.randint(min_coins, max_coins))
         eco["balance"] = max(0, eco["balance"] - loss)
-        embed = discord.Embed(title="🎣 
- else:
+       # ============================================================
+# CONTINUATION FROM FISH COMMAND (paste after the cut-off)
+# ============================================================
+
+    else:
         embed = discord.Embed(title="🎣 Fishing Result!", description=f"You caught: **{catch}**!\nBetter luck next time!", color=0x95a5a6)
     await interaction.response.send_message(embed=embed)
 

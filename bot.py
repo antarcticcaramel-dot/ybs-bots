@@ -3424,7 +3424,7 @@ class VerifyModal(Modal, title="🎮 Link Roblox Account"):
         await interaction.followup.send(embed=embed, view=ConfirmVerifyView(), ephemeral=True)
 
 # Replace old class in global scope so VerifyPanelView uses the new one
-VerifyPanelView.verify_btn.callback  # just reference to ensure no breakage
+# VerifyPanelView will automatically use the patched VerifyModal above
 
 # ============================================================
 # PORTFOLIO WITH IMAGE SUPPORT

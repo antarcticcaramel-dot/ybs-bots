@@ -3586,14 +3586,13 @@ async def slash_daily(interaction: discord.Interaction):
         diff = 86400 - (now - datetime.fromisoformat(eco["last_daily"])).total_seconds()
         h, rem = divmod(int(diff), 3600)
         m = rem // 60
-        embed = discord.Embed(title="⏰ Daily Already Claimed", description=f"Come back in **{h}h {m}m**!", color=0xe74c3c)
-        return await interaction.response.send_message(embed=embed, ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Already Claimed", f"Come back in **{h}h {m}m**!"), ephemeral=True)
     amt = random.randint(200, 500)
     bonus_text = ""
     if interaction.user.id in roblox_links and roblox_links[interaction.user.id].get("verified"):
         bonus = random.randint(50, 100)
         amt += bonus
-        bonus_text = f"\n✅ **Roblox Verified Bonus:** +{bonus} coins"
+        bonus_text += f"\n✅ **Roblox Verified Bonus:** +{bonus} coins"
     if interaction.user.id in premium_users:
         prem_bonus = int(amt * 0.5)
         amt += prem_bonus
@@ -3615,8 +3614,7 @@ async def slash_work(interaction: discord.Interaction):
     if eco["last_work"] and (now - datetime.fromisoformat(eco["last_work"])).total_seconds() < 3600:
         diff = 3600 - (now - datetime.fromisoformat(eco["last_work"])).total_seconds()
         m, s = divmod(int(diff), 60)
-        embed = discord.Embed(title="⏰ Still Recovering", description=f"Rest for **{m}m {s}s** before working again.", color=0xe74c3c)
-        return await interaction.response.send_message(embed=embed, ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Still Recovering", f"Rest for **{m}m {s}s** before working again."), ephemeral=True)
     jobs = [
         "coded a smooth Luau script 💻", "modelled an epic environment 🎨",
         "squashed a nasty bug 🐛", "scripted a fun obby mechanic 🏃",
@@ -3662,55 +3660,38 @@ async def slash_pay(interaction: discord.Interaction, member: discord.Member, am
 @app_commands.describe(amount="Amount to deposit (or 'all')")
 async def slash_deposit(interaction: discord.Interaction, amount: str):
     eco = get_economy(interaction.user.id, str(interaction.user))
-    if amount.lower() == "all":
-        dep = eco["balance"]
-    else:
-        try:
-            dep = int(amount)
-        except:
-            return await interaction.response.send_message(embed=error_embed("Invalid Amount"), ephemeral=True)
+    dep = eco["balance"] if amount.lower() == "all" else int(amount) if amount.isdigit() else -1
     if dep <= 0 or dep > eco["balance"]:
-        return await interaction.response.send_message(embed=error_embed("Invalid Amount", f"You have {eco['balance']:,} coins."), ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Invalid Amount", f"You have **{eco['balance']:,} coins**."), ephemeral=True)
     eco["balance"] -= dep
     eco["bank"] = eco.get("bank", 0) + dep
-    await interaction.response.send_message(embed=success_embed("Deposited!", f"**{dep:,} coins** deposited to your bank.\n\n💵 Wallet: {eco['balance']:,}\n🏦 Bank: {eco['bank']:,}"))
+    await interaction.response.send_message(embed=success_embed("Deposited!", f"**{dep:,} coins** → bank\n\n💵 Wallet: {eco['balance']:,}\n🏦 Bank: {eco['bank']:,}"))
 
 @tree.command(name="withdraw", description="Withdraw coins from your bank")
 @app_commands.describe(amount="Amount to withdraw (or 'all')")
 async def slash_withdraw(interaction: discord.Interaction, amount: str):
     eco = get_economy(interaction.user.id, str(interaction.user))
     bank = eco.get("bank", 0)
-    if amount.lower() == "all":
-        wd = bank
-    else:
-        try:
-            wd = int(amount)
-        except:
-            return await interaction.response.send_message(embed=error_embed("Invalid Amount"), ephemeral=True)
+    wd = bank if amount.lower() == "all" else int(amount) if amount.isdigit() else -1
     if wd <= 0 or wd > bank:
-        return await interaction.response.send_message(embed=error_embed("Invalid Amount", f"Bank: {bank:,} coins."), ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Invalid Amount", f"Bank: **{bank:,} coins**."), ephemeral=True)
     eco["bank"] = bank - wd
     eco["balance"] += wd
-    await interaction.response.send_message(embed=success_embed("Withdrawn!", f"**{wd:,} coins** moved to wallet.\n\n💵 Wallet: {eco['balance']:,}\n🏦 Bank: {eco['bank']:,}"))
+    await interaction.response.send_message(embed=success_embed("Withdrawn!", f"**{wd:,} coins** → wallet\n\n💵 Wallet: {eco['balance']:,}\n🏦 Bank: {eco['bank']:,}"))
 
 @tree.command(name="gamble", description="Gamble your YBS Coins")
 @app_commands.describe(amount="Coins to bet (or 'all')")
 async def slash_gamble(interaction: discord.Interaction, amount: str):
     eco = get_economy(interaction.user.id, str(interaction.user))
-    if amount.lower() == "all":
-        bet = eco["balance"]
-    else:
-        try:
-            bet = int(amount)
-        except:
-            return await interaction.response.send_message(embed=error_embed("Invalid Amount"), ephemeral=True)
+    bet = eco["balance"] if amount.lower() == "all" else int(amount) if amount.isdigit() else -1
     if bet <= 0:
         return await interaction.response.send_message(embed=error_embed("Invalid Amount"), ephemeral=True)
     if eco["balance"] < bet:
-        return await interaction.response.send_message(embed=error_embed("Insufficient Funds", f"Only **{eco['balance']:,}**."), ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Insufficient Funds", f"You have **{eco['balance']:,} coins**."), ephemeral=True)
     win = random.random() > 0.5
     if win:
-        eco["balance"] += bet; eco["total_earned"] += bet
+        eco["balance"] += bet
+        eco["total_earned"] += bet
         embed = discord.Embed(title="🎲 You Won!", description=f"Bet **{bet:,}** and **WON**! 🎉\n+**{bet:,} coins**\n**Balance:** {eco['balance']:,}", color=0x2ecc71)
     else:
         eco["balance"] -= bet
@@ -3722,20 +3703,26 @@ async def slash_gamble(interaction: discord.Interaction, amount: str):
 async def slash_slots(interaction: discord.Interaction, bet: int = 50):
     eco = get_economy(interaction.user.id, str(interaction.user))
     if eco["balance"] < bet:
-        return await interaction.response.send_message(embed=error_embed("Insufficient Funds", f"Only **{eco['balance']:,}**."), ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Insufficient Funds", f"You have **{eco['balance']:,} coins**."), ephemeral=True)
     syms = ["🍒", "🍋", "🍇", "⭐", "💎", "🎰", "🔔", "🍀"]
     r = [random.choice(syms) for _ in range(3)]
     if r[0] == r[1] == r[2]:
         multi = 15 if r[0] == "💎" else 10 if r[0] == "🎰" else 5
-        win = bet * multi; eco["balance"] += win - bet; eco["total_earned"] += win - bet
+        win = bet * multi
+        eco["balance"] += win - bet
+        eco["total_earned"] += win - bet
         result = f"🎉 **JACKPOT! {r[0]}** — Won **{win:,}**!"
         color = 0xf1c40f
     elif r[0] == r[1] or r[1] == r[2] or r[0] == r[2]:
-        win = bet * 2; eco["balance"] += win - bet; eco["total_earned"] += win - bet
+        win = bet * 2
+        eco["balance"] += win - bet
+        eco["total_earned"] += win - bet
         result = f"✅ **Two of a kind!** — Won **{win:,}**!"
         color = 0x2ecc71
     else:
-        eco["balance"] -= bet; result = f"❌ **No luck!** — Lost **{bet:,}**."; color = 0xe74c3c
+        eco["balance"] -= bet
+        result = f"❌ **No luck!** — Lost **{bet:,}**."
+        color = 0xe74c3c
     embed = discord.Embed(title="🎰 Slot Machine", color=color)
     embed.add_field(name="Result", value=f"┌ {r[0]} ┬ {r[1]} ┬ {r[2]} ┐", inline=False)
     embed.add_field(name="Outcome", value=result, inline=False)
@@ -3750,23 +3737,24 @@ async def slash_rob(interaction: discord.Interaction, member: discord.Member):
     robber = get_economy(interaction.user.id, str(interaction.user))
     victim = get_economy(member.id, str(member))
     now = datetime.now()
-    if robber.get("last_rob") and (now - datetime.fromisoformat(robber["last_rob"])).total_seconds() < 3600:
-        diff = 3600 - (now - datetime.fromisoformat(robber["last_rob"])).total_seconds()
+    last_rob = robber.get("last_rob")
+    if last_rob and (now - datetime.fromisoformat(last_rob)).total_seconds() < 3600:
+        diff = 3600 - (now - datetime.fromisoformat(last_rob)).total_seconds()
         m, s = divmod(int(diff), 60)
         return await interaction.response.send_message(embed=error_embed("On Cooldown", f"Wait **{m}m {s}s** before robbing again."), ephemeral=True)
     if victim["balance"] < 100:
         return await interaction.response.send_message(embed=error_embed("Too Broke", f"**{member.display_name}** doesn't have enough to rob!"), ephemeral=True)
     robber["last_rob"] = now.isoformat()
-    success = random.random() > 0.45
-    if success:
+    if random.random() > 0.45:
         stolen = random.randint(50, min(500, victim["balance"]))
-        robber["balance"] += stolen; robber["total_earned"] += stolen
+        robber["balance"] += stolen
+        robber["total_earned"] += stolen
         victim["balance"] -= stolen
         embed = discord.Embed(title="🦝 Robbery Successful!", description=f"{interaction.user.mention} robbed **{member.display_name}** for **{stolen:,} coins!** 💸", color=0x2ecc71)
     else:
         fine = random.randint(50, 250)
         robber["balance"] = max(0, robber["balance"] - fine)
-        embed = discord.Embed(title="🚨 Caught Red-Handed!", description=f"{interaction.user.mention} got caught robbing **{member.display_name}** and paid a **{fine:,} coin** fine! 🚔", color=0xe74c3c)
+        embed = discord.Embed(title="🚨 Caught Red-Handed!", description=f"{interaction.user.mention} got caught and paid a **{fine:,} coin** fine! 🚔", color=0xe74c3c)
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name="fish", description="Go fishing for coins!")
@@ -3775,31 +3763,30 @@ async def slash_fish(interaction: discord.Interaction):
     catches = [
         ("🐟 Small Fish", 20, 50), ("🐠 Tropical Fish", 30, 80),
         ("🐡 Pufferfish", 40, 100), ("🦈 Shark", 100, 300),
-        ("💎 Treasure", 500, 1000), ("🎣 Nothing", 0, 0),
+        ("💎 Treasure Chest", 500, 1000), ("🎣 Nothing", 0, 0),
         ("👟 Old Boot", -10, -5), ("🐙 Octopus", 80, 200)
     ]
-    catch, min_coins, max_coins = random.choices(catches, weights=[25, 20, 15, 10, 5, 20, 3, 2])[0]
-    if max_coins > 0:
-        coins = random.randint(min_coins, max_coins)
-        eco["balance"] += coins; eco["total_earned"] += coins
+    catch, min_c, max_c = random.choices(catches, weights=[25, 20, 15, 10, 5, 20, 3, 2])[0]
+    if max_c > 0:
+        coins = random.randint(min_c, max_c)
+        eco["balance"] += coins
+        eco["total_earned"] += coins
         embed = discord.Embed(title="🎣 Fishing Result!", description=f"You caught: **{catch}**!\n💰 **+{coins} coins**\n**Balance:** {eco['balance']:,}", color=0x3498db)
-    elif min_coins < 0:
-        loss = abs(random.randint(min_coins, max_coins))
+    elif min_c < 0:
+        loss = abs(random.randint(min_c, max_c))
         eco["balance"] = max(0, eco["balance"] - loss)
-      else:
-        embed = discord.Embed(title="🎣 Fishing Result!", description=f"You caught: **{catch}**!\nBetter luck next time!", color=0x95a5a6)
+        embed = discord.Embed(title="🎣 Fishing Result!", description=f"You caught: **{catch}**!\n💸 **-{loss} coins**\n**Balance:** {eco['balance']:,}", color=0xe74c3c)
+    else:
+        embed = discord.Embed(title="🎣 Fishing Result!", description=f"You got: **{catch}**!\nBetter luck next time!", color=0x95a5a6)
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name="mine", description="Go mining for coins!")
 async def slash_mine(interaction: discord.Interaction):
     eco = get_economy(interaction.user.id, str(interaction.user))
     finds = [
-        ("💎 Diamond", 500, 1000),
-        ("🥇 Gold", 200, 400),
-        ("🥈 Silver", 100, 200),
-        ("🪨 Stone", 10, 30),
-        ("💀 Nothing", 0, 0),
-        ("🧨 Cave-in", -50, -20),
+        ("💎 Diamond", 500, 1000), ("🥇 Gold Ore", 200, 400),
+        ("🥈 Silver Ore", 100, 200), ("🪨 Stone", 10, 30),
+        ("💀 Nothing", 0, 0), ("🧨 Cave-in!", -50, -20),
     ]
     find, min_c, max_c = random.choices(finds, weights=[5, 15, 20, 35, 20, 5])[0]
     if max_c > 0:
@@ -3810,9 +3797,9 @@ async def slash_mine(interaction: discord.Interaction):
     elif min_c < 0:
         loss = abs(random.randint(min_c, max_c))
         eco["balance"] = max(0, eco["balance"] - loss)
-        embed = discord.Embed(title="⛏️ Mining Accident!", description=f"**{find}**! Lost **{loss} coins** in damages.\n**Balance:** {eco['balance']:,}", color=0xe74c3c)
+        embed = discord.Embed(title="⛏️ Mining Accident!", description=f"**{find}** Lost **{loss} coins**.\n**Balance:** {eco['balance']:,}", color=0xe74c3c)
     else:
-        embed = discord.Embed(title="⛏️ Mining Result!", description=f"**{find}**! You found nothing this time.", color=0x95a5a6)
+        embed = discord.Embed(title="⛏️ Mining Result!", description=f"**{find}**! Nothing this time.", color=0x95a5a6)
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name="richlist", description="View the richest members")
@@ -3839,6 +3826,23 @@ async def slash_givecoins(interaction: discord.Interaction, member: discord.Memb
     eco["balance"] += amount
     eco["total_earned"] += amount
     await interaction.response.send_message(embed=success_embed("Coins Given", f"Gave **{amount:,} coins** to {member.mention}."))
+
+@tree.command(name="removecoins", description="Remove coins from a member [Admin]")
+@app_commands.describe(member="Member", amount="Coins to remove")
+async def slash_removecoins(interaction: discord.Interaction, member: discord.Member, amount: int):
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
+    eco = get_economy(member.id, str(member))
+    eco["balance"] = max(0, eco["balance"] - amount)
+    await interaction.response.send_message(embed=success_embed("Coins Removed", f"Removed **{amount:,} coins** from {member.mention}."))
+
+@tree.command(name="ecoreset", description="Reset a member's economy [Admin]")
+@app_commands.describe(member="Member")
+async def slash_ecoreset(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
+    economy_data.pop(member.id, None)
+    await interaction.response.send_message(embed=success_embed("Economy Reset", f"Economy data cleared for {member.mention}."))
 
 # ============================================================
 # SLASH — FUN
@@ -3877,7 +3881,6 @@ async def slash_joke(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name="rps", description="Rock Paper Scissors vs the bot")
-@app_commands.describe(choice="Your move")
 @app_commands.choices(choice=[
     app_commands.Choice(name="🪨 Rock", value="rock"),
     app_commands.Choice(name="📄 Paper", value="paper"),
@@ -3933,14 +3936,12 @@ async def slash_truth(interaction: discord.Interaction):
     ts = [
         "What's your most embarrassing coding mistake?",
         "What game are you secretly working on?",
-        "What dev skill do you wish you had?",
         "Have you ever copy-pasted code you didn't understand?",
         "What's the longest you've spent on one bug?",
         "Have you ever rage-quit Roblox Studio?",
         "What's the worst code you've ever written?",
     ]
-    embed = discord.Embed(title="😳 Truth!", description=random.choice(ts), color=0xFF79C6)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=discord.Embed(title="😳 Truth!", description=random.choice(ts), color=0xFF79C6))
 
 @tree.command(name="dare", description="Get a random dare")
 async def slash_dare(interaction: discord.Interaction):
@@ -3951,43 +3952,35 @@ async def slash_dare(interaction: discord.Interaction):
         "Script a random feature in 5 minutes!",
         "Draw your game idea in MS Paint and share it!",
         "Change your nickname to 'Roblox Noob' for 1 hour!",
-        "DM someone a random Roblox meme!",
     ]
-    embed = discord.Embed(title="😈 Dare!", description=random.choice(ds), color=0xe74c3c)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=discord.Embed(title="😈 Dare!", description=random.choice(ds), color=0xe74c3c))
 
 @tree.command(name="coinflip", description="Flip a coin")
 async def slash_coinflip(interaction: discord.Interaction):
     result = random.choice(["Heads", "Tails"])
-    emoji = "🪙"
-    embed = discord.Embed(title=f"{emoji} Coin Flip — **{result}!**", color=0xf1c40f)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=discord.Embed(title=f"🪙 Coin Flip — **{result}!**", color=0xf1c40f))
 
 @tree.command(name="dice", description="Roll a dice")
 @app_commands.describe(sides="Number of sides (default 6)")
 async def slash_dice(interaction: discord.Interaction, sides: int = 6):
     if sides < 2 or sides > 100:
-        return await interaction.response.send_message(embed=error_embed("Invalid", "Sides must be between 2 and 100."), ephemeral=True)
-    result = random.randint(1, sides)
-    embed = discord.Embed(title=f"🎲 D{sides} Roll — **{result}**", color=0x5865f2)
-    await interaction.response.send_message(embed=embed)
+        return await interaction.response.send_message(embed=error_embed("Invalid", "Sides must be 2–100."), ephemeral=True)
+    await interaction.response.send_message(embed=discord.Embed(title=f"🎲 D{sides} Roll — **{random.randint(1, sides)}**", color=0x5865f2))
 
 @tree.command(name="choose", description="Pick randomly from options")
-@app_commands.describe(options="Options separated by commas")
+@app_commands.describe(options="Comma-separated options")
 async def slash_choose(interaction: discord.Interaction, options: str):
     choices = [o.strip() for o in options.split(",") if o.strip()]
     if len(choices) < 2:
-        return await interaction.response.send_message(embed=error_embed("Need more options", "Separate options with commas."), ephemeral=True)
-    pick = random.choice(choices)
-    embed = discord.Embed(title="🎯 I Choose...", description=f"**{pick}**", color=0x5865f2)
+        return await interaction.response.send_message(embed=error_embed("Need More Options", "Separate options with commas."), ephemeral=True)
+    embed = discord.Embed(title="🎯 I Choose...", description=f"**{random.choice(choices)}**", color=0x5865f2)
     embed.set_footer(text=f"From: {', '.join(choices)}")
     await interaction.response.send_message(embed=embed)
 
 @tree.command(name="mock", description="Mock some text")
 @app_commands.describe(text="Text to mock")
 async def slash_mock(interaction: discord.Interaction, text: str):
-    result = "".join(c.upper() if i % 2 else c.lower() for i, c in enumerate(text))
-    await interaction.response.send_message(f"🐦 {result}")
+    await interaction.response.send_message("".join(c.upper() if i % 2 else c.lower() for i, c in enumerate(text)))
 
 @tree.command(name="reverse", description="Reverse some text")
 @app_commands.describe(text="Text to reverse")
@@ -3999,8 +3992,7 @@ async def slash_reverse(interaction: discord.Interaction, text: str):
 async def slash_pp(interaction: discord.Interaction, member: discord.Member = None):
     member = member or interaction.user
     score = (member.id * 7) % 21
-    bar = "8" + "=" * score + "D"
-    await interaction.response.send_message(f"📏 **{member.display_name}'s size:**\n`{bar}` ({score} cm)")
+    await interaction.response.send_message(f"📏 **{member.display_name}:**\n`8{'=' * score}D` ({score} cm)")
 
 @tree.command(name="iq", description="Check someone's IQ")
 @app_commands.describe(member="Member to check")
@@ -4008,11 +4000,10 @@ async def slash_iq(interaction: discord.Interaction, member: discord.Member = No
     member = member or interaction.user
     score = random.randint(50, 200)
     label = "Genius 🧠" if score >= 160 else "Very Smart 🎓" if score >= 130 else "Smart 📚" if score >= 110 else "Average 🙂" if score >= 90 else "Hmm... 🤔" if score >= 70 else "Uh oh... 😬"
-    embed = discord.Embed(title="🧠 IQ Test", description=f"**{member.display_name}**'s IQ is **{score}** — {label}", color=0x9b59b6)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=discord.Embed(title="🧠 IQ Test", description=f"**{member.display_name}** — IQ: **{score}** — {label}", color=0x9b59b6))
 
 @tree.command(name="wouldyou", description="Would you rather question")
-@app_commands.describe(option_a="Option A", option_b="Option B")
+@app_commands.describe(option_a="Option A (optional)", option_b="Option B (optional)")
 async def slash_wouldyou(interaction: discord.Interaction, option_a: str = None, option_b: str = None):
     presets = [
         ("Be a Roblox dev forever", "Be a Minecraft dev forever"),
@@ -4020,13 +4011,10 @@ async def slash_wouldyou(interaction: discord.Interaction, option_a: str = None,
         ("Have 1M Robux now", "Have 10M Robux in a year"),
         ("Work solo", "Work in a team"),
     ]
-    if option_a and option_b:
-        a, b = option_a, option_b
-    else:
-        a, b = random.choice(presets)
+    a, b = (option_a, option_b) if option_a and option_b else random.choice(presets)
     embed = discord.Embed(title="🤔 Would You Rather…", color=0x9B59B6)
-    embed.add_field(name="🅰️ Option A", value=a, inline=True)
-    embed.add_field(name="🅱️ Option B", value=b, inline=True)
+    embed.add_field(name="🅰️", value=a, inline=True)
+    embed.add_field(name="🅱️", value=b, inline=True)
     msg = await interaction.response.send_message(embed=embed)
     msg = await interaction.original_response()
     await msg.add_reaction("🅰️")
@@ -4040,8 +4028,6 @@ async def slash_nhie(interaction: discord.Interaction):
         "Never have I ever spent 3+ hours on a single bug.",
         "Never have I ever accidentally deleted a script with no backup.",
         "Never have I ever published a broken game by mistake.",
-        "Never have I ever stayed up past 2am scripting.",
-        "Never have I ever used free models in a 'serious' project.",
     ]
     embed = discord.Embed(title="🤚 Never Have I Ever", description=random.choice(questions), color=0xFF79C6)
     embed.set_footer(text="🖐️ = Have | ☝️ = Never")
@@ -4054,13 +4040,10 @@ async def slash_nhie(interaction: discord.Interaction):
 async def slash_fortune(interaction: discord.Interaction):
     fortunes = [
         "A great game idea is already in your mind. Start building today.",
-        "Your next script will work first try. (Probably not, but believe!)",
+        "Your next script will work first try. (Believe it!)",
         "The bug you've been chasing will reveal itself tomorrow.",
         "Collaboration with a teammate will unlock something great.",
-        "Your portfolio will impress someone important soon.",
-        "A breakthrough in your project is closer than you think.",
         "The best games are made by those who never stop learning.",
-        "Your creativity is your greatest asset — use it boldly.",
     ]
     embed = discord.Embed(title="🥠 Fortune Cookie", description=f"*\"{random.choice(fortunes)}\"*", color=0xf1c40f)
     await interaction.response.send_message(embed=embed)
@@ -4068,9 +4051,8 @@ async def slash_fortune(interaction: discord.Interaction):
 @tree.command(name="riddle", description="Get a random riddle")
 async def slash_riddle(interaction: discord.Interaction):
     riddles = [
-        ("I have keys but no locks. I have space but no room. You can enter but can't go inside. What am I?", "A keyboard!"),
+        ("I have keys but no locks. I have space but no room. What am I?", "A keyboard!"),
         ("The more you take, the more you leave behind. What am I?", "Footsteps!"),
-        ("I speak without a mouth and hear without ears. What am I?", "An echo!"),
         ("What has to be broken before you can use it?", "An egg!"),
         ("I'm tall when I'm young, short when I'm old. What am I?", "A candle!"),
     ]
@@ -4091,14 +4073,11 @@ async def slash_riddle(interaction: discord.Interaction):
 @tree.command(name="trivia", description="Answer a Roblox dev trivia question")
 async def slash_trivia(interaction: discord.Interaction):
     questions = [
-        ("What does CSS stand for?", "Cascading Style Sheets"),
-        ("What year was Roblox founded?", "2004"),
-        ("In Lua, what function prints to console?", "print()"),
         ("What language does Roblox Studio use?", "Lua / Luau"),
-        ("What does API stand for?", "Application Programming Interface"),
-        ("What does RGB stand for?", "Red Green Blue"),
+        ("What year was Roblox founded?", "2004"),
         ("What Roblox service handles player data persistence?", "DataStoreService"),
         ("What event fires when a player joins a server?", "Players.PlayerAdded"),
+        ("What does API stand for?", "Application Programming Interface"),
     ]
     q, a = random.choice(questions)
     embed = discord.Embed(title="🎓 Trivia!", description=q, color=0x5865f2)
@@ -4159,8 +4138,7 @@ async def slash_calc(interaction: discord.Interaction, expression: str):
 @app_commands.describe(reason="AFK reason")
 async def slash_afk(interaction: discord.Interaction, reason: str = "AFK"):
     afk_data[interaction.user.id] = {"reason": reason, "time": datetime.now().strftime("%H:%M")}
-    embed = discord.Embed(description=f"💤 {interaction.user.mention} is now AFK: **{reason}**", color=0x6b7280)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=discord.Embed(description=f"💤 {interaction.user.mention} is now AFK: **{reason}**", color=0x6b7280))
 
 @tree.command(name="remindme", description="Set a reminder")
 @app_commands.describe(duration="e.g. 30m, 1h, 2h30m", reminder="What to remind you about")
@@ -4168,19 +4146,19 @@ async def slash_remindme(interaction: discord.Interaction, duration: str, remind
     total_seconds = 0
     matches = re.findall(r"(\d+)\s*([smhd])", duration.lower())
     if not matches:
-        return await interaction.response.send_message(embed=error_embed("Invalid Duration", "Use format like: `30m`, `1h`, `2h30m`"), ephemeral=True)
+        return await interaction.response.send_message(embed=error_embed("Invalid Duration", "Use format: `30m`, `1h`, `2h30m`"), ephemeral=True)
     for value, unit in matches:
         multipliers = {"s": 1, "m": 60, "h": 3600, "d": 86400}
         total_seconds += int(value) * multipliers.get(unit, 0)
-    remind_time = (datetime.now() + timedelta(seconds=total_seconds)).isoformat()
+    remind_time = datetime.now() + timedelta(seconds=total_seconds)
     reminders_data.append({
         "user_id": interaction.user.id,
         "channel_id": interaction.channel.id,
-        "time": remind_time,
+        "time": remind_time.isoformat(),
         "reminder": reminder,
         "sent": False
     })
-    embed = discord.Embed(title="⏰ Reminder Set!", description=f"I'll remind you about: **{reminder}**\n\n**When:** <t:{int((datetime.now() + timedelta(seconds=total_seconds)).timestamp())}:R>", color=0x3498db)
+    embed = discord.Embed(title="⏰ Reminder Set!", description=f"**{reminder}**\n\nWhen: <t:{int(remind_time.timestamp())}:R>", color=0x3498db)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @tree.command(name="color", description="View info about a hex color")
@@ -4249,11 +4227,11 @@ async def slash_embed(interaction: discord.Interaction):
     await interaction.response.send_modal(EmbedBuilderModal())
 
 @tree.command(name="poll", description="Create an interactive poll")
-@app_commands.describe(question="Poll question", option_a="Option A", option_b="Option B", option_c="Option C", option_d="Option D")
+@app_commands.describe(question="Poll question", option_a="Option A", option_b="Option B", option_c="Option C (optional)", option_d="Option D (optional)")
 async def slash_poll(interaction: discord.Interaction, question: str, option_a: str, option_b: str, option_c: str = None, option_d: str = None):
     options = [o for o in [option_a, option_b, option_c, option_d] if o]
     embed = discord.Embed(title=f"📊 {question}", color=0x5865f2, timestamp=discord.utils.utcnow())
-    embed.set_footer(text=f"Poll by {interaction.user.display_name}")
+    embed.set_footer(text=f"Poll by {interaction.user.display_name} · Vote using the buttons!")
     await interaction.response.send_message(embed=embed, view=PollView(question, options))
 
 @tree.command(name="suggest", description="Submit a suggestion")
@@ -4263,60 +4241,14 @@ async def slash_suggest(interaction: discord.Interaction, suggestion: str):
     channel = bot.get_channel(sug_ch_id) if sug_ch_id else interaction.channel
     embed = discord.Embed(title="💡 New Suggestion", description=suggestion, color=0x2ecc71, timestamp=discord.utils.utcnow())
     embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
-    embed.set_footer(text=f"User ID: {interaction.user.id}")
     msg = await channel.send(embed=embed)
     await msg.add_reaction("✅")
     await msg.add_reaction("❌")
-    await interaction.response.send_message(embed=success_embed("Suggestion Submitted!", "Your suggestion has been posted!"), ephemeral=True)
+    await interaction.response.send_message(embed=success_embed("Suggestion Submitted!"), ephemeral=True)
 
 # ============================================================
-# SLASH — ADMIN
+# SLASH — EVENTS
 # ============================================================
-@tree.command(name="announce", description="Post an announcement [Staff]")
-@app_commands.describe(channel="Channel to announce in")
-async def slash_announce(interaction: discord.Interaction, channel: discord.TextChannel = None):
-    if not is_staff_interaction(interaction):
-        return await interaction.response.send_message(embed=error_embed("Staff Only"), ephemeral=True)
-    ch = channel or bot.get_channel(get(interaction.guild.id, "announcements_channel")) or interaction.channel
-    await interaction.response.send_modal(AnnounceModal(ch))
-
-@tree.command(name="addword", description="Add a word to auto-mod filter [Staff]")
-@app_commands.describe(word="Word to ban")
-async def slash_addword(interaction: discord.Interaction, word: str):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message(embed=error_embed("No Permission"), ephemeral=True)
-    gid = str(interaction.guild.id)
-    if gid not in automod_data:
-        automod_data[gid] = []
-    if word.lower() not in automod_data[gid]:
-        automod_data[gid].append(word.lower())
-    await interaction.response.send_message(embed=success_embed("Word Added", f"`{word}` added to filter."), ephemeral=True)
-
-@tree.command(name="removeword", description="Remove a word from auto-mod filter [Staff]")
-@app_commands.describe(word="Word to remove")
-async def slash_removeword(interaction: discord.Interaction, word: str):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message(embed=error_embed("No Permission"), ephemeral=True)
-    gid = str(interaction.guild.id)
-    wl = automod_data.get(gid, [])
-    match = next((w for w in wl if w.lower() == word.lower()), None)
-    if match:
-        wl.remove(match)
-        await interaction.response.send_message(embed=success_embed("Word Removed", f"`{word}` removed from filter."), ephemeral=True)
-    else:
-        await interaction.response.send_message(embed=error_embed("Not Found", f"`{word}` not in filter."), ephemeral=True)
-
-@tree.command(name="wordlist", description="View auto-mod word filter [Staff]")
-async def slash_wordlist(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message(embed=error_embed("No Permission"), ephemeral=True)
-    gid = str(interaction.guild.id)
-    words = automod_data.get(gid, [])
-    embed = discord.Embed(title="🤖 Auto-Mod Filter", color=0xe74c3c)
-    embed.description = ", ".join(f"`{w}`" for w in words) if words else "No words filtered."
-    embed.set_footer(text=f"{len(words)} word(s) filtered")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
 @tree.command(name="giveaway", description="Start a giveaway [Staff]")
 @app_commands.describe(prize="What to give away", duration_minutes="Duration in minutes")
 async def slash_giveaway(interaction: discord.Interaction, prize: str, duration_minutes: int = 60):
@@ -4334,10 +4266,7 @@ async def slash_giveaway(interaction: discord.Interaction, prize: str, duration_
     embed.set_footer(text=f"Hosted by {interaction.user.display_name} · Ends at")
     msg = await channel.send(embed=embed)
     await msg.add_reaction("🎉")
-    giveaway_data[msg.id] = {
-        "prize": prize, "channel": channel.id,
-        "ends": end_time.isoformat(), "host": str(interaction.user)
-    }
+    giveaway_data[msg.id] = {"prize": prize, "channel": channel.id, "ends": end_time.isoformat(), "host": str(interaction.user)}
     add_activity("🎉", f"Giveaway: {prize}", f"{duration_minutes}min")
     await interaction.response.send_message(embed=success_embed("Giveaway Started!", f"Posted in {channel.mention}!"), ephemeral=True)
     await asyncio.sleep(duration_minutes * 60)
@@ -4349,19 +4278,24 @@ async def slash_giveaway(interaction: discord.Interaction, prize: str, duration_
             if users:
                 winner = random.choice(users)
                 await channel.send(f"🎉 Congratulations {winner.mention}! You won **{prize}**!")
-                result_embed = discord.Embed(title="🎉 GIVEAWAY ENDED", description=f"Winner: {winner.mention}\nPrize: **{prize}**", color=0x57f287)
-                await msg.edit(embed=result_embed)
             else:
                 await channel.send(f"❌ Not enough entries for **{prize}**.")
         except Exception as e:
             print(f"Giveaway error: {e}")
         giveaway_data.pop(msg.id, None)
 
+@tree.command(name="announce", description="Post an announcement [Staff]")
+@app_commands.describe(channel="Channel to post in")
+async def slash_announce(interaction: discord.Interaction, channel: discord.TextChannel = None):
+    if not is_staff_interaction(interaction):
+        return await interaction.response.send_message(embed=error_embed("Staff Only"), ephemeral=True)
+    ch = channel or bot.get_channel(get(interaction.guild.id, "announcements_channel")) or interaction.channel
+    await interaction.response.send_modal(AnnounceModal(ch))
+
 @tree.command(name="serverrules", description="Post server rules [Staff]")
 async def slash_serverrules(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.manage_guild:
         return await interaction.response.send_message(embed=error_embed("No Permission"), ephemeral=True)
-    embed = discord.Embed(title="📜 Server Rules", color=0x5865f2, timestamp=discord.utils.utcnow())
     rules = [
         "Be respectful to all members.",
         "No harassment, hate speech, or discrimination.",
@@ -4371,9 +4305,10 @@ async def slash_serverrules(interaction: discord.Interaction):
         "No advertising without permission.",
         "Follow Discord's Terms of Service.",
         "Listen to staff and moderators.",
-        "No sharing personal information without consent.",
+        "No sharing personal information.",
         "Have fun and be creative! 🎮",
     ]
+    embed = discord.Embed(title="📜 Server Rules", color=0x5865f2, timestamp=discord.utils.utcnow())
     embed.description = "\n".join(f"**{i+1}.** {r}" for i, r in enumerate(rules))
     embed.set_footer(text="Failure to follow rules may result in mutes, kicks, or bans.")
     await interaction.channel.send(embed=embed)
@@ -4385,13 +4320,11 @@ async def slash_birthday(interaction: discord.Interaction, month: int, day: int)
     if month < 1 or month > 12 or day < 1 or day > 31:
         return await interaction.response.send_message(embed=error_embed("Invalid Date"), ephemeral=True)
     birthday_data[interaction.user.id] = f"{month:02d}-{day:02d}"
-    embed = discord.Embed(title="🎂 Birthday Set!", description=f"Your birthday is set to **{month}/{day}**!\n\nWe'll celebrate with you on your special day! 🎉", color=0xFF79C6)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=success_embed("Birthday Set!", f"Set to **{month}/{day}**! We'll celebrate with you! 🎉"), ephemeral=True)
 
-@tree.command(name="counting-stats", description="View counting stats for this server")
+@tree.command(name="counting-stats", description="View counting channel stats")
 async def slash_counting_stats(interaction: discord.Interaction):
-    guild_id = str(interaction.guild.id)
-    data = counting_data.get(guild_id, {"count": 0, "highscore": 0})
+    data = counting_data.get(str(interaction.guild.id), {"count": 0, "highscore": 0})
     embed = discord.Embed(title="🔢 Counting Stats", color=0x5865f2)
     embed.add_field(name="Current Count", value=str(data.get("count", 0)))
     embed.add_field(name="High Score", value=str(data.get("highscore", 0)))
@@ -4405,12 +4338,15 @@ async def slash_counting_stats(interaction: discord.Interaction):
 async def slash_counting_reset(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
         return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
-    guild_id = str(interaction.guild.id)
-    if guild_id in counting_data:
-        counting_data[guild_id]["count"] = 0
-        counting_data[guild_id]["last_user"] = None
-    await interaction.response.send_message(embed=success_embed("Counting Reset!", "Count has been reset to 0."))
+    gid = str(interaction.guild.id)
+    if gid in counting_data:
+        counting_data[gid]["count"] = 0
+        counting_data[gid]["last_user"] = None
+    await interaction.response.send_message(embed=success_embed("Counting Reset!", "Count reset to 0."))
 
+# ============================================================
+# SLASH — ADMIN
+# ============================================================
 @tree.command(name="customcmd", description="Add a custom command [Admin]")
 async def slash_customcmd(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
@@ -4436,37 +4372,24 @@ async def slash_listcmds(interaction: discord.Interaction):
     if not cmds:
         return await interaction.response.send_message(embed=info_embed("No Custom Commands", "Add one with /customcmd!"), ephemeral=True)
     embed = discord.Embed(title="📋 Custom Commands", color=0x5865f2)
-    embed.description = "\n".join(f"`!{k}` — {v[:50]}" for k, v in cmds.items())
+    embed.description = "\n".join(f"`!{k}` — {v[:60]}" for k, v in cmds.items())
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
-@tree.command(name="setup", description="Configure the bot [Admin]")
-async def slash_setup(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.administrator:
-        return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
-    embed = discord.Embed(
-        title="⚙️ Bot Setup",
-        description="Use the buttons below to configure channels, roles, and features.",
-        color=0x5865F2
-    )
-    await interaction.response.send_message(embed=embed, view=SetupMainView(), ephemeral=True)
 
 @tree.command(name="premium", description="Grant premium to a member [Admin]")
 @app_commands.describe(member="Member", days="Days of premium (default 30)")
 async def slash_premium(interaction: discord.Interaction, member: discord.Member, days: int = 30):
     if not interaction.user.guild_permissions.administrator:
         return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
-    premium_users[member.id] = {
-        "expires": (datetime.now() + timedelta(days=days)).isoformat(),
-        "tier": "premium", "granted_by": str(interaction.user)
-    }
+    premium_users[member.id] = {"expires": (datetime.now() + timedelta(days=days)).isoformat(), "tier": "premium", "granted_by": str(interaction.user)}
     prem_role_id = get(interaction.guild.id, "premium_role")
     if prem_role_id:
         prem_role = interaction.guild.get_role(prem_role_id)
         if prem_role:
-            try:
-                await member.add_roles(prem_role)
-            except:
-                pass
+            try: await member.add_roles(prem_role)
+            except: pass
+    try:
+        await member.send(embed=discord.Embed(title="👑 Premium Granted!", description=f"You have **Premium** in {interaction.guild.name} for **{days} days**!\n\n✅ 1.5x XP & coin boost\n✅ Bonus daily coins\n✅ Premium channels access", color=0xf1c40f))
+    except: pass
     await interaction.response.send_message(embed=success_embed("Premium Granted!", f"**{member}** has Premium for **{days}** days!"))
 
 @tree.command(name="unpremium", description="Remove premium from a member [Admin]")
@@ -4479,28 +4402,23 @@ async def slash_unpremium(interaction: discord.Interaction, member: discord.Memb
     if prem_role_id:
         prem_role = interaction.guild.get_role(prem_role_id)
         if prem_role and prem_role in member.roles:
-            try:
-                await member.remove_roles(prem_role)
-            except:
-                pass
+            try: await member.remove_roles(prem_role)
+            except: pass
     await interaction.response.send_message(embed=success_embed("Premium Removed", f"**{member}**'s premium has been removed."))
 
-@tree.command(name="reactionrole", description="Add a reaction role [Admin]")
-@app_commands.describe(message_id="Message ID", emoji="Emoji to react with", role="Role to give")
+@tree.command(name="reactionrole", description="Set up a reaction role [Admin]")
+@app_commands.describe(message_id="Message ID", emoji="Emoji", role="Role to give")
 async def slash_reactionrole(interaction: discord.Interaction, message_id: str, emoji: str, role: discord.Role):
     if not interaction.user.guild_permissions.administrator:
         return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
     gid = str(interaction.guild.id)
-    if gid not in reaction_roles:
-        reaction_roles[gid] = {}
-    if message_id not in reaction_roles[gid]:
-        reaction_roles[gid][message_id] = {}
+    if gid not in reaction_roles: reaction_roles[gid] = {}
+    if message_id not in reaction_roles[gid]: reaction_roles[gid][message_id] = {}
     reaction_roles[gid][message_id][emoji] = role.id
     try:
         msg = await interaction.channel.fetch_message(int(message_id))
         await msg.add_reaction(emoji)
-    except:
-        pass
+    except: pass
     await interaction.response.send_message(embed=success_embed("Reaction Role Added", f"{emoji} → {role.mention}"), ephemeral=True)
 
 @tree.command(name="dm", description="DM a member [Staff]")
@@ -4509,11 +4427,7 @@ async def slash_dm(interaction: discord.Interaction, member: discord.Member, mes
     if not is_staff_interaction(interaction):
         return await interaction.response.send_message(embed=error_embed("Staff Only"), ephemeral=True)
     try:
-        embed = discord.Embed(
-            title=f"📬 Message from {interaction.guild.name} Staff",
-            description=message,
-            color=0x5865f2
-        )
+        embed = discord.Embed(title=f"📬 Message from {interaction.guild.name} Staff", description=message, color=0x5865f2)
         embed.set_footer(text="You can reply to this DM and staff will see it.")
         await member.send(embed=embed)
         dm_reply_map[member.id] = {"type": "general", "guild_id": interaction.guild.id}
@@ -4532,8 +4446,7 @@ async def slash_lockdown(interaction: discord.Interaction):
             try:
                 await ch.set_permissions(interaction.guild.default_role, send_messages=False)
                 count += 1
-            except:
-                pass
+            except: pass
     embed = discord.Embed(title="🔒 Server Lockdown", description=f"**{count}** channels locked by {interaction.user.mention}.", color=0xe74c3c, timestamp=discord.utils.utcnow())
     await interaction.followup.send(embed=embed)
     add_activity("🔒", f"Server lockdown by {interaction.user.display_name}")
@@ -4549,8 +4462,7 @@ async def slash_unlockdown(interaction: discord.Interaction):
             try:
                 await ch.set_permissions(interaction.guild.default_role, send_messages=None)
                 count += 1
-            except:
-                pass
+            except: pass
     embed = discord.Embed(title="🔓 Server Unlocked", description=f"**{count}** channels unlocked by {interaction.user.mention}.", color=0x2ecc71, timestamp=discord.utils.utcnow())
     await interaction.followup.send(embed=embed)
 
@@ -4560,163 +4472,40 @@ async def slash_shutdown(interaction: discord.Interaction):
         return await interaction.response.send_message(embed=error_embed("Owner Only"), ephemeral=True)
     code = generate_staff_code()
     SHUTDOWN_CONFIRM_CODES[interaction.user.id] = code
-    embed = discord.Embed(title="⚠️ Confirm Shutdown", description=f"To confirm shutdown, use `/shutdown-confirm` with code:\n```\n{code}\n```\n**This will take the bot offline immediately.**", color=0xe74c3c)
+    embed = discord.Embed(title="⚠️ Confirm Shutdown", description=f"Use `/shutdown-confirm` with code:\n```\n{code}\n```\n**This takes the bot offline immediately.**", color=0xe74c3c)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @tree.command(name="shutdown-confirm", description="Confirm bot shutdown [Owner only]")
 @app_commands.describe(code="Confirmation code from /shutdown")
 async def slash_shutdown_confirm(interaction: discord.Interaction, code: str):
+    global bot_shutdown_flag
     if interaction.user.id != interaction.guild.owner_id:
         return await interaction.response.send_message(embed=error_embed("Owner Only"), ephemeral=True)
     stored = SHUTDOWN_CONFIRM_CODES.get(interaction.user.id)
     if not stored or stored.upper() != code.upper():
         return await interaction.response.send_message(embed=error_embed("Wrong Code"), ephemeral=True)
     SHUTDOWN_CONFIRM_CODES.pop(interaction.user.id, None)
-    await interaction.response.send_message(embed=discord.Embed(title="🔴 Shutting Down...", description="Bot is going offline. Goodbye!", color=0xe74c3c))
-    global bot_shutdown_flag
+    await interaction.response.send_message(embed=discord.Embed(title="🔴 Shutting Down...", description="Bot going offline. Goodbye!", color=0xe74c3c))
+    add_activity("🔴", f"Bot shutdown by {interaction.user.display_name}")
+    await asyncio.sleep(2)
     bot_shutdown_flag = True
 
-# ============================================================
-# PREFIX COMMANDS (! prefix)
-# ============================================================
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup(ctx):
-    embed = discord.Embed(
-        title="⚙️ Young Boy Studios — Bot Setup",
-        description="Use the buttons below to fully configure the bot.",
-        color=0x5865F2
-    )
-    await ctx.send(embed=embed, view=SetupMainView())
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def showconfig(ctx):
-    config = load_config().get(str(ctx.guild.id), {})
-    if not config:
-        return await ctx.send(embed=error_embed("No Config", "Run `!setup` first!"))
-    embed = discord.Embed(title="⚙️ Current Config", color=0x5865F2)
-    for key, value in config.items():
-        obj = ctx.guild.get_role(value) or ctx.guild.get_channel(value)
-        embed.add_field(name=key.replace("_"," ").title(), value=obj.mention if obj else str(value), inline=True)
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def help(ctx):
-    embed = discord.Embed(title="📚 YBS Bot — Commands", color=0x5865F2)
-    embed.add_field(name="⚙️ Setup", value="`!setup` `!showconfig`", inline=False)
-    embed.add_field(name="🔨 Moderation", value="`!kick` `!ban` `!warn` `!purge` `!mute` `!unmute` `!lock` `!unlock`", inline=False)
-    embed.add_field(name="ℹ️ Info", value="`!userinfo` `!serverinfo` `!ping` `!membercount`", inline=False)
-    embed.add_field(name="🎉 Fun", value="`!dice` `!coinflip` `!poll`", inline=False)
-    embed.add_field(name="💡 Slash Commands", value="Use `/help` for the full list of 70+ slash commands!", inline=False)
-    embed.set_footer(text="Prefix: ! | Most commands are slash commands now")
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def ping(ctx):
-    await ctx.send(embed=discord.Embed(title="🏓 Pong!", description=f"**{round(bot.latency * 1000)}ms**", color=0x2ecc71))
-
-@bot.command()
-async def userinfo(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    embed = discord.Embed(title=f"👤 {member}", color=member.color)
-    embed.set_thumbnail(url=member.display_avatar.url)
-    embed.add_field(name="ID", value=member.id)
-    embed.add_field(name="Joined", value=member.joined_at.strftime("%d/%m/%Y") if member.joined_at else "?")
-    embed.add_field(name="Warnings", value=len(warnings_data.get(member.id, [])))
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def serverinfo(ctx):
-    g = ctx.guild
-    embed = discord.Embed(title=f"🏠 {g.name}", color=0x5865F2)
-    embed.add_field(name="Members", value=g.member_count)
-    embed.add_field(name="Channels", value=len(g.channels))
-    embed.add_field(name="Roles", value=len(g.roles))
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def membercount(ctx):
-    await ctx.send(embed=discord.Embed(description=f"👥 **{ctx.guild.member_count}** members!", color=0x5865f2))
-
-@bot.command()
-async def dice(ctx):
-    await ctx.send(embed=discord.Embed(title=f"🎲 You rolled a **{random.randint(1,6)}**!", color=0x5865f2))
-
-@bot.command()
-async def coinflip(ctx):
-    await ctx.send(embed=discord.Embed(title=f"🪙 **{random.choice(['Heads','Tails'])}!**", color=0xf1c40f))
-
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason="No reason"):
-    await member.kick(reason=reason)
-    await ctx.send(embed=success_embed("Kicked", f"**{member}** kicked. Reason: {reason}"))
-
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason="No reason"):
-    await member.ban(reason=reason)
-    await ctx.send(embed=success_embed("Banned", f"**{member}** banned. Reason: {reason}"))
-
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def purge(ctx, amount: int):
-    await ctx.channel.purge(limit=amount + 1)
-    await ctx.send(embed=success_embed("Purged", f"Deleted **{amount}** messages."), delete_after=3)
-
-@bot.command()
-@commands.has_permissions(manage_channels=True)
-async def lock(ctx):
-    await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=False)
-    await ctx.send(embed=success_embed("🔒 Channel Locked"))
-
-@bot.command()
-@commands.has_permissions(manage_channels=True)
-async def unlock(ctx):
-    await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=None)
-    await ctx.send(embed=success_embed("🔓 Channel Unlocked"))
-
-@bot.command()
-async def warn(ctx, member: discord.Member, *, reason="No reason"):
-    if not is_staff(ctx):
-        return await ctx.send(embed=error_embed("No Permission"))
-    if member.id not in warnings_data:
-        warnings_data[member.id] = []
-    warnings_data[member.id].append({"reason": reason, "by": str(ctx.author), "time": datetime.now().isoformat()})
-    count = len(warnings_data[member.id])
-    await ctx.send(embed=success_embed("Warned", f"**{member}** warned ({count}/3). Reason: {reason}"))
-
-@bot.command()
-async def mute(ctx, member: discord.Member, minutes: int = 10, *, reason="No reason"):
-    if not is_staff(ctx):
-        return await ctx.send(embed=error_embed("No Permission"))
-    try:
-        await member.timeout(discord.utils.utcnow() + timedelta(minutes=minutes), reason=reason)
-        await ctx.send(embed=success_embed("Muted", f"**{member}** muted for **{minutes}min**."))
-    except:
-        await ctx.send(embed=error_embed("Failed"))
-
-@bot.command()
-async def unmute(ctx, member: discord.Member):
-    if not is_staff(ctx):
-        return await ctx.send(embed=error_embed("No Permission"))
-    try:
-        await member.timeout(None)
-        await ctx.send(embed=success_embed("Unmuted", f"**{member}** unmuted."))
-    except:
-        await ctx.send(embed=error_embed("Failed"))
+@tree.command(name="setup", description="Configure the bot [Admin]")
+async def slash_setup(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message(embed=error_embed("Admin Only"), ephemeral=True)
+    embed = discord.Embed(title="⚙️ Bot Setup", description="Use the buttons below to configure channels, roles, and features.", color=0x5865F2)
+    await interaction.response.send_message(embed=embed, view=SetupMainView(), ephemeral=True)
 
 # ============================================================
 # FLASK DASHBOARD
 # ============================================================
-flask_app = Flask(__name__)
+flask_app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 flask_app.jinja_env.globals.update(enumerate=enumerate)
 
 def build_xp_leaderboard():
-    sorted_xp = sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True)
     result = []
-    for uid, d in sorted_xp:
+    for uid, d in sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True):
         lv = get_level(d["xp"])
         next_lv_xp = xp_for_level(lv + 1)
         prev_lv_xp = xp_for_level(lv)
@@ -4725,8 +4514,10 @@ def build_xp_leaderboard():
     return result
 
 def build_eco_leaderboard():
-    return [{"uid": uid, "name": d.get("name", "Unknown"), "balance": d["balance"], "total_earned": d["total_earned"]}
-            for uid, d in sorted(economy_data.items(), key=lambda x: x[1]["balance"], reverse=True)]
+    return [
+        {"uid": uid, "name": d.get("name", "Unknown"), "balance": d["balance"], "total_earned": d["total_earned"]}
+        for uid, d in sorted(economy_data.items(), key=lambda x: x[1]["balance"], reverse=True)
+    ]
 
 def build_members():
     all_ids = set(xp_data.keys()) | set(economy_data.keys())
@@ -4753,7 +4544,9 @@ def common():
     for uid, warns in list(warnings_data.items())[-8:]:
         if warns:
             recent_warns.append({"user_id": uid, "count": len(warns), "last_reason": warns[-1]["reason"], "last_by": warns[-1].get("by", "—")})
-    top_xp = build_xp_leaderboard()[:5]
+    mod_action_counts = {}
+    for log in mod_log_data:
+        mod_action_counts[log["action"]] = mod_action_counts.get(log["action"], 0) + 1
     return dict(
         bot_online=bot.is_ready(),
         bot_name=str(bot.user) if bot.user else "YBS Bot",
@@ -4770,11 +4563,12 @@ def common():
         role_counts=role_counts,
         recent_warns=recent_warns,
         recent_apps=list(applications_data.values())[-5:],
-        top_xp=top_xp,
+        top_xp=build_xp_leaderboard()[:5],
         mod_logs=mod_log_data,
         roblox_count=len(roblox_links),
         bug_count=len(bug_reports),
         premium_count=len(premium_users),
+        mod_action_counts=mod_action_counts,
     )
 
 @flask_app.route("/")
@@ -4788,6 +4582,11 @@ def dashboard_applications():
 @flask_app.route("/warnings")
 def dashboard_warnings():
     return render_template("dashboard.html", page="warnings", warnings={str(k): v for k, v in warnings_data.items()}, **common())
+
+@flask_app.route("/notes")
+def dashboard_notes():
+    all_notes = {str(k): v for k, v in notes_data.items() if v}
+    return render_template("dashboard.html", page="notes", all_notes=all_notes, **common())
 
 @flask_app.route("/activity")
 def dashboard_activity():
@@ -4831,12 +4630,21 @@ def dashboard_economy():
 
 @flask_app.route("/roblox")
 def dashboard_roblox():
-    accounts = [{"discord_name": v.get("discord_name", "Unknown"), "username": v["username"], "display": v.get("display", v["username"]), "roblox_id": v["roblox_id"], "thumb": v.get("thumb"), "linked_at": v.get("linked_at", "—")} for v in roblox_links.values()]
+    accounts = [{"discord_name": v.get("discord_name", "Unknown"), "username": v["username"], "display": v.get("display", v["username"]), "roblox_id": v["roblox_id"], "thumb": v.get("thumb"), "linked_at": v.get("linked_at", "—"), "verified": v.get("verified", False)} for v in roblox_links.values()]
     return render_template("dashboard.html", page="roblox", roblox_accounts=accounts, **common())
 
 @flask_app.route("/bugs")
 def dashboard_bugs():
     return render_template("dashboard.html", page="bugs", bug_reports=bug_reports, **common())
+
+@flask_app.route("/analytics")
+def dashboard_analytics():
+    return render_template("dashboard.html", page="analytics", **common())
+
+@flask_app.route("/premium")
+def dashboard_premium():
+    premium_members = {str(uid): data for uid, data in premium_users.items()}
+    return render_template("dashboard.html", page="premium", premium_members=premium_members, **common())
 
 @flask_app.route("/api/stats")
 def api_stats():
@@ -4848,7 +4656,10 @@ def api_stats():
         "economy_users": len(economy_data),
         "roblox_linked": len(roblox_links),
         "uptime": uptime_str(),
+        "ping": round(bot.latency * 1000) if bot.is_ready() else 0,
         "activity": activity_log[:10],
+        "bug_reports": len(bug_reports),
+        "premium_users": len(premium_users),
     })
 
 # ============================================================
@@ -4862,5 +4673,4 @@ def run_bot():
 
 bot_thread = threading.Thread(target=run_bot, daemon=True)
 bot_thread.start()
-
 flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

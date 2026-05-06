@@ -3561,7 +3561,6 @@ async def slash_setlevel(interaction: discord.Interaction, member: discord.Membe
     xp_data[member.id]["level"] = level
     await interaction.response.send_message(embed=success_embed("Level Set", f"Set **{member.mention}** to Level **{level}**."))
 
-cat > /mnt/user-data/outputs/economy_onwards.py << 'ENDOFFILE'
 # ============================================================
 # SLASH — ECONOMY (11 commands)
 # ============================================================
@@ -4509,5 +4508,4 @@ def run_bot():
 bot_thread = threading.Thread(target=run_bot, daemon=True)
 bot_thread.start()
 flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
-ENDOFFILE
-echo "File written: $(wc -l < /mnt/user-data/outputs/economy_onwards.py) lines"
+

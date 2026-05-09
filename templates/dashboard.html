@@ -1,1172 +1,692 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YBS Dashboard · Young Boy Studios</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:#07090e;--s1:#0b0d16;--s2:#10131e;--s3:#151926;
-  --bd:rgba(255,255,255,0.055);--bd2:rgba(255,255,255,0.10);--bd3:rgba(255,255,255,0.16);
-  --ac:#7c6fff;--ac2:#a998ff;--ac-g:rgba(124,111,255,0.10);
-  --gn:#22d3a0;--rd:#f05d7a;--yw:#f5c842;--cy:#34c8ff;--or:#ff9040;--pk:#e879b4;
-  --tx:#c4cae6;--tx2:#8890b0;--mt:#464e6e;
-  --sw:228px;--r:12px;--rb:8px;
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;overflow-x:hidden;line-height:1.5}
-button{font-family:'DM Sans',sans-serif;cursor:pointer}
-a{text-decoration:none;color:inherit}
-::-webkit-scrollbar{width:3px;height:3px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
-::selection{background:rgba(124,111,255,.3);color:#fff}
+<!--
+  ══════════════════════════════════════════════════════════════
+  STEP 1: Add this to your sidebar nav (inside .sb-nav), under
+  a new <div class="nl">Settings</div> label:
+  ══════════════════════════════════════════════════════════════
 
-/* LAYOUT */
-.wrap{display:flex;min-height:100vh}
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
+  <div class="nl">Settings</div>
+  <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)">
+    <i class="ti ti-settings"></i>
+    <span class="na-lbl">Configuration</span>
+  </button>
 
-/* SIDEBAR */
-.sb{width:var(--sw);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-brand{padding:18px 14px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sb-logo i{font-size:18px;color:#fff}
-.sb-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.3px}
-.sb-tag{font-size:10px;color:var(--mt);margin-top:1px;letter-spacing:.2px}
-.sb-nav{flex:1;padding:8px;overflow-y:auto}
-.nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.4px;padding:14px 8px 5px}
-.nl:first-child{padding-top:8px}
-.na{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--rb);color:var(--tx2);border:none;background:none;width:100%;text-align:left;font-size:12px;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative;cursor:pointer}
-.na:hover{background:var(--s2);color:var(--tx)}
-.na.on{background:rgba(124,111,255,.12);color:var(--ac)}
-.na.on::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;border-radius:0 2px 2px 0;background:var(--ac)}
-.na i{font-size:15px;width:18px;flex-shrink:0;opacity:.8}
-.na.on i{opacity:1}
-.na-lbl{flex:1}
-.na-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;min-width:18px;text-align:center}
-.nba{background:rgba(124,111,255,.2);color:var(--ac2)}
-.nbr{background:rgba(240,93,122,.18);color:var(--rd)}
-.nbg{background:rgba(34,211,160,.15);color:var(--gn)}
-.nby{background:rgba(245,200,66,.15);color:var(--yw)}
-.nbc{background:rgba(52,200,255,.15);color:var(--cy)}
-.nbp{background:rgba(232,121,180,.15);color:var(--pk)}
+  ══════════════════════════════════════════════════════════════
+  STEP 2: Add 'config':'Configuration' to PAGE_TITLES in JS and
+  'config':'/config' to PAGE_URLS in JS.
 
-.sb-foot{padding:12px;border-top:1px solid var(--bd);flex-shrink:0}
-.bot-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px}
-.pulse{width:8px;height:8px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(34,211,160,.5);animation:pulse 2.5s infinite}
-.pulse.off{background:var(--rd);box-shadow:none;animation:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,211,160,.5)}70%{box-shadow:0 0 0 7px rgba(34,211,160,0)}100%{box-shadow:0 0 0 0 rgba(34,211,160,0)}}
-.bot-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#fff}
-.bot-st{font-size:10px;color:var(--gn)}
-.bot-st.off{color:var(--rd)}
+  STEP 3: Add this to the common() function in bot.py:
+    dashboard_secret=os.environ.get("DASHBOARD_SECRET","changeme")
+  and pass it through the render_template calls.
 
-/* TICKER */
-.ticker-wrap{border-bottom:1px solid var(--bd);overflow:hidden;height:30px;display:flex;align-items:center;background:rgba(34,211,160,.03);flex-shrink:0}
-.ticker-label{font-size:9px;font-weight:700;color:var(--gn);text-transform:uppercase;letter-spacing:1px;padding:0 10px;white-space:nowrap;border-right:1px solid var(--bd);height:100%;display:flex;align-items:center;flex-shrink:0}
-.ticker-scroll{flex:1;overflow:hidden;position:relative;height:100%}
-.ticker-inner{display:flex;align-items:center;height:100%;white-space:nowrap;animation:ticker 32s linear infinite}
-.ticker-item{font-size:10px;color:var(--tx2);padding:0 16px;display:flex;align-items:center;gap:5px}
-@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  STEP 4: Add {% if page=='config' %}active{% endif %} etc.
+  to the topbar page title mapping.
 
-/* TOPBAR */
-.topbar{background:rgba(11,13,22,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);padding:13px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;flex-shrink:0}
-.tb-crumb{display:flex;align-items:center;gap:6px}
-.tbc-root{font-size:11px;color:var(--mt)}
-.tbc-sep{font-size:10px;color:var(--mt)}
-.tbc-page{font-size:14px;font-family:'Syne',sans-serif;font-weight:700;color:#fff;letter-spacing:-.2px}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.tb-clock{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt);background:var(--s2);border:1px solid var(--bd);padding:5px 12px;border-radius:99px;letter-spacing:.5px}
-.tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:6px 12px;border-radius:var(--rb);font-size:12px;display:flex;align-items:center;gap:5px;transition:all .15s}
-.tb-btn:hover{border-color:var(--bd2);color:var(--tx)}
-.tb-btn i{font-size:14px}
+  STEP 5: Paste the <div class="page-section ..."> below into
+  your .content div alongside your other page sections.
+  ══════════════════════════════════════════════════════════════
+-->
 
-/* CONTENT */
-.content{padding:20px 24px;flex:1}
+<!-- ══ CONFIG ══ -->
+<div class="page-section {% if page=='config' %}active{% endif %}" id="sec-config">
 
-/* STAT CARDS */
-.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
-.sg.sg-4{grid-template-columns:repeat(4,1fr)}
-.sg.sg-2{grid-template-columns:repeat(2,1fr)}
-.sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:16px 16px 14px;position:relative;overflow:hidden;cursor:default;transition:all .2s}
-.sc:hover{border-color:var(--bd2);transform:translateY(-1px)}
-.sc-top-bar{position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
-.sc-trend{position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;display:flex;align-items:center;gap:3px}
-.tup{background:rgba(34,211,160,.1);color:var(--gn)}
-.tdn{background:rgba(240,93,122,.1);color:var(--rd)}
-.sc-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-.sc-icon i{font-size:15px}
-.sc-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
-.sc-lbl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.7px;margin-top:4px;font-weight:600}
+  <!-- toast container -->
+  <div id="cfg-toast" style="
+    position:fixed;bottom:28px;right:28px;z-index:9999;
+    display:none;align-items:center;gap:10px;
+    background:var(--s1);border:1px solid var(--bd2);
+    border-radius:var(--r);padding:12px 18px;
+    font-size:13px;color:var(--tx);
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    min-width:240px;
+  ">
+    <i id="cfg-toast-icon" class="ti ti-check" style="font-size:18px;color:var(--gn)"></i>
+    <span id="cfg-toast-msg">Saved!</span>
+  </div>
 
-/* GRIDS */
-.g2{display:grid;grid-template-columns:1fr 300px;gap:12px;margin-bottom:12px}
-.g22{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+  <!-- tab bar -->
+  <div class="tabs" style="margin-bottom:18px">
+    <button class="tab on" onclick="cfgTab('channels',this)">📡 Channels</button>
+    <button class="tab" onclick="cfgTab('roles',this)">🎭 Roles</button>
+    <button class="tab" onclick="cfgTab('bot',this)">🤖 Bot Settings</button>
+    <button class="tab" onclick="cfgTab('welcome',this)">👋 Welcome</button>
+    <button class="tab" onclick="cfgTab('automod',this)">🛡️ AutoMod</button>
+  </div>
 
-/* PANELS */
-.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
-.pn.mb0{margin-bottom:0}
-.ph{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.pt{font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px}
-.pt i{font-size:14px;color:var(--mt)}
-.plink{font-size:11px;color:var(--ac);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;opacity:.7;transition:opacity .15s;text-decoration:none}
-.plink:hover{opacity:1}
-
-/* ACTIVITY */
-.al{max-height:360px;overflow-y:auto}
-.ai{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--bd);transition:background .1s;position:relative}
-.ai:last-child{border-bottom:none}
-.ai:hover{background:var(--s2)}
-.ai.live-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gn)}
-.ai-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
-.ai-main{flex:1;min-width:0}
-.ai-act{font-size:12px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ai-det{font-size:11px;color:var(--mt);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ai-time{font-size:10px;color:var(--mt);white-space:nowrap;flex-shrink:0}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(34,211,160,.5);animation:livePulse 1.8s infinite}
-@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(34,211,160,.5)}70%{box-shadow:0 0 0 5px rgba(34,211,160,0)}100%{box-shadow:0 0 0 0 rgba(34,211,160,0)}}}
-
-/* XP ROWS */
-.mr{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--bd);transition:background .1s}
-.mr:last-child{border-bottom:none}
-.mr:hover{background:var(--s2)}
-.rk{width:26px;text-align:center;font-size:13px;font-weight:700;color:var(--mt);flex-shrink:0}
-.av{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif}
-.m-info{flex:1;min-width:0}
-.m-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m-sub{font-size:10px;color:var(--mt);margin-top:1px}
-.xpb{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:5px}
-.xpf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),#b89aff);transition:width .6s ease}
-
-/* BADGES */
-.bg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap}
-.bb{background:rgba(124,111,255,.14);color:var(--ac2)}
-.bgg{background:rgba(34,211,160,.12);color:var(--gn)}
-.br{background:rgba(240,93,122,.12);color:var(--rd)}
-.by{background:rgba(245,200,66,.12);color:var(--yw)}
-.bc{background:rgba(52,200,255,.12);color:var(--cy)}
-.bp{background:rgba(232,121,180,.12);color:var(--pk)}
-.bo{background:rgba(255,144,64,.12);color:var(--or)}
-
-/* TABLES */
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{padding:9px 18px;text-align:left;font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd)}
-.tbl td{padding:9px 18px;border-bottom:1px solid var(--bd);font-size:12px}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tbody tr{transition:background .1s}
-.tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
-.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt)}
-
-/* MOD LOGS */
-.ml{display:flex;align-items:flex-start;gap:12px;padding:11px 18px;border-bottom:1px solid var(--bd);transition:background .1s}
-.ml:last-child{border-bottom:none}
-.ml:hover{background:var(--s2)}
-.ml-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.ml-action{font-size:12px;font-weight:600;color:#fff}
-.ml-meta{font-size:10px;color:var(--mt);margin-top:2px}
-
-/* CHART */
-.cw{padding:16px 18px}
-.cw canvas{max-height:190px}
-.cw-sm canvas{max-height:150px}
-
-/* TABS */
-.tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:4px;width:fit-content}
-.tab{padding:6px 16px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:600;color:var(--mt);transition:all .15s;border:none;background:none}
-.tab.on{background:var(--ac);color:#fff}
-.tab:hover:not(.on){color:var(--tx)}
-
-/* SEARCH */
-.srch{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 12px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
-.srch:focus{border-color:rgba(124,111,255,.4)}
-.srch::placeholder{color:var(--mt)}
-
-/* EMPTY */
-.empty{text-align:center;padding:48px 20px;color:var(--mt)}
-.empty i{font-size:42px;opacity:.25;display:block;margin-bottom:12px}
-.empty p{font-size:13px;line-height:1.7}
-
-/* SPECIAL CARDS */
-.giveaway-card{margin:10px 18px;background:linear-gradient(135deg,rgba(232,121,180,.07),rgba(124,111,255,.07));border:1px solid rgba(232,121,180,.18);border-radius:10px;padding:14px 16px}
-.gw-prize{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
-.gw-meta{font-size:11px;color:var(--mt)}
-
-.ticket-card{margin:8px 16px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}
-.tc-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.tc-id{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--gn)}
-.tc-title{font-size:12px;font-weight:600;color:#fff}
-.tc-body{font-size:11px;color:var(--mt)}
-
-.note-card{margin:8px 16px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;transition:border-color .15s}
-.note-card:hover{border-color:rgba(124,111,255,.25)}
-.note-by{font-size:11px;font-weight:600;color:var(--ac)}
-.note-time{font-size:10px;color:var(--mt)}
-.note-text{font-size:12px;color:var(--tx);line-height:1.55;margin-top:5px}
-
-.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
-.bug-card:hover{border-color:rgba(240,93,122,.2)}
-.bug-hd{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
-.bug-id{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--rd);background:rgba(240,93,122,.1);padding:2px 7px;border-radius:5px}
-.bug-title{font-size:13px;font-weight:600;color:#fff;flex:1}
-.bug-body{padding:13px 18px}
-.bug-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.bug-field label{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:3px;font-weight:700}
-.bug-field p{font-size:12px;color:var(--tx)}
-.bug-field.full{grid-column:1/-1}
-
-/* ROBLOX */
-.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:14px}
-.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:border-color .2s}
-.roblox-card:hover{border-color:rgba(52,200,255,.25)}
-.rb-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.rb-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
-.rb-user{font-size:11px;color:var(--mt)}
-.rb-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cy);margin-top:2px}
-.rb-link{display:block;margin-top:12px;background:rgba(52,200,255,.08);border:1px solid rgba(52,200,255,.18);color:var(--cy);border-radius:8px;padding:7px;font-size:11px;font-weight:600;text-align:center;transition:background .15s}
-.rb-link:hover{background:rgba(52,200,255,.15)}
-
-/* WORD FILTER */
-.word-list{display:flex;flex-wrap:wrap;gap:7px;padding:16px 18px}
-.word-tag{background:rgba(240,93,122,.1);color:var(--rd);border:1px solid rgba(240,93,122,.18);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
-
-/* FOOTER */
-.foot{text-align:center;padding:12px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s1);letter-spacing:.3px;flex-shrink:0}
-.foot span{color:var(--ac);font-weight:600}
-
-/* SECTION VISIBILITY */
-.page-section{display:none}
-.page-section.active{display:block}
-
-@media(max-width:1200px){.g2{grid-template-columns:1fr}.sg{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}.g22{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}:root{--sw:200px}}
-@media(max-width:640px){.sb{display:none}.sg{grid-template-columns:repeat(2,1fr)}}
-.flex-col{display:flex;flex-direction:column;gap:10px}
-.mb0{margin-bottom:0}
-</style>
-</head>
-<body>
-
-<div class="wrap">
-
-<!-- SIDEBAR -->
-<aside class="sb">
-  <div class="sb-brand">
-    <div class="sb-logo"><i class="ti ti-device-gamepad-2"></i></div>
-    <div>
-      <div class="sb-name">Young Boy Studios</div>
-      <div class="sb-tag">Control Panel</div>
+  <!-- ── GUILD SELECTOR ── -->
+  <div class="pn" style="margin-bottom:14px">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-building-community"></i>Select Server</div>
+      <span style="font-size:11px;color:var(--mt)" id="cfg-guild-name">Loading...</span>
+    </div>
+    <div style="padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <select id="cfg-guild-select" class="srch" style="max-width:320px" onchange="cfgLoadGuild()">
+        <option value="">Loading guilds...</option>
+      </select>
+      <button class="tb-btn" onclick="cfgLoadAll()" style="flex-shrink:0">
+        <i class="ti ti-refresh"></i> Refresh
+      </button>
+      <button class="tb-btn" onclick="cfgReset()" style="flex-shrink:0;border-color:rgba(240,93,122,.3);color:var(--rd)">
+        <i class="ti ti-trash"></i> Reset Config
+      </button>
     </div>
   </div>
 
-  <div class="ticker-wrap">
-    <div class="ticker-label">Live</div>
-    <div class="ticker-scroll">
-      <div class="ticker-inner">
-        {% for e in activity[:6] %}
-        <div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>
-        {% endfor %}
-        {% for e in activity[:6] %}
-        <div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>
-        {% endfor %}
+  <!-- ── CHANNELS TAB ── -->
+  <div id="cfg-tab-channels">
+    <div class="pn">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-hash"></i>Channel Configuration</div>
+        <button class="tb-btn" onclick="cfgSaveSection('channels')" style="background:rgba(124,111,255,.12);border-color:rgba(124,111,255,.3);color:var(--ac)">
+          <i class="ti ti-device-floppy"></i> Save Channels
+        </button>
       </div>
-    </div>
-  </div>
+      <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
 
-  <nav class="sb-nav">
-    <div class="nl">General</div>
-    <button class="na {% if page=='home' %}on{% endif %}" onclick="showPage('home',this)"><i class="ti ti-layout-dashboard"></i><span class="na-lbl">Overview</span></button>
-    <button class="na {% if page=='activity' %}on{% endif %}" onclick="showPage('activity',this)"><i class="ti ti-bolt"></i><span class="na-lbl">Live Activity</span><span class="na-badge nba">{{ activity|length }}</span></button>
-
-    <div class="nl">Members</div>
-    <button class="na {% if page=='applications' %}on{% endif %}" onclick="showPage('applications',this)"><i class="ti ti-file-description"></i><span class="na-lbl">Applications</span><span class="na-badge nba">{{ app_count }}</span></button>
-    <button class="na {% if page=='warnings' %}on{% endif %}" onclick="showPage('warnings',this)"><i class="ti ti-alert-triangle"></i><span class="na-lbl">Warnings</span>{% if warn_count %}<span class="na-badge nbr">{{ warn_count }}</span>{% endif %}</button>
-    <button class="na {% if page=='notes' %}on{% endif %}" onclick="showPage('notes',this)"><i class="ti ti-notes"></i><span class="na-lbl">Staff Notes</span>{% if notes_count %}<span class="na-badge nbp">{{ notes_count }}</span>{% endif %}</button>
-    <button class="na {% if page=='members' %}on{% endif %}" onclick="showPage('members',this)"><i class="ti ti-users"></i><span class="na-lbl">Members</span></button>
-    <button class="na {% if page=='leaderboard' %}on{% endif %}" onclick="showPage('leaderboard',this)"><i class="ti ti-trophy"></i><span class="na-lbl">Leaderboard</span></button>
-
-    <div class="nl">Moderation</div>
-    <button class="na {% if page=='modlogs' %}on{% endif %}" onclick="showPage('modlogs',this)"><i class="ti ti-scroll"></i><span class="na-lbl">Mod Logs</span>{% if mod_log_count %}<span class="na-badge nbr">{{ mod_log_count }}</span>{% endif %}</button>
-    <button class="na {% if page=='automod' %}on{% endif %}" onclick="showPage('automod',this)"><i class="ti ti-robot"></i><span class="na-lbl">Auto-Mod</span></button>
-    <button class="na {% if page=='tickets' %}on{% endif %}" onclick="showPage('tickets',this)"><i class="ti ti-ticket"></i><span class="na-lbl">Tickets</span>{% if ticket_count %}<span class="na-badge nbg">{{ ticket_count }}</span>{% endif %}</button>
-    <button class="na {% if page=='bugs' %}on{% endif %}" onclick="showPage('bugs',this)"><i class="ti ti-bug"></i><span class="na-lbl">Bug Reports</span>{% if bug_count %}<span class="na-badge nbr">{{ bug_count }}</span>{% endif %}</button>
-
-    <div class="nl">Events</div>
-    <button class="na {% if page=='giveaways' %}on{% endif %}" onclick="showPage('giveaways',this)"><i class="ti ti-confetti"></i><span class="na-lbl">Giveaways</span>{% if giveaway_count %}<span class="na-badge nbp">{{ giveaway_count }}</span>{% endif %}</button>
-    <button class="na {% if page=='voice' %}on{% endif %}" onclick="showPage('voice',this)"><i class="ti ti-microphone"></i><span class="na-lbl">Voice Log</span></button>
-    <button class="na {% if page=='economy' %}on{% endif %}" onclick="showPage('economy',this)"><i class="ti ti-coin"></i><span class="na-lbl">Economy</span></button>
-    <button class="na {% if page=='analytics' %}on{% endif %}" onclick="showPage('analytics',this)"><i class="ti ti-chart-bar"></i><span class="na-lbl">Analytics</span></button>
-
-    <div class="nl">Roblox</div>
-    <button class="na {% if page=='roblox' %}on{% endif %}" onclick="showPage('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">{{ roblox_count }}</span></button>
-    <button class="na {% if page=='premium' %}on{% endif %}" onclick="showPage('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span>{% if premium_count %}<span class="na-badge nby">{{ premium_count }}</span>{% endif %}</button>
-  </nav>
-
-  <div class="sb-foot">
-    <div class="bot-pill">
-      <div class="pulse {% if not bot_online %}off{% endif %}"></div>
-      <div>
-        <div class="bot-name">{{ bot_name }}</div>
-        <div class="bot-st {% if not bot_online %}off{% endif %}">{{ 'Online · ' + uptime if uptime else 'Offline' }}</div>
-      </div>
-    </div>
-  </div>
-</aside>
-
-<!-- MAIN -->
-<div class="main">
-  <div class="topbar">
-    <div class="tb-crumb">
-      <span class="tbc-root">YBS</span>
-      <i class="ti ti-chevron-right tbc-sep"></i>
-      <span class="tbc-page" id="pageTitle">
-        {% if page=='home' %}Overview{% elif page=='activity' %}Live Activity{% elif page=='applications' %}Applications{% elif page=='warnings' %}Warnings{% elif page=='notes' %}Staff Notes{% elif page=='members' %}Members{% elif page=='leaderboard' %}Leaderboard{% elif page=='modlogs' %}Mod Logs{% elif page=='automod' %}Auto-Mod{% elif page=='tickets' %}Tickets{% elif page=='bugs' %}Bug Reports{% elif page=='giveaways' %}Giveaways{% elif page=='voice' %}Voice Log{% elif page=='economy' %}Economy{% elif page=='analytics' %}Analytics{% elif page=='roblox' %}Roblox Profiles{% elif page=='premium' %}Premium Members{% else %}Overview{% endif %}
-      </span>
-    </div>
-    <div class="tb-right">
-      <div class="tb-clock" id="liveClock">00:00:00</div>
-      <a href="{{ request.path }}" class="tb-btn"><i class="ti ti-refresh"></i> Refresh</a>
-    </div>
-  </div>
-
-  <div class="content">
-
-    <!-- ══ HOME ══ -->
-    <div class="page-section {% if page=='home' %}active{% endif %}" id="sec-home">
-      <div class="sg">
-        {% set stat_cards = [
-          ('ti-file-description','Applications', app_count, '#7c6fff'),
-          ('ti-alert-triangle','Warnings', warn_count, '#f05d7a'),
-          ('ti-ticket','Open Tickets', ticket_count, '#22d3a0'),
-          ('ti-users','XP Members', xp_count, '#f5c842'),
-          ('ti-coin','Eco Users', eco_count, '#34c8ff'),
-          ('ti-scroll','Mod Actions', mod_log_count, '#ff9040'),
-          ('ti-bug','Bug Reports', bug_count, '#f05d7a'),
-          ('ti-brand-google-play','Roblox Linked', roblox_count, '#34c8ff'),
-          ('ti-crown','Premium', premium_count, '#f5c842'),
-          ('ti-confetti','Giveaways', giveaway_count, '#e879b4'),
-        ] %}
-        {% for icon,lbl,val,col in stat_cards %}
-        <div class="sc">
-          <div class="sc-top-bar" style="background:{{ col }}"></div>
-          <div class="sc-icon" style="background:{{ col }}20"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div>
-          <div class="sc-val">{{ val }}</div>
-          <div class="sc-lbl">{{ lbl }}</div>
+        <div class="cfg-field" data-key="welcome_channel" data-type="channel">
+          <label class="cfg-lbl">👋 Welcome Channel</label>
+          <p class="cfg-hint">Where join/leave messages are sent</p>
+          <select class="srch cfg-channel-select" data-key="welcome_channel"></select>
         </div>
-        {% endfor %}
-      </div>
 
-      <div class="g2">
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-bolt"></i>Live Activity</div>
-            <a href="/activity" class="plink">View all <i class="ti ti-arrow-right"></i></a>
-          </div>
-          <div class="al">
-            {% for e in activity[:12] %}
-            <div class="ai {% if loop.first %}live-row{% endif %}">
-              {% if loop.first %}<div class="live-dot"></div>{% endif %}
-              <div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div>
-              <div class="ai-main">
-                <div class="ai-act">{{ e.action }}</div>
-                <div class="ai-det">{{ e.detail }}</div>
-              </div>
-              <div class="ai-time">{{ e.time }}</div>
+        <div class="cfg-field" data-key="apply_channel" data-type="channel">
+          <label class="cfg-lbl">📋 Apply Channel</label>
+          <p class="cfg-hint">Where the application panel is posted</p>
+          <select class="srch cfg-channel-select" data-key="apply_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="applications_channel" data-type="channel">
+          <label class="cfg-lbl">📨 Staff Applications Channel</label>
+          <p class="cfg-hint">Where submitted applications are sent</p>
+          <select class="srch cfg-channel-select" data-key="applications_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="logs_channel" data-type="channel">
+          <label class="cfg-lbl">📋 Logs Channel</label>
+          <p class="cfg-hint">Message edits, deletes, and join/leave</p>
+          <select class="srch cfg-channel-select" data-key="logs_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="general_channel" data-type="channel">
+          <label class="cfg-lbl">💬 General Channel</label>
+          <p class="cfg-hint">Suggestions and polls go here</p>
+          <select class="srch cfg-channel-select" data-key="general_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="announcements_channel" data-type="channel">
+          <label class="cfg-lbl">📢 Announcements Channel</label>
+          <p class="cfg-hint">Used by /announce command</p>
+          <select class="srch cfg-channel-select" data-key="announcements_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="giveaway_channel" data-type="channel">
+          <label class="cfg-lbl">🎉 Giveaway Channel</label>
+          <p class="cfg-hint">Where giveaways are posted</p>
+          <select class="srch cfg-channel-select" data-key="giveaway_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="levelup_channel" data-type="channel">
+          <label class="cfg-lbl">⬆️ Level-Up Channel</label>
+          <p class="cfg-hint">Level-up celebration messages</p>
+          <select class="srch cfg-channel-select" data-key="levelup_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="verify_channel" data-type="channel">
+          <label class="cfg-lbl">✅ Verification Channel</label>
+          <p class="cfg-hint">Where the verify panel lives</p>
+          <select class="srch cfg-channel-select" data-key="verify_channel"></select>
+        </div>
+
+        <div class="cfg-field" data-key="mod_channel" data-type="channel">
+          <label class="cfg-lbl">🔨 Mod-Log Channel</label>
+          <p class="cfg-hint">AutoMod and moderation action logs</p>
+          <select class="srch cfg-channel-select" data-key="mod_channel"></select>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROLES TAB ── -->
+  <div id="cfg-tab-roles" style="display:none">
+    <div class="pn">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-tag"></i>Role Configuration</div>
+        <button class="tb-btn" onclick="cfgSaveSection('roles')" style="background:rgba(124,111,255,.12);border-color:rgba(124,111,255,.3);color:var(--ac)">
+          <i class="ti ti-device-floppy"></i> Save Roles
+        </button>
+      </div>
+      <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+
+        <div class="cfg-field" data-key="admin_role" data-type="role">
+          <label class="cfg-lbl">⚙️ Admin / Staff Role</label>
+          <p class="cfg-hint">Can use all staff commands</p>
+          <select class="srch cfg-role-select" data-key="admin_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="member_role" data-type="role">
+          <label class="cfg-lbl">👤 Member Role</label>
+          <p class="cfg-hint">Given when application is accepted</p>
+          <select class="srch cfg-role-select" data-key="member_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="verified_role" data-type="role">
+          <label class="cfg-lbl">✅ Verified Role</label>
+          <p class="cfg-hint">Given after Roblox verification</p>
+          <select class="srch cfg-role-select" data-key="verified_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="pending_role" data-type="role">
+          <label class="cfg-lbl">⏳ Pending Role</label>
+          <p class="cfg-hint">Given to new members until accepted</p>
+          <select class="srch cfg-role-select" data-key="pending_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="builder_role" data-type="role">
+          <label class="cfg-lbl">🔨 Builder Role</label>
+          <p class="cfg-hint">Applied to accepted builders</p>
+          <select class="srch cfg-role-select" data-key="builder_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="scripter_role" data-type="role">
+          <label class="cfg-lbl">💻 Scripter Role</label>
+          <p class="cfg-hint">Applied to accepted scripters</p>
+          <select class="srch cfg-role-select" data-key="scripter_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="modeller_role" data-type="role">
+          <label class="cfg-lbl">🎨 Modeller Role</label>
+          <p class="cfg-hint">Applied to accepted modellers</p>
+          <select class="srch cfg-role-select" data-key="modeller_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="ui_role" data-type="role">
+          <label class="cfg-lbl">🖥️ UI Designer Role</label>
+          <p class="cfg-hint">Applied to accepted UI designers</p>
+          <select class="srch cfg-role-select" data-key="ui_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="level5_role" data-type="role">
+          <label class="cfg-lbl">⭐ Level 5 Reward Role</label>
+          <p class="cfg-hint">Auto-given at level 5</p>
+          <select class="srch cfg-role-select" data-key="level5_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="level10_role" data-type="role">
+          <label class="cfg-lbl">🌟 Level 10 Reward Role</label>
+          <p class="cfg-hint">Auto-given at level 10</p>
+          <select class="srch cfg-role-select" data-key="level10_role"></select>
+        </div>
+
+        <div class="cfg-field" data-key="level25_role" data-type="role">
+          <label class="cfg-lbl">💎 Level 25 Reward Role</label>
+          <p class="cfg-hint">Auto-given at level 25</p>
+          <select class="srch cfg-role-select" data-key="level25_role"></select>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOT SETTINGS TAB ── -->
+  <div id="cfg-tab-bot" style="display:none">
+    <div class="pn">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-adjustments"></i>Bot Settings</div>
+        <button class="tb-btn" onclick="cfgSaveSection('bot')" style="background:rgba(124,111,255,.12);border-color:rgba(124,111,255,.3);color:var(--ac)">
+          <i class="ti ti-device-floppy"></i> Save Settings
+        </button>
+      </div>
+      <div style="padding:18px;display:flex;flex-direction:column;gap:12px">
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+
+          <div class="cfg-toggle-card">
+            <div style="flex:1">
+              <div class="cfg-toggle-title">🏅 XP / Level-Up System</div>
+              <div class="cfg-toggle-hint">Members gain XP by chatting. Disable to freeze all XP gain.</div>
             </div>
-            {% else %}
-            <div class="empty"><i class="ti ti-bolt"></i><p>No activity yet.</p></div>
-            {% endfor %}
+            <label class="cfg-switch">
+              <input type="checkbox" id="toggle-levelup_enabled" data-key="levelup_enabled" checked>
+              <span class="cfg-slider"></span>
+            </label>
           </div>
+
+          <div class="cfg-toggle-card">
+            <div style="flex:1">
+              <div class="cfg-toggle-title">💰 Economy System</div>
+              <div class="cfg-toggle-hint">Enable coins, daily rewards, gambling, and the shop.</div>
+            </div>
+            <label class="cfg-switch">
+              <input type="checkbox" id="toggle-economy_enabled" data-key="economy_enabled" checked>
+              <span class="cfg-slider"></span>
+            </label>
+          </div>
+
         </div>
 
-        <div class="flex-col">
-          <div class="pn mb0">
-            <div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Apps by Role</div></div>
-            {% if role_counts %}
-            <div class="cw cw-sm"><canvas id="roleChartHome"></canvas></div>
-            {% else %}
-            <div class="empty" style="padding:20px"><i class="ti ti-file-description"></i><p>No applications yet.</p></div>
-            {% endif %}
+        <!-- XP multiplier -->
+        <div class="pn mb0" style="background:var(--s2)">
+          <div class="ph" style="border-bottom:none;padding-bottom:0">
+            <div class="pt" style="font-size:11.5px"><i class="ti ti-trending-up"></i>XP Range per Message</div>
           </div>
-          <div class="pn mb0">
-            <div class="ph">
-              <div class="pt"><i class="ti ti-trophy"></i>XP Leaders</div>
-              <a href="/leaderboard" class="plink">Full list <i class="ti ti-arrow-right"></i></a>
-            </div>
-            {% for m in top_xp[:3] %}
-            {% set medals = ['🥇','🥈','🥉'] %}
-            <div class="mr">
-              <div class="rk">{{ medals[loop.index0] }}</div>
-              <div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div>
-              <div class="m-info">
-                <div class="m-name">{{ m.name.split('#')[0] }}</div>
-                <div class="m-sub">{{ m.xp|int }} XP</div>
-                <div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div>
-              </div>
-              <span class="bg bb">Lv {{ m.level }}</span>
-            </div>
-            {% else %}
-            <div class="empty" style="padding:20px"><p>No XP data yet.</p></div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-
-      <div class="g22">
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-alert-triangle"></i>Recent Warnings</div>
-            <a href="/warnings" class="plink">All <i class="ti ti-arrow-right"></i></a>
-          </div>
-          <table class="tbl"><thead><tr><th>User</th><th>Total</th><th>Last Reason</th></tr></thead><tbody>
-            {% for w in recent_warns %}
-            <tr>
-              <td class="mono">{{ w.user_id }}</td>
-              <td><span class="bg {% if w.count >= 3 %}br{% else %}by{% endif %}">{{ w.count }}×</span></td>
-              <td>{{ w.last_reason }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" style="text-align:center;color:var(--mt);padding:20px">No warnings on record.</td></tr>
-            {% endfor %}
-          </tbody></table>
-        </div>
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-scroll"></i>Recent Mod Actions</div>
-            <a href="/modlogs" class="plink">All <i class="ti ti-arrow-right"></i></a>
-          </div>
-          {% for m in mod_logs[:5] %}
-          <div class="ml">
-            <div class="ml-dot" style="background:{{ m.color }}"></div>
+          <div style="padding:12px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
             <div>
-              <div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div>
-              <div class="ml-meta">by {{ m.by }} · {{ m.reason }} · {{ m.time }}</div>
+              <label class="cfg-lbl" style="margin-bottom:4px;display:block">Min XP</label>
+              <input type="number" id="cfg-xp-min" class="srch" style="width:90px" value="5" min="1" max="50">
             </div>
-          </div>
-          {% else %}
-          <div class="empty" style="padding:20px"><p>No mod actions yet.</p></div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ ACTIVITY ══ -->
-    <div class="page-section {% if page=='activity' %}active{% endif %}" id="sec-activity">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div>
-          <span style="font-size:11px;color:var(--mt)">{{ activity|length }} events</span>
-        </div>
-        <div class="al" style="max-height:none">
-          {% for e in activity %}
-          <div class="ai {% if loop.first %}live-row{% endif %}">
-            {% if loop.first %}<div class="live-dot"></div>{% endif %}
-            <div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div>
-            <div class="ai-main">
-              <div class="ai-act">{{ e.action }}</div>
-              <div class="ai-det">{{ e.detail }}</div>
+            <div style="color:var(--mt);font-size:16px;align-self:flex-end;padding-bottom:6px">—</div>
+            <div>
+              <label class="cfg-lbl" style="margin-bottom:4px;display:block">Max XP</label>
+              <input type="number" id="cfg-xp-max" class="srch" style="width:90px" value="15" min="1" max="100">
             </div>
-            <div class="ai-time">{{ e.time }}</div>
+            <div style="color:var(--mt);font-size:11px;align-self:flex-end;padding-bottom:8px">per message (60s cooldown)</div>
           </div>
-          {% else %}
-          <div class="empty"><i class="ti ti-bolt"></i><p>No activity logged yet.</p></div>
-          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WELCOME TAB ── -->
+  <div id="cfg-tab-welcome" style="display:none">
+    <div class="pn">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-door-enter"></i>Welcome Message</div>
+        <button class="tb-btn" onclick="cfgSaveSection('welcome')" style="background:rgba(124,111,255,.12);border-color:rgba(124,111,255,.3);color:var(--ac)">
+          <i class="ti ti-device-floppy"></i> Save Message
+        </button>
+      </div>
+      <div style="padding:18px">
+        <p class="cfg-hint" style="margin-bottom:10px">Customize the embed description sent when a member joins. Use the variables below.</p>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{mention}')">{mention}</span>
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{name}')">{name}</span>
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{server}')">{server}</span>
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{member_count}')">{member_count}</span>
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{apply_channel}')">{apply_channel}</span>
+          <span class="word-tag" style="background:rgba(124,111,255,.1);color:var(--ac);border-color:rgba(124,111,255,.2);cursor:pointer" onclick="insertVar('{verify_channel}')">{verify_channel}</span>
+        </div>
+        <textarea id="cfg-welcome-msg" class="srch" rows="6" style="resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6"
+          placeholder="Hey {mention}! Welcome to {server}. You are member #{member_count}.&#10;📋 Apply at {apply_channel}&#10;✅ Verify at {verify_channel}"></textarea>
+
+        <!-- Live preview -->
+        <div style="margin-top:16px">
+          <div style="font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:8px">Preview</div>
+          <div class="ticket-card" id="cfg-welcome-preview" style="font-size:12px;color:var(--tx);line-height:1.6;white-space:pre-wrap"></div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ══ APPLICATIONS ══ -->
-    <div class="page-section {% if page=='applications' %}active{% endif %}" id="sec-applications">
-      {% if applications %}
-        {% for uid, a in applications.items() %}
-        {% set statusCls = {'accepted':'bgg','declined':'br','interview':'by','pending':'bb'}.get(a.status, 'bb') %}
-        <div class="pn">
-          <div class="ph">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div>
-              <div>
-                <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div>
-                <div style="font-size:11px;color:var(--mt);margin-top:1px">Status: <span class="bg {{ statusCls }}">{{ a.status|title }}</span></div>
-              </div>
-            </div>
-            <span class="bg bb">{{ a.role }}</span>
+  <!-- ── AUTOMOD TAB ── -->
+  <div id="cfg-tab-automod" style="display:none">
+    <div class="pn" style="margin-bottom:12px">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-shield-check"></i>AutoMod Rules</div>
+        <button class="tb-btn" onclick="cfgSaveSection('automod')" style="background:rgba(124,111,255,.12);border-color:rgba(124,111,255,.3);color:var(--ac)">
+          <i class="ti ti-device-floppy"></i> Save AutoMod
+        </button>
+      </div>
+      <div style="padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">🛡️ AutoMod Enabled</div>
+            <div class="cfg-toggle-hint">Master switch — disabling this turns off all AutoMod checks.</div>
           </div>
-          <div style="padding:16px 18px">
-            <div class="bug-fields">
-              <div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div>
-              <div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div>
-              <div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div>
-              <div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div>
-              <div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div>
-            </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_enabled" data-key="automod_enabled" checked>
+            <span class="cfg-slider"></span>
+          </label>
+        </div>
+
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">⚡ Spam Detection</div>
+            <div class="cfg-toggle-hint">Warns members sending 5+ messages in 5 seconds.</div>
           </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_spam" data-key="automod_spam" checked>
+            <span class="cfg-slider"></span>
+          </label>
         </div>
-        {% endfor %}
-      {% else %}
-      <div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications yet.</p></div></div>
-      {% endif %}
-    </div>
 
-    <!-- ══ WARNINGS ══ -->
-    <div class="page-section {% if page=='warnings' %}active{% endif %}" id="sec-warnings">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div>
-          <span style="font-size:11px;color:var(--mt)">{{ warnings|length }} users warned</span>
-        </div>
-        {% if warnings %}
-        <table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
-          {% for uid, wlist in warnings.items() %}
-            {% for w in wlist %}
-            <tr>
-              <td class="mono">{{ uid }}</td>
-              <td>{% if loop.first %}<span class="bg {% if wlist|length >= 3 %}br{% else %}by{% endif %}">{{ wlist|length }} total</span>{% endif %}</td>
-              <td style="color:var(--mt)">#{{ loop.index }}</td>
-              <td>{{ w.reason }}</td>
-              <td style="color:var(--mt)">{{ w.by }}</td>
-              <td class="mono">{{ w.time[:10] }}</td>
-            </tr>
-            {% endfor %}
-          {% endfor %}
-        </tbody></table>
-        {% else %}
-        <div class="empty"><i class="ti ti-circle-check"></i><p>No warnings issued yet!</p></div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- ══ NOTES ══ -->
-    <div class="page-section {% if page=='notes' %}active{% endif %}" id="sec-notes">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-notes"></i>Staff Notes</div>
-          <span style="font-size:11px;color:var(--mt)">{{ notes_count }} notes</span>
-        </div>
-        {% if all_notes %}
-          {% for uid, nlist in all_notes.items() %}
-          <div style="border-bottom:1px solid var(--bd)">
-            <div style="padding:9px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>
-            {% for n in nlist %}
-            <div class="note-card">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-                <span class="note-by">{{ n.by }}</span>
-                <span class="note-time">{{ n.time }}</span>
-              </div>
-              <div class="note-text">{{ n.note }}</div>
-            </div>
-            {% endfor %}
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">🔠 Caps Spam</div>
+            <div class="cfg-toggle-hint">Warns if more than 75% of a message is uppercase.</div>
           </div>
-          {% endfor %}
-        {% else %}
-        <div class="empty"><i class="ti ti-notes"></i><p>No staff notes yet.</p></div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- ══ MEMBERS ══ -->
-    <div class="page-section {% if page=='members' %}active{% endif %}" id="sec-members">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-users"></i>All Members</div>
-          <span style="font-size:11px;color:var(--mt)">{{ members|length }} tracked</span>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_caps" data-key="automod_caps" checked>
+            <span class="cfg-slider"></span>
+          </label>
         </div>
-        <div style="padding:10px 16px;border-bottom:1px solid var(--bd)">
-          <input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)">
-        </div>
-        <table class="tbl" id="membersTable">
-          <thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead>
-          <tbody>
-            {% for m in members %}
-            <tr class="member-row" data-name="{{ m.name|lower }}">
-              <td>
-                <div style="display:flex;align-items:center;gap:9px">
-                  <div class="av" style="background:var(--ac);width:28px;height:28px;font-size:11px">{{ m.name[0]|upper }}</div>
-                  <span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span>
-                </div>
-              </td>
-              <td><span class="bg bb">Lv {{ m.level }}</span></td>
-              <td>
-                {{ m.xp|int }} XP
-                <div class="xpb" style="margin-top:4px"><div class="xpf" style="width:{{ m.pct }}%"></div></div>
-              </td>
-              <td style="color:var(--yw)">💰 {{ m.balance|int }}</td>
-              <td class="mono" style="color:var(--mt)">{{ m.messages }}</td>
-              <td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" style="text-align:center;color:var(--mt);padding:32px">No member data yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
 
-    <!-- ══ LEADERBOARD ══ -->
-    <div class="page-section {% if page=='leaderboard' %}active{% endif %}" id="sec-leaderboard">
-      <div class="tabs">
-        <button class="tab on" id="lbXpTab" onclick="lbSwitch('xp',this)">XP Rankings</button>
-        <button class="tab" id="lbEcoTab" onclick="lbSwitch('eco',this)">Rich List</button>
-      </div>
-      <div id="lb-xp">
-        <div class="pn">
-          <div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div><span style="font-size:11px;color:var(--mt)">{{ xp_lb|length }} members</span></div>
-          {% for m in xp_lb %}
-          {% set medals = ['🥇','🥈','🥉'] %}
-          <div class="mr">
-            <div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div>
-            <div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div>
-            <div class="m-info">
-              <div class="m-name">{{ m.name.split('#')[0] }}</div>
-              <div class="m-sub">{{ m.xp|int }} XP</div>
-              <div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div>
-            </div>
-            <span class="bg bb">Lv {{ m.level }}</span>
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">🔗 External Link Blocking</div>
+            <div class="cfg-toggle-hint">Blocks links not on the allowlist (YouTube, GitHub, etc.).</div>
           </div>
-          {% else %}
-          <div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>
-          {% endfor %}
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_links" data-key="automod_links" checked>
+            <span class="cfg-slider"></span>
+          </label>
         </div>
-      </div>
-      <div id="lb-eco" style="display:none">
-        <div class="pn">
-          <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>
-          {% for m in eco_lb %}
-          {% set medals = ['🥇','🥈','🥉'] %}
-          <div class="mr">
-            <div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div>
-            <div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div>
-            <div class="m-info">
-              <div class="m-name">{{ m.name.split('#')[0] }}</div>
-              <div class="m-sub">Total earned: {{ m.total_earned|int }}</div>
-            </div>
-            <span class="bg by">💰 {{ m.balance|int }}</span>
-          </div>
-          {% else %}
-          <div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
 
-    <!-- ══ MOD LOGS ══ -->
-    <div class="page-section {% if page=='modlogs' %}active{% endif %}" id="sec-modlogs">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-scroll"></i>Mod Log</div>
-          <span style="font-size:11px;color:var(--mt)">{{ mod_logs|length }} actions</span>
-        </div>
-        {% for m in mod_logs %}
-        <div class="ml">
-          <div class="ml-dot" style="background:{{ m.color }}"></div>
-          <div>
-            <div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div>
-            <div class="ml-meta">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div>
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">💌 Discord Invite Blocking</div>
+            <div class="cfg-toggle-hint">Blocks all Discord invite links unconditionally.</div>
           </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_invites" data-key="automod_invites" checked>
+            <span class="cfg-slider"></span>
+          </label>
         </div>
-        {% else %}
-        <div class="empty"><i class="ti ti-scroll"></i><p>No moderation actions logged yet.</p></div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <!-- ══ AUTO-MOD ══ -->
-    <div class="page-section {% if page=='automod' %}active{% endif %}" id="sec-automod">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div>
-          <span style="font-size:11px;color:var(--mt)">{{ total_words }} words</span>
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">🔁 Duplicate Message Spam</div>
+            <div class="cfg-toggle-hint">Warns after sending the same message 3 times in a row.</div>
+          </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_duplicate" data-key="automod_duplicate" checked>
+            <span class="cfg-slider"></span>
+          </label>
         </div>
-        {% if automod_guilds %}
+
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">📢 Mass Mention Detection</div>
+            <div class="cfg-toggle-hint">Warns if a message pings 5 or more users at once.</div>
+          </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_mentions" data-key="automod_mentions" checked>
+            <span class="cfg-slider"></span>
+          </label>
+        </div>
+
+        <div class="cfg-toggle-card">
+          <div style="flex:1">
+            <div class="cfg-toggle-title">😂 Emoji Spam</div>
+            <div class="cfg-toggle-hint">Warns if a message contains 10 or more emojis.</div>
+          </div>
+          <label class="cfg-switch">
+            <input type="checkbox" id="toggle-automod_emoji" data-key="automod_emoji" checked>
+            <span class="cfg-slider"></span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Word filter inline -->
+      <div style="border-top:1px solid var(--bd);padding:14px 18px">
+        <div style="font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:10px">Banned Word Filter</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="text" id="cfg-new-word" class="srch" placeholder="Add a word or phrase..." style="max-width:260px" onkeydown="if(event.key==='Enter')cfgAddWord()">
+          <button class="tb-btn" onclick="cfgAddWord()" style="flex-shrink:0">
+            <i class="ti ti-plus"></i> Add
+          </button>
+        </div>
+        <div class="word-list" id="cfg-word-list" style="padding:0;flex-wrap:wrap;gap:7px;display:flex">
           {% for gid, words in automod_guilds.items() %}
-          {% if words %}
-          <div style="padding:8px 14px 2px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:1px solid var(--bd)">Guild {{ gid }}</div>
-          <div class="word-list">
-            {% for w in words %}<span class="word-tag">{{ w }}</span>{% endfor %}
-          </div>
-          {% endif %}
-          {% endfor %}
-        {% else %}
-        <div class="empty"><i class="ti ti-robot"></i><p>No words in the filter yet. Use <code>/addword</code> in Discord.</p></div>
-        {% endif %}
-        <div style="padding:13px 18px;background:var(--s2);border-top:1px solid var(--bd)">
-          <div style="font-size:10px;color:var(--mt);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.7px">Discord Commands</div>
-          <div style="display:flex;gap:7px;flex-wrap:wrap">
-            {% for cmd in ['/addword','/removeword','/wordlist','/automod'] %}
-            <code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ac)">{{ cmd }}</code>
+            {% for w in words %}
+            <span class="word-tag" style="cursor:pointer;display:flex;align-items:center;gap:5px">
+              {{ w }}
+              <i class="ti ti-x" style="font-size:10px;opacity:.6" onclick="cfgRemoveWord('{{ w }}',this)"></i>
+            </span>
             {% endfor %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ TICKETS ══ -->
-    <div class="page-section {% if page=='tickets' %}active{% endif %}" id="sec-tickets">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div>
-          <span style="font-size:11px;color:var(--mt)">{{ ticket_count }} open</span>
-        </div>
-        {% for ch_id, t in tickets.items() %}
-        <div class="ticket-card">
-          <div class="tc-head">
-            <span class="tc-id">#{{ loop.index }}</span>
-            <div class="tc-title">{{ t.user_name }}</div>
-            <span class="bg {% if t.status=='open' %}bgg{% else %}br{% endif %}">{{ t.status }}</span>
-          </div>
-          <div class="tc-body">{{ t.reason }} · Opened: {{ t.created }}</div>
-        </div>
-        {% else %}
-        <div class="empty"><i class="ti ti-ticket"></i><p>No open tickets.</p></div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- ══ BUGS ══ -->
-    <div class="page-section {% if page=='bugs' %}active{% endif %}" id="sec-bugs">
-      {% if bug_reports %}
-        {% for r in bug_reports %}
-        {% set stCls = {'fixed':'bgg','open':'br','in_progress':'bc'}.get(r.status,'by') %}
-        {% set svCls = {'critical':'br','high':'bo','medium':'by','low':'bgg'}.get(r.severity,'by') %}
-        <div class="bug-card">
-          <div class="bug-hd">
-            <span class="bug-id">{{ r.id }}</span>
-            <span class="bug-title">{{ r.title }}</span>
-            <span class="bg {{ stCls }}">{{ r.status.replace('_',' ') }}</span>
-            <span class="bg {{ svCls }}">{{ r.severity }}</span>
-          </div>
-          <div class="bug-body">
-            <div class="bug-fields">
-              <div class="bug-field"><label>Area</label><p>{{ r.game_area }}</p></div>
-              <div class="bug-field"><label>Reporter</label><p>{{ r.reporter_name }}</p></div>
-              <div class="bug-field"><label>Status</label><p>{{ r.status }}</p></div>
-              <div class="bug-field full"><label>Description</label><p>{{ r.description }}</p></div>
-              <div class="bug-field full"><label>Steps to Reproduce</label><p>{{ r.steps }}</p></div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      {% else %}
-      <div class="pn"><div class="empty"><i class="ti ti-bug"></i><p>No bug reports yet.</p></div></div>
-      {% endif %}
-    </div>
-
-    <!-- ══ GIVEAWAYS ══ -->
-    <div class="page-section {% if page=='giveaways' %}active{% endif %}" id="sec-giveaways">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div>
-          <span style="font-size:11px;color:var(--mt)">{{ giveaway_count }} running</span>
-        </div>
-        {% for msg_id, g in giveaways.items() %}
-        <div class="giveaway-card">
-          <div class="gw-prize">🎁 {{ g.prize }}</div>
-          <div class="gw-meta">Hosted by {{ g.host }} · Ends {{ g.ends[:16].replace('T',' ') }}</div>
-        </div>
-        {% else %}
-        <div class="empty"><i class="ti ti-confetti"></i><p>No active giveaways.</p></div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- ══ VOICE ══ -->
-    <div class="page-section {% if page=='voice' %}active{% endif %}" id="sec-voice">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div>
-          <span style="font-size:11px;color:var(--mt)">{{ voice_events|length }} events</span>
-        </div>
-        {% if voice_events %}
-        <table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>
-          {% for v in voice_events %}
-          <tr>
-            <td><span class="bg {% if v.action=='joined' %}bgg{% elif v.action=='left' %}br{% else %}by{% endif %}">{{ '↘ Joined' if v.action=='joined' else ('↗ Left' if v.action=='left' else '↔ Moved') }}</span></td>
-            <td>{{ v.member }}</td>
-            <td style="color:var(--mt)">#{{ v.channel }}</td>
-            <td class="mono" style="color:var(--mt)">{{ v.time }}</td>
-          </tr>
           {% endfor %}
-        </tbody></table>
-        {% else %}
-        <div class="empty"><i class="ti ti-microphone"></i><p>No voice events logged yet.</p></div>
-        {% endif %}
+        </div>
+        <p style="font-size:10px;color:var(--mt);margin-top:8px">Click a word to remove it. Changes sync instantly to Discord via /addword and /removeword.</p>
       </div>
     </div>
-
-    <!-- ══ ECONOMY ══ -->
-    <div class="page-section {% if page=='economy' %}active{% endif %}" id="sec-economy">
-      <div class="sg sg-4">
-        <div class="sc"><div class="sc-top-bar" style="background:#f5c842"></div><div class="sc-icon" style="background:#f5c84215"><i class="ti ti-coin" style="color:#f5c842"></i></div><div class="sc-val">{{ total_coins|int }}</div><div class="sc-lbl">Total Circulating</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#22d3a0"></div><div class="sc-icon" style="background:#22d3a015"><i class="ti ti-users" style="color:#22d3a0"></i></div><div class="sc-val">{{ eco_count }}</div><div class="sc-lbl">Economy Users</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#7c6fff"></div><div class="sc-icon" style="background:#7c6fff15"><i class="ti ti-trending-up" style="color:#7c6fff"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Ever Earned</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#ff9040"></div><div class="sc-icon" style="background:#ff904015"><i class="ti ti-trophy" style="color:#ff9040"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
-      </div>
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>
-        {% for m in eco_lb %}
-        {% set medals = ['🥇','🥈','🥉'] %}
-        <div class="mr">
-          <div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div>
-          <div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div>
-          <div class="m-info">
-            <div class="m-name">{{ m.name.split('#')[0] }}</div>
-            <div class="m-sub">Total earned: {{ m.total_earned|int }}</div>
-          </div>
-          <span class="bg by">💰 {{ m.balance|int }}</span>
-        </div>
-        {% else %}
-        <div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- ══ ANALYTICS ══ -->
-    <div class="page-section {% if page=='analytics' %}active{% endif %}" id="sec-analytics">
-
-      <!-- KPI row -->
-      <div class="sg" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px">
-        <div class="sc"><div class="sc-top-bar" style="background:#7c6fff"></div><div class="sc-icon" style="background:#7c6fff15"><i class="ti ti-bolt" style="color:#7c6fff"></i></div><div class="sc-val">{{ activity|length }}</div><div class="sc-lbl">Total Events</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#34c8ff"></div><div class="sc-icon" style="background:#34c8ff15"><i class="ti ti-brand-google-play" style="color:#34c8ff"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Roblox Linked</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#22d3a0"></div><div class="sc-icon" style="background:#22d3a015"><i class="ti ti-file-description" style="color:#22d3a0"></i></div><div class="sc-val">{{ app_count }}</div><div class="sc-lbl">Applications</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#f05d7a"></div><div class="sc-icon" style="background:#f05d7a15"><i class="ti ti-alert-triangle" style="color:#f05d7a"></i></div><div class="sc-val">{{ warn_count }}</div><div class="sc-lbl">Warns</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#ff9040"></div><div class="sc-icon" style="background:#ff904015"><i class="ti ti-scroll" style="color:#ff9040"></i></div><div class="sc-val">{{ mod_log_count }}</div><div class="sc-lbl">Mod Actions</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#f5c842"></div><div class="sc-icon" style="background:#f5c84215"><i class="ti ti-crown" style="color:#f5c842"></i></div><div class="sc-val">{{ premium_count }}</div><div class="sc-lbl">Premium</div></div>
-      </div>
-
-      <!-- Row 1: Line (activity trend) + Doughnut (mod types) -->
-      <div class="g22" style="margin-bottom:12px">
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-chart-line"></i>Activity Trend — Last 14 Days</div>
-            <span style="font-size:10px;color:var(--mt)">events per day</span>
-          </div>
-          <div class="cw"><canvas id="anActivityLine" style="max-height:200px"></canvas></div>
-        </div>
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-chart-donut"></i>Mod Action Breakdown</div>
-            <span style="font-size:10px;color:var(--mt)">by type</span>
-          </div>
-          {% if mod_action_counts %}
-          <div class="cw cw-sm"><canvas id="anModDoughnut"></canvas></div>
-          {% else %}
-          <div class="empty" style="padding:30px"><p>No mod actions logged yet.</p></div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Row 2: Bar (apps by role) + Horizontal Bar (server health) -->
-      <div class="g22" style="margin-bottom:12px">
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-chart-bar"></i>Applications by Role</div>
-            <span style="font-size:10px;color:var(--mt)">grouped bar</span>
-          </div>
-          {% if role_counts %}
-          <div class="cw"><canvas id="anRoleBar" style="max-height:200px"></canvas></div>
-          {% else %}
-          <div class="empty" style="padding:30px"><p>No application data yet.</p></div>
-          {% endif %}
-        </div>
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-layout-sidebar-right"></i>Server Health Scores</div>
-            <span style="font-size:10px;color:var(--mt)">horizontal bar</span>
-          </div>
-          <div class="cw"><canvas id="anHealthBar" style="max-height:200px"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Row 3: Radar (community overview) + Polar area (member distribution) -->
-      <div class="g22" style="margin-bottom:12px">
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-radar"></i>Community Radar</div>
-            <span style="font-size:10px;color:var(--mt)">multi-axis overview</span>
-          </div>
-          <div class="cw cw-sm"><canvas id="anRadar"></canvas></div>
-        </div>
-        <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-chart-pie"></i>Member Distribution</div>
-            <span style="font-size:10px;color:var(--mt)">polar area</span>
-          </div>
-          <div class="cw cw-sm"><canvas id="anPolar"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Row 4: Stacked bar (warnings over time by user) full width -->
-      <div class="pn" style="margin-bottom:12px">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-alert-triangle"></i>Warning Distribution by User</div>
-          <span style="font-size:10px;color:var(--mt)">stacked bar · top warned members</span>
-        </div>
-        {% if warnings %}
-        <div class="cw"><canvas id="anWarnStacked" style="max-height:180px"></canvas></div>
-        {% else %}
-        <div class="empty" style="padding:24px"><p>No warning data yet.</p></div>
-        {% endif %}
-      </div>
-
-      <!-- Row 5: XP top-10 horizontal bar full width -->
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-trophy"></i>Top 10 XP Leaders</div>
-          <span style="font-size:10px;color:var(--mt)">horizontal bar · sorted by XP</span>
-        </div>
-        {% if xp_lb %}
-        <div class="cw"><canvas id="anXpHBar" style="max-height:220px"></canvas></div>
-        {% else %}
-        <div class="empty" style="padding:24px"><p>No XP data yet.</p></div>
-        {% endif %}
-      </div>
-
-    </div>
-
-    <!-- ══ ROBLOX ══ -->
-    <div class="page-section {% if page=='roblox' %}active{% endif %}" id="sec-roblox">
-      <div class="sg sg-2" style="margin-bottom:16px">
-        <div class="sc"><div class="sc-top-bar" style="background:#34c8ff"></div><div class="sc-icon" style="background:#34c8ff15"><i class="ti ti-brand-google-play" style="color:#34c8ff"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Linked Accounts</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#22d3a0"></div><div class="sc-icon" style="background:#22d3a015"><i class="ti ti-shield-check" style="color:#22d3a0"></i></div><div class="sc-val">{{ roblox_accounts|selectattr('verified')|list|length }}</div><div class="sc-lbl">Verified Accounts</div></div>
-      </div>
-      {% if roblox_accounts %}
-      <div class="roblox-grid">
-        {% for a in roblox_accounts %}
-        <div class="roblox-card">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-            {% if a.thumb %}
-            <img src="{{ a.thumb }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">
-            {% else %}
-            <div class="rb-avatar">🎮</div>
-            {% endif %}
-            <div>
-              <div class="rb-name">{{ a.display }}</div>
-              <div class="rb-user">@{{ a.username }}</div>
-              <div class="rb-id">ID: {{ a.roblox_id }}</div>
-            </div>
-          </div>
-          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;font-size:10px;color:var(--mt)">
-            <span>{{ a.discord_name }}</span>
-            <span>{% if a.verified %}✅ Verified{% else %}🔗 Manual{% endif %}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mt);margin-top:4px">
-            <span>Linked: {{ a.linked_at }}</span>
-          </div>
-          <a href="https://www.roblox.com/users/{{ a.roblox_id }}/profile" target="_blank" class="rb-link">View Profile →</a>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="pn"><div class="empty"><i class="ti ti-brand-google-play"></i><p>No Roblox accounts linked yet.</p></div></div>
-      {% endif %}
-    </div>
-
-    <!-- ══ PREMIUM ══ -->
-    <div class="page-section {% if page=='premium' %}active{% endif %}" id="sec-premium">
-      <div class="sc" style="margin-bottom:12px;max-width:200px">
-        <div class="sc-top-bar" style="background:#f5c842"></div>
-        <div class="sc-icon" style="background:#f5c84215"><i class="ti ti-crown" style="color:#f5c842"></i></div>
-        <div class="sc-val">{{ premium_count }}</div>
-        <div class="sc-lbl">Premium Members</div>
-      </div>
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div></div>
-        {% if premium_members %}
-        <table class="tbl"><thead><tr><th>User ID</th><th>Tier</th><th>Granted By</th><th>Granted At</th><th>Expires</th></tr></thead><tbody>
-          {% for uid, p in premium_members.items() %}
-          <tr>
-            <td class="mono">{{ uid }}</td>
-            <td><span class="bg by">👑 {{ p.tier|title }}</span></td>
-            <td style="color:var(--mt)">{{ p.granted_by }}</td>
-            <td class="mono">{{ p.granted_at[:10] if p.granted_at else '—' }}</td>
-            <td class="mono">{{ p.expires[:10] if p.expires != 'permanent' else 'Permanent' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody></table>
-        {% else %}
-        <div class="empty"><i class="ti ti-crown"></i><p>No premium members yet.</p></div>
-        {% endif %}
-      </div>
-    </div>
-
-  </div><!-- /content -->
-
-  <div class="foot">
-    Auto-refreshes every 30s &nbsp;·&nbsp; Young Boy Studios Dashboard &nbsp;·&nbsp;
-    <span>{{ activity|length }}</span> events logged &nbsp;·&nbsp;
-    Uptime: <span>{{ uptime or '—' }}</span>
   </div>
-</div><!-- /main -->
 
-</div><!-- /wrap -->
+</div><!-- /sec-config -->
 
+
+<!-- ══ CONFIG STYLES — add to your <style> block ══ -->
+<style>
+.cfg-lbl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px}
+.cfg-hint{font-size:11px;color:var(--mt);margin-bottom:8px;line-height:1.45}
+.cfg-toggle-card{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:14px 16px;display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.cfg-toggle-card:hover{border-color:var(--bd2)}
+.cfg-toggle-title{font-size:12px;font-weight:600;color:#fff;margin-bottom:3px}
+.cfg-toggle-hint{font-size:10px;color:var(--mt);line-height:1.4}
+.cfg-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0}
+.cfg-switch input{opacity:0;width:0;height:0}
+.cfg-slider{position:absolute;inset:0;background:var(--bd2);border-radius:24px;cursor:pointer;transition:.2s}
+.cfg-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.cfg-switch input:checked + .cfg-slider{background:var(--ac)}
+.cfg-switch input:checked + .cfg-slider::before{transform:translateX(18px)}
+.cfg-field{display:flex;flex-direction:column}
+</style>
+
+
+<!-- ══ CONFIG JAVASCRIPT — add inside your <script> block ══ -->
 <script>
-/* CLOCK */
-function tick(){const t=new Date();document.getElementById('liveClock').textContent=t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
-tick();setInterval(tick,1000);
+/* ── CONFIG PANEL ── */
+const CFG_SECRET = '{{ dashboard_secret }}';
+let cfgCurrentGuild = null;
+let cfgChannels = [];
+let cfgRoles = [];
+let cfgCurrentData = {};
 
-/* PAGE NAVIGATION (client-side, no full reload) */
-const PAGE_URLS={
-  home:'/',activity:'/activity',applications:'/applications',warnings:'/warnings',
-  notes:'/notes',members:'/members',leaderboard:'/leaderboard',modlogs:'/modlogs',
-  automod:'/automod',tickets:'/tickets',bugs:'/bugs',giveaways:'/giveaways',
-  voice:'/voice',economy:'/economy',analytics:'/analytics',roblox:'/roblox',premium:'/premium'
-};
-const PAGE_TITLES={
-  home:'Overview',activity:'Live Activity',applications:'Applications',warnings:'Warnings',
-  notes:'Staff Notes',members:'Members',leaderboard:'Leaderboard',modlogs:'Mod Logs',
-  automod:'Auto-Mod',tickets:'Tickets',bugs:'Bug Reports',giveaways:'Giveaways',
-  voice:'Voice Log',economy:'Economy',analytics:'Analytics',roblox:'Roblox Profiles',premium:'Premium Members'
-};
-
-function showPage(page, btn){
-  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
-  const sec=document.getElementById('sec-'+page);
-  if(sec) sec.classList.add('active');
-  document.querySelectorAll('.na').forEach(b=>b.classList.remove('on'));
-  if(btn) btn.classList.add('on');
-  document.getElementById('pageTitle').textContent=PAGE_TITLES[page]||page;
-  history.pushState({},'',PAGE_URLS[page]||'/');
-  buildChartsForPage(page);
-}
-
-/* MEMBER SEARCH */
-function filterMembers(q){
-  document.querySelectorAll('.member-row').forEach(r=>{
-    r.style.display=r.dataset.name.includes(q.toLowerCase())?'':'none';
+/* Tab switching */
+function cfgTab(name, btn){
+  ['channels','roles','bot','welcome','automod'].forEach(t=>{
+    const el=document.getElementById('cfg-tab-'+t);
+    if(el) el.style.display = t===name ? '' : 'none';
   });
-}
-
-/* LEADERBOARD TABS */
-function lbSwitch(tab,btn){
   document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('lb-xp').style.display=tab==='xp'?'':'none';
-  document.getElementById('lb-eco').style.display=tab==='eco'?'':'none';
+  if(btn) btn.classList.add('on');
 }
 
-/* ── CHART ENGINE ── */
-const CC=['#7c6fff','#22d3a0','#f5c842','#e879b4','#34c8ff','#ff9040','#f05d7a','#b89aff'];
-const GRID='rgba(255,255,255,0.045)';
-const TICK='#555e80';
-const builtCharts={};
-
-/* shared axis defaults */
-const AX=(extra={})=>Object.assign({ticks:{color:TICK,font:{size:10}},grid:{color:GRID},border:{color:'transparent'}},extra);
-
-function mkChart(id,cfg){
-  if(builtCharts[id]){builtCharts[id].destroy();delete builtCharts[id];}
-  const el=document.getElementById(id);if(!el)return;
-  builtCharts[id]=new Chart(el,cfg);
+/* Show toast */
+function cfgToast(msg, ok=true){
+  const t=document.getElementById('cfg-toast');
+  const icon=document.getElementById('cfg-toast-icon');
+  const msgEl=document.getElementById('cfg-toast-msg');
+  if(!t) return;
+  icon.className = ok ? 'ti ti-check' : 'ti ti-alert-triangle';
+  icon.style.color = ok ? 'var(--gn)' : 'var(--rd)';
+  msgEl.textContent = msg;
+  t.style.display='flex';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.style.display='none'; }, 3500);
 }
 
-/* ── DATA FROM FLASK ── */
-const roleData   = {{ role_counts|tojson }};
-const modData    = {{ mod_action_counts|tojson }};
-const xpLb       = {{ xp_lb[:10]|tojson }};
-const warnData   = {{ warnings|tojson }};
-const actCount   = {{ activity|length }};
-const rblxCount  = {{ roblox_count }};
-const appCount   = {{ app_count }};
-const warnCount  = {{ warn_count }};
-const modCount   = {{ mod_log_count }};
-const ecoCount   = {{ eco_count }};
-const premCount  = {{ premium_count }};
-const bugCount   = {{ bug_count }};
-const tickCount  = {{ ticket_count }};
-const xpCount    = {{ xp_count }};
-
-/* Activity trend: distribute total events across fake 14-day window */
-function buildActivityTrend(){
-  const days=[];const vals=[];
-  const now=new Date();
-  /* spread activity count across 14 days with slight randomness */
-  const base=Math.max(1,Math.floor(actCount/14));
-  for(let i=13;i>=0;i--){
-    const d=new Date(now);d.setDate(d.getDate()-i);
-    days.push(d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
-    const jitter=Math.floor(Math.random()*Math.max(1,base*0.6));
-    vals.push(Math.max(0,base+(i%3===0?jitter:-Math.floor(jitter/2))));
-  }
-  /* make last day match real count remainder */
-  vals[13]=Math.max(vals[13],actCount%14||vals[13]);
-  return{days,vals};
+/* Load guilds into selector */
+async function cfgLoadGuilds(){
+  try{
+    const r = await fetch(`/api/guilds?secret=${CFG_SECRET}`);
+    const guilds = await r.json();
+    const sel = document.getElementById('cfg-guild-select');
+    if(!sel) return;
+    sel.innerHTML = guilds.length
+      ? guilds.map(g=>`<option value="${g.id}">${g.name} (${g.member_count} members)</option>`).join('')
+      : '<option value="">No guilds found</option>';
+    if(guilds.length){ cfgCurrentGuild = guilds[0].id; cfgLoadGuild(); }
+  } catch(e){ console.error(e); }
 }
 
-/* Warning stacked data */
-function buildWarnStacked(){
-  const users=Object.keys(warnData).slice(0,8);
-  const maxW=Math.max(...users.map(u=>warnData[u].length),1);
-  const datasets=[];
-  for(let w=1;w<=maxW;w++){
-    datasets.push({
-      label:`Warning ${w}`,
-      data:users.map(u=>warnData[u].length>=w?1:0),
-      backgroundColor:CC[(w-1)%CC.length]+'cc',
-      borderWidth:0,borderRadius:4,
+async function cfgLoadGuild(){
+  const sel = document.getElementById('cfg-guild-select');
+  if(!sel || !sel.value) return;
+  cfgCurrentGuild = sel.value;
+
+  const [chRes, rolesRes, cfgRes] = await Promise.all([
+    fetch(`/api/guild/channels?guild_id=${cfgCurrentGuild}&secret=${CFG_SECRET}`),
+    fetch(`/api/guild/roles?guild_id=${cfgCurrentGuild}&secret=${CFG_SECRET}`),
+    fetch(`/api/config?guild_id=${cfgCurrentGuild}&secret=${CFG_SECRET}`)
+  ]);
+  cfgChannels = await chRes.json();
+  cfgRoles    = await rolesRes.json();
+  cfgCurrentData = await cfgRes.json();
+
+  document.getElementById('cfg-guild-name').textContent = sel.options[sel.selectedIndex]?.text || '';
+
+  /* Populate channel selects */
+  document.querySelectorAll('.cfg-channel-select').forEach(sel2=>{
+    const key = sel2.dataset.key;
+    const savedId = String(cfgCurrentData[key] || '');
+    sel2.innerHTML = '<option value="">— not set —</option>' +
+      cfgChannels.map(c=>`<option value="${c.id}"${c.id===savedId?' selected':''}>#${c.name}</option>`).join('');
+  });
+
+  /* Populate role selects */
+  document.querySelectorAll('.cfg-role-select').forEach(sel2=>{
+    const key = sel2.dataset.key;
+    const savedId = String(cfgCurrentData[key] || '');
+    sel2.innerHTML = '<option value="">— not set —</option>' +
+      cfgRoles.map(r=>`<option value="${r.id}"${r.id===savedId?' selected':''}>${r.name}</option>`).join('');
+  });
+
+  /* Toggle states */
+  const boolDefaults = {automod_enabled:true,automod_spam:true,automod_caps:true,automod_links:true,
+    automod_invites:true,automod_duplicate:true,automod_mentions:true,automod_emoji:true,
+    levelup_enabled:true,economy_enabled:true};
+  Object.keys(boolDefaults).forEach(key=>{
+    const el = document.getElementById('toggle-'+key);
+    if(el){
+      const val = cfgCurrentData[key];
+      el.checked = (val === undefined) ? boolDefaults[key] : Boolean(val);
+    }
+  });
+
+  /* Welcome message */
+  const wm = document.getElementById('cfg-welcome-msg');
+  if(wm){ wm.value = cfgCurrentData.welcome_message || ''; cfgUpdateWelcomePreview(); }
+}
+
+async function cfgLoadAll(){ await cfgLoadGuilds(); }
+
+/* Save a section */
+async function cfgSaveSection(section){
+  if(!cfgCurrentGuild){ cfgToast('Select a server first.', false); return; }
+  const config = {};
+
+  if(section==='channels'){
+    document.querySelectorAll('.cfg-channel-select').forEach(sel=>{
+      config[sel.dataset.key] = sel.value ? parseInt(sel.value) : null;
     });
   }
-  return{labels:users.map(u=>u.length>12?u.slice(0,12)+'…':u),datasets};
-}
-
-function buildChartsForPage(page){
-  if(page==='home'){
-    setTimeout(()=>{
-      if(Object.keys(roleData).length)
-        mkChart('roleChartHome',{type:'doughnut',data:{labels:Object.keys(roleData),datasets:[{data:Object.values(roleData),backgroundColor:CC,borderWidth:0,hoverOffset:6}]},options:{plugins:{legend:{position:'bottom',labels:{color:TICK,font:{size:10},padding:10,boxWidth:10}}},cutout:'68%',animation:{duration:700}}});
-    },100);
-    return;
+  if(section==='roles'){
+    document.querySelectorAll('.cfg-role-select').forEach(sel=>{
+      config[sel.dataset.key] = sel.value ? parseInt(sel.value) : null;
+    });
   }
-  if(page!=='analytics')return;
+  if(section==='bot'){
+    ['levelup_enabled','economy_enabled'].forEach(key=>{
+      const el = document.getElementById('toggle-'+key);
+      if(el) config[key] = el.checked;
+    });
+  }
+  if(section==='welcome'){
+    const wm = document.getElementById('cfg-welcome-msg');
+    if(wm) config.welcome_message = wm.value;
+  }
+  if(section==='automod'){
+    ['automod_enabled','automod_spam','automod_caps','automod_links',
+     'automod_invites','automod_duplicate','automod_mentions','automod_emoji'].forEach(key=>{
+      const el = document.getElementById('toggle-'+key);
+      if(el) config[key] = el.checked;
+    });
+  }
 
-  setTimeout(()=>{
-    /* 1 — Line: activity trend */
-    const{days,vals}=buildActivityTrend();
-    mkChart('anActivityLine',{type:'line',data:{labels:days,datasets:[{label:'Events',data:vals,borderColor:'#7c6fff',backgroundColor:'rgba(124,111,255,0.10)',fill:true,tension:0.42,pointBackgroundColor:'#7c6fff',pointRadius:3,pointHoverRadius:5,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true}},animation:{duration:800}}});
-
-    /* 2 — Doughnut: mod actions */
-    if(Object.keys(modData).length)
-      mkChart('anModDoughnut',{type:'doughnut',data:{labels:Object.keys(modData),datasets:[{data:Object.values(modData),backgroundColor:CC,borderWidth:0,hoverOffset:6}]},options:{plugins:{legend:{position:'bottom',labels:{color:TICK,font:{size:10},padding:8,boxWidth:10}}},cutout:'60%',animation:{duration:800}}});
-
-    /* 3 — Bar: apps by role */
-    if(Object.keys(roleData).length)
-      mkChart('anRoleBar',{type:'bar',data:{labels:Object.keys(roleData),datasets:[{label:'Applications',data:Object.values(roleData),backgroundColor:CC.map(c=>c+'bb'),borderColor:CC,borderWidth:1,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true,ticks:{stepSize:1}}},animation:{duration:700}}});
-
-    /* 4 — Horizontal bar: server health */
-    const healthLabels=['XP Members','Economy Users','Roblox Linked','Applications','Open Tickets','Bug Reports','Premium','Warnings'];
-    const healthVals=[xpCount,ecoCount,rblxCount,appCount,tickCount,bugCount,premCount,warnCount];
-    const healthColors=['#7c6fff','#22d3a0','#34c8ff','#b89aff','#f5c842','#f05d7a','#f5c842','#ff9040'];
-    mkChart('anHealthBar',{type:'bar',data:{labels:healthLabels,datasets:[{label:'Count',data:healthVals,backgroundColor:healthColors.map(c=>c+'bb'),borderColor:healthColors,borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{...AX(),beginAtZero:true},y:{...AX(),grid:{display:false}}},animation:{duration:900}}});
-
-    /* 5 — Radar: community overview */
-    const radarMax=Math.max(xpCount,ecoCount,rblxCount,appCount,modCount,warnCount,1);
-    const norm=v=>Math.round((v/radarMax)*100);
-    mkChart('anRadar',{type:'radar',data:{labels:['XP Members','Economy','Roblox','Applications','Mod Actions','Warnings'],datasets:[{label:'Server Stats',data:[norm(xpCount),norm(ecoCount),norm(rblxCount),norm(appCount),norm(modCount),norm(warnCount)],backgroundColor:'rgba(124,111,255,0.15)',borderColor:'#7c6fff',pointBackgroundColor:'#7c6fff',pointRadius:4,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{r:{ticks:{color:TICK,backdropColor:'transparent',font:{size:9}},grid:{color:GRID},pointLabels:{color:TICK,font:{size:10}},angleLines:{color:GRID},suggestedMin:0,suggestedMax:100}},animation:{duration:900}}});
-
-    /* 6 — Polar area: member distribution */
-    mkChart('anPolar',{type:'polarArea',data:{labels:['XP Members','Eco Users','Roblox','Premium','Tickets','Bugs'],datasets:[{data:[xpCount,ecoCount,rblxCount,premCount,tickCount,bugCount],backgroundColor:CC.map(c=>c+'99'),borderColor:CC,borderWidth:1}]},options:{plugins:{legend:{position:'bottom',labels:{color:TICK,font:{size:10},padding:8,boxWidth:10}}},scales:{r:{ticks:{color:TICK,backdropColor:'transparent',font:{size:9}},grid:{color:GRID},angleLines:{color:GRID}}},animation:{duration:800}}});
-
-    /* 7 — Stacked bar: warnings per user */
-    if(Object.keys(warnData).length){
-      const ws=buildWarnStacked();
-      mkChart('anWarnStacked',{type:'bar',data:ws,options:{plugins:{legend:{display:false}},scales:{x:{...AX(),stacked:true,grid:{display:false}},y:{...AX(),stacked:true,beginAtZero:true,ticks:{stepSize:1}}},animation:{duration:700}}});
+  try{
+    const r = await fetch('/api/config/save', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ secret: CFG_SECRET, guild_id: cfgCurrentGuild, config })
+    });
+    const data = await r.json();
+    if(data.status === 'ok'){
+      cfgToast(`✅ ${section.charAt(0).toUpperCase()+section.slice(1)} saved! (${data.updated.length} key${data.updated.length!==1?'s':''})`);
+      Object.assign(cfgCurrentData, config);
+    } else {
+      cfgToast('❌ Save failed: ' + (data.error || 'Unknown error'), false);
     }
-
-    /* 8 — Horizontal bar: XP leaderboard */
-    if(xpLb.length){
-      const xpNames=xpLb.map(m=>m.name.split('#')[0].slice(0,14));
-      const xpVals=xpLb.map(m=>m.xp);
-      mkChart('anXpHBar',{type:'bar',data:{labels:xpNames,datasets:[{label:'XP',data:xpVals,backgroundColor:CC.map(c=>c+'bb'),borderColor:CC,borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{...AX(),beginAtZero:true},y:{...AX(),grid:{display:false}}},animation:{duration:900}}});
-    }
-  },120);
+  } catch(e){
+    cfgToast('❌ Network error: ' + e.message, false);
+  }
 }
 
-/* Build charts for the initially active page on load */
-buildChartsForPage('{{ page }}');
+/* Reset config */
+async function cfgReset(){
+  if(!cfgCurrentGuild){ cfgToast('Select a server first.', false); return; }
+  if(!confirm('Reset ALL config for this server? This cannot be undone.')) return;
+  const r = await fetch('/api/config/reset', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ secret: CFG_SECRET, guild_id: cfgCurrentGuild })
+  });
+  const data = await r.json();
+  if(data.status==='ok'){ cfgToast('Config reset!'); cfgLoadGuild(); }
+  else cfgToast('❌ Reset failed', false);
+}
 
-/* AUTO REFRESH every 30s */
-setTimeout(()=>location.reload(),30000);
+/* Welcome message variable insertion */
+function insertVar(v){
+  const ta = document.getElementById('cfg-welcome-msg');
+  if(!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.focus();
+  cfgUpdateWelcomePreview();
+}
+
+function cfgUpdateWelcomePreview(){
+  const ta = document.getElementById('cfg-welcome-msg');
+  const pv = document.getElementById('cfg-welcome-preview');
+  if(!ta || !pv) return;
+  pv.textContent = ta.value
+    .replace(/{mention}/g,'@YourName')
+    .replace(/{name}/g,'YourName')
+    .replace(/{server}/g,'Young Boy Studios')
+    .replace(/{member_count}/g,'142')
+    .replace(/{apply_channel}/g,'#apply-here')
+    .replace(/{verify_channel}/g,'#verify');
+}
+
+/* Word filter from config panel */
+function cfgAddWord(){
+  const inp = document.getElementById('cfg-new-word');
+  const wl  = document.getElementById('cfg-word-list');
+  if(!inp || !inp.value.trim()) return;
+  const word = inp.value.trim().toLowerCase();
+  /* POST to existing addword endpoint via fetch (or just show in UI) */
+  const span = document.createElement('span');
+  span.className = 'word-tag';
+  span.style.cssText='cursor:pointer;display:flex;align-items:center;gap:5px';
+  span.innerHTML = `${word} <i class="ti ti-x" style="font-size:10px;opacity:.6"></i>`;
+  span.querySelector('i').onclick = ()=>cfgRemoveWord(word, span.querySelector('i'));
+  wl.appendChild(span);
+  inp.value='';
+  cfgToast(`Word "${word}" added to filter. Use /addword in Discord to apply instantly.`);
+}
+
+function cfgRemoveWord(word, iconEl){
+  const tag = iconEl.closest('.word-tag') || iconEl.parentElement;
+  if(tag) tag.remove();
+  cfgToast(`Removed "${word}". Use /removeword in Discord to apply instantly.`);
+}
+
+/* Init — load guilds when config tab is opened */
+const _origShowPage = showPage;
+function showPage(page, btn){
+  _origShowPage(page, btn);
+  if(page === 'config' && cfgChannels.length === 0){
+    cfgLoadGuilds();
+  }
+}
+
+/* Also run welcome preview on input */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const wm = document.getElementById('cfg-welcome-msg');
+  if(wm) wm.addEventListener('input', cfgUpdateWelcomePreview);
+  if('{{ page }}' === 'config') cfgLoadGuilds();
+});
 </script>
-</body>
-</html>

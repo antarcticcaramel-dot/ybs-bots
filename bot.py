@@ -6,7 +6,7 @@ import json
 import os
 import asyncio
 import aiohttp
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import threading
 from flask import Flask, render_template, jsonify, request
@@ -16,6 +16,98 @@ import time
 # TOKEN
 # ============================================================
 TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
+
+# ============================================================
+# ROBLOX GROUP CONFIG
+# ============================================================
+REQUIRED_GROUP_ID = 35116281
+REQUIRED_GROUP_URL = "https://www.roblox.com/share/g/35116281"
+
+def _group_embed(title: str, desc: str) -> discord.Embed:
+    return discord.Embed(title=title, description=desc, color=0xED4245)
+
+async def check_group_membership(roblox_id: int) -> bool:
+    """Returns True if the Roblox user is currently in the required group."""
+    url = f"https://groups.roblox.com/v1/users/{roblox_id}/groups/roles"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                if resp.status != 200:
+                    return False
+                data = await resp.json()
+                return any(
+                    g.get("group", {}).get("id") == REQUIRED_GROUP_ID
+                    for g in data.get("data", [])
+                )
+    except Exception:
+        return False
+
+async def require_group(interaction: discord.Interaction) -> bool:
+    """
+    Slash-command gate.
+    • User must have a linked Roblox account.
+    • That account must currently be in the required group.
+    Returns True to proceed, False (already replied) to abort.
+    """
+    linked = roblox_links.get(interaction.user.id)
+    if not linked:
+        embed = _group_embed(
+            "🎮 Roblox Group Required",
+            f"You must **verify your Roblox account** and join the YBS group first.\n\n"
+            f"1️⃣ Join the group: {REQUIRED_GROUP_URL}\n"
+            f"2️⃣ Run `/roblox-verify` to link your account\n"
+            f"3️⃣ Try again!",
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return False
+
+    in_group = await check_group_membership(linked["roblox_id"])
+    if not in_group:
+        embed = _group_embed(
+            "🚫 Not in Required Group",
+            f"Your Roblox account **@{linked['username']}** is **not** in the YBS group "
+            f"(or has left it).\n\n"
+            f"👉 Rejoin here: {REQUIRED_GROUP_URL}\n"
+            f"Once rejoined, try again.",
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return False
+
+    return True
+
+async def require_group_prefix(ctx) -> bool:
+    """Same gate for prefix commands."""
+    linked = roblox_links.get(ctx.author.id)
+    if not linked:
+        embed = _group_embed(
+            "🎮 Roblox Group Required",
+            f"Verify your Roblox account and join the YBS group first.\n\n"
+            f"1️⃣ Join: {REQUIRED_GROUP_URL}\n"
+            f"2️⃣ Run `/roblox-verify`\n"
+            f"3️⃣ Try again!",
+        )
+        await ctx.send(embed=embed)
+        return False
+
+    in_group = await check_group_membership(linked["roblox_id"])
+    if not in_group:
+        embed = _group_embed(
+            "🚫 Not in Required Group",
+            f"**@{linked['username']}** is not in the YBS group.\n\n"
+            f"Rejoin: {REQUIRED_GROUP_URL}\n"
+            f"Then try again.",
+        )
+        await ctx.send(embed=embed)
+        return False
+
+    return True
+
+# ============================================================
+# FIX: always use timezone-aware UTC for Discord timeouts
+# ============================================================
+def utcnow() -> datetime:
+    """Timezone-aware UTC now — required by discord.py v2 timeouts."""
+    return datetime.now(timezone.utc)
 
 # ============================================================
 # CONFIG SYSTEM
@@ -79,20 +171,20 @@ bot_shutdown_flag = False
 import re
 from collections import defaultdict, deque
 
-automod_infractions    = {}                  # user_id -> {warns, muted, kicks, mute_warns}
-automod_message_times  = defaultdict(deque)  # user_id -> deque of timestamps
-automod_duplicate_times = {}                 # user_id -> {content, count}
+automod_infractions    = {}
+automod_message_times  = defaultdict(deque)
+automod_duplicate_times = {}
 
 automod_link_pattern   = re.compile(r'(https?://|discord\.gg/|discordapp\.com/invite/|bit\.ly/|tinyurl\.com/|t\.me/)', re.IGNORECASE)
 automod_invite_pattern = re.compile(r'(discord\.gg/|discord\.com/invite/|discordapp\.com/invite/)', re.IGNORECASE)
 
-automod_spam_threshold  = 5     # messages
-automod_spam_window     = 5     # seconds
-automod_duplicate_count = 3     # same msg X times
-automod_mention_limit   = 5     # @mentions per message
-automod_emoji_limit     = 10    # emojis per message
-automod_newline_limit   = 15    # newlines per message
-automod_caps_threshold  = 0.75  # 75%+ caps
+automod_spam_threshold  = 5
+automod_spam_window     = 5
+automod_duplicate_count = 3
+automod_mention_limit   = 5
+automod_emoji_limit     = 10
+automod_newline_limit   = 15
+automod_caps_threshold  = 0.75
 
 ALLOWED_DOMAINS = [
     "roblox.com", "create.roblox.com", "devforum.roblox.com",
@@ -102,26 +194,23 @@ ALLOWED_DOMAINS = [
 
 SEVERITY_COLORS = {"warn": 0xFFD166, "mute": 0xFF9F43, "kick": 0xED4245, "ban": 0x8B0000}
 
-# ============================================================
-# ADVANCED AUTO-MOD HELPERS
-# ============================================================
-def is_allowed_link(url: str) -> bool:
+def is_allowed_link(url):
     return any(domain in url.lower() for domain in ALLOWED_DOMAINS)
 
-def contains_blocked_link(text: str) -> bool:
+def contains_blocked_link(text):
     urls = re.findall(r'https?://\S+|discord\.gg/\S+', text, re.IGNORECASE)
     return any(not is_allowed_link(u) for u in urls)
 
-def contains_invite(text: str) -> bool:
+def contains_invite(text):
     return bool(automod_invite_pattern.search(text))
 
-def is_caps_spam(text: str) -> bool:
+def is_caps_spam(text):
     letters = [c for c in text if c.isalpha()]
     if len(letters) < 8:
         return False
     return (sum(1 for c in letters if c.isupper()) / len(letters)) >= automod_caps_threshold
 
-def is_message_spam(user_id: int) -> bool:
+def is_message_spam(user_id):
     now = datetime.now().timestamp()
     times = automod_message_times[user_id]
     times.append(now)
@@ -129,7 +218,7 @@ def is_message_spam(user_id: int) -> bool:
         times.popleft()
     return len(times) >= automod_spam_threshold
 
-def is_duplicate_spam(user_id: int, content: str) -> bool:
+def is_duplicate_spam(user_id, content):
     if not content.strip():
         return False
     entry = automod_duplicate_times.get(user_id, {"content": "", "count": 0})
@@ -140,20 +229,20 @@ def is_duplicate_spam(user_id: int, content: str) -> bool:
     automod_duplicate_times[user_id] = entry
     return entry["count"] >= automod_duplicate_count
 
-def count_mentions(message: discord.Message) -> int:
+def count_mentions(message):
     return len(message.mentions) + len(message.role_mentions)
 
-def count_emojis(text: str) -> int:
+def count_emojis(text):
     uni = re.findall(r'[\U0001F300-\U0001F9FF]|[\u2600-\u27BF]|\u00a9|\u00ae', text)
     custom = re.findall(r'<a?:\w+:\d+>', text)
     return len(uni) + len(custom)
 
-def get_automod_infractions(user_id: int) -> dict:
+def get_automod_infractions(user_id):
     if user_id not in automod_infractions:
         automod_infractions[user_id] = {"warns": 0, "muted": False, "kicks": 0, "mute_warns": 0}
     return automod_infractions[user_id]
 
-async def _dm_member(member: discord.Member, content: str):
+async def _dm_member(member, content):
     try:
         embed = discord.Embed(title="🤖 AutoMod — Young Boy Studios", description=content, color=0xFF9F43)
         embed.set_footer(text="If you think this is a mistake, open a /ticket in the server.")
@@ -161,27 +250,27 @@ async def _dm_member(member: discord.Member, content: str):
     except Exception:
         pass
 
-async def send_automod_log(guild: discord.Guild, member: discord.Member, reason: str, action: str, detail: str = ""):
+async def send_automod_log(guild, member, reason, action, detail=""):
     log_ch_id = get(guild.id, "mod_channel") or get(guild.id, "logs_channel")
     log_ch = guild.get_channel(log_ch_id) if log_ch_id else None
     if not log_ch:
         return
     inf = get_automod_infractions(member.id)
     color = SEVERITY_COLORS.get(action.lower(), 0xFF9F43)
-    embed = discord.Embed(title=f"🤖 AutoMod — {action.upper()}", description=f"**{member.mention}** was automatically moderated.", color=color, timestamp=datetime.now())
+    embed = discord.Embed(title=f"🤖 AutoMod — {action.upper()}", description=f"**{member.mention}** was automatically moderated.", color=color, timestamp=utcnow())
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.add_field(name="👤 Member",              value=f"{member} (`{member.id}`)",           inline=True)
-    embed.add_field(name="⚠️ Trigger",             value=reason,                                inline=True)
-    embed.add_field(name="🔨 Action",              value=action.title(),                        inline=True)
-    embed.add_field(name="📊 AutoMod Warns",       value=str(inf["warns"]),                     inline=True)
-    embed.add_field(name="🦶 Kicks",               value=str(inf["kicks"]),                     inline=True)
-    embed.add_field(name="🔇 Muted",               value="✅" if inf["muted"] else "❌",        inline=True)
+    embed.add_field(name="👤 Member",        value=f"{member} (`{member.id}`)", inline=True)
+    embed.add_field(name="⚠️ Trigger",       value=reason,                     inline=True)
+    embed.add_field(name="🔨 Action",        value=action.title(),             inline=True)
+    embed.add_field(name="📊 AutoMod Warns", value=str(inf["warns"]),          inline=True)
+    embed.add_field(name="🦶 Kicks",         value=str(inf["kicks"]),          inline=True)
+    embed.add_field(name="🔇 Muted",         value="✅" if inf["muted"] else "❌", inline=True)
     if detail:
         embed.add_field(name="💬 Content", value=f"```{detail[:400]}```", inline=False)
     embed.set_footer(text="Use the buttons below to take further action")
     await log_ch.send(embed=embed, view=AutoModActionView(member))
 
-async def automod_warn_and_escalate(message: discord.Message, reason: str, detail: str = ""):
+async def automod_warn_and_escalate(message, reason, detail=""):
     member = message.author
     guild  = message.guild
     inf    = get_automod_infractions(member.id)
@@ -206,28 +295,26 @@ async def automod_warn_and_escalate(message: discord.Message, reason: str, detai
         except Exception:
             pass
         await _dm_member(member, f"⚠️ **Warning 1/3** in **{guild.name}**\n**Reason:** {reason}\n\nPlease follow the rules — 3 warnings = mute.")
-
     elif total == 2:
         try:
             await message.channel.send(embed=discord.Embed(description=f"⚠️ {member.mention} — **{reason}**\n*Warning 2/3. Next = **mute**.*", color=0xFF9F43), delete_after=10)
         except Exception:
             pass
-        await _dm_member(member, f"⚠️ **Warning 2/3** in **{guild.name}**\n**Reason:** {reason}\n\n⚡ **One more violation and you will be muted!**")
-
+        await _dm_member(member, f"⚠️ **Warning 2/3** in **{guild.name}**\n**Reason:** {reason}\n\n⚡ One more violation = mute!")
     elif total >= 3 and not inf["muted"]:
-        inf["muted"]     = True
+        inf["muted"]      = True
         inf["mute_warns"] = 0
         try:
-            await member.timeout(datetime.utcnow() + timedelta(minutes=10), reason=f"[AutoMod] {reason}")
+            # ✅ FIXED: use timezone-aware utcnow()
+            await member.timeout(utcnow() + timedelta(minutes=10), reason=f"[AutoMod] {reason}")
         except Exception:
             pass
         try:
             await message.channel.send(embed=discord.Embed(description=f"🔇 {member.mention} muted **10 minutes** by AutoMod.\n**Reason:** {reason}", color=0xED4245), delete_after=15)
         except Exception:
             pass
-        await _dm_member(member, f"🔇 **Muted 10 minutes** in **{guild.name}**.\n**Reason:** {reason}\n\n⚡ Continue after unmute and you will be **kicked**.")
+        await _dm_member(member, f"🔇 **Muted 10 minutes** in **{guild.name}**.\n**Reason:** {reason}\n\n⚡ Continue after unmute = **kick**.")
         await send_automod_log(guild, member, reason, "Mute (10 min)", detail)
-
     elif inf["muted"]:
         inf["mute_warns"] = inf.get("mute_warns", 0) + 1
         if inf["mute_warns"] >= 3 and inf["kicks"] == 0:
@@ -253,28 +340,28 @@ async def automod_warn_and_escalate(message: discord.Message, reason: str, detai
             await _dm_member(member, f"⚠️ **Post-mute warning {inf['mute_warns']}/3** in **{guild.name}**\n**Reason:** {reason}\n\n🚨 3 post-mute warns = **kick**.")
             await send_automod_log(guild, member, reason, f"Warn (post-mute {inf['mute_warns']}/3)", detail)
 
-async def automod_check_ban(member: discord.Member, guild: discord.Guild):
+async def automod_check_ban(member, guild):
     inf = get_automod_infractions(member.id)
     if inf["kicks"] >= 1 and inf["warns"] >= 3:
         try:
             await member.ban(reason="[AutoMod] Repeated violations after kick")
         except Exception:
             pass
-        await _dm_member(member, f"🔨 **Permanently banned** from **{guild.name}**.\nYou were kicked for violations, then reoffended after rejoining.\n\nThis was done automatically by AutoMod.")
+        await _dm_member(member, f"🔨 **Permanently banned** from **{guild.name}**.\nAutoMod: reoffended after kick.")
         add_mod_log("AutoMod Ban", str(member), "AutoMod", "Reoffended after kick", "#8b0000")
         add_activity("🔨", f"AutoMod banned {member.display_name}", "Rejoined & reoffended")
         log_ch_id = get(guild.id, "mod_channel") or get(guild.id, "logs_channel")
         log_ch = guild.get_channel(log_ch_id) if log_ch_id else None
         if log_ch:
-            embed = discord.Embed(title="🔨 AutoMod — PERMANENT BAN", description=f"**{member}** banned after rejoining and reoffending.", color=0x8B0000, timestamp=datetime.now())
+            embed = discord.Embed(title="🔨 AutoMod — PERMANENT BAN", description=f"**{member}** banned after rejoining and reoffending.", color=0x8B0000, timestamp=utcnow())
             embed.set_thumbnail(url=member.display_avatar.url)
             await log_ch.send(embed=embed)
 
 # ============================================================
-# AUTO-MOD ACTION VIEW (sent to logs channel)
+# AUTO-MOD ACTION VIEW
 # ============================================================
 class AutoModActionView(View):
-    def __init__(self, member: discord.Member):
+    def __init__(self, member):
         super().__init__(timeout=None)
         self.member = member
 
@@ -292,7 +379,8 @@ class AutoModActionView(View):
         if not interaction.user.guild_permissions.moderate_members:
             return await interaction.response.send_message("❌ No permission.", ephemeral=True)
         try:
-            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=1), reason=f"Staff after AutoMod — {interaction.user}")
+            # ✅ FIXED: timezone-aware
+            await self.member.timeout(utcnow() + timedelta(hours=1), reason=f"Staff after AutoMod — {interaction.user}")
             add_mod_log("Mute", str(self.member), str(interaction.user), "1h after AutoMod", "#faa61a")
             await interaction.response.send_message(f"🔇 **{self.member}** muted 1h.", ephemeral=True)
         except Exception: await interaction.response.send_message("❌ Couldn't mute.", ephemeral=True)
@@ -302,7 +390,8 @@ class AutoModActionView(View):
         if not interaction.user.guild_permissions.moderate_members:
             return await interaction.response.send_message("❌ No permission.", ephemeral=True)
         try:
-            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=24), reason=f"Staff after AutoMod — {interaction.user}")
+            # ✅ FIXED: timezone-aware
+            await self.member.timeout(utcnow() + timedelta(hours=24), reason=f"Staff after AutoMod — {interaction.user}")
             add_mod_log("Mute", str(self.member), str(interaction.user), "24h after AutoMod", "#faa61a")
             await interaction.response.send_message(f"🔇 **{self.member}** muted 24h.", ephemeral=True)
         except Exception: await interaction.response.send_message("❌ Couldn't mute.", ephemeral=True)
@@ -602,6 +691,18 @@ class VerifyModal(Modal, title="🎮 Link Roblox Account"):
         data = await fetch_roblox(username)
         if not data:
             return await interaction.followup.send("❌ Roblox user not found! Check the username and try again.", ephemeral=True)
+
+        # ✅ GROUP CHECK at verify stage too
+        in_group = await check_group_membership(data["id"])
+        if not in_group:
+            embed = _group_embed(
+                "🚫 Not in Required Group",
+                f"Your Roblox account **@{data['name']}** is not in the YBS group.\n\n"
+                f"👉 Join first: {REQUIRED_GROUP_URL}\n"
+                f"Then try verifying again.",
+            )
+            return await interaction.followup.send(embed=embed, ephemeral=True)
+
         code = f"YBS-{random.randint(100000, 999999)}"
         verification_data[interaction.user.id] = {
             "code": code,
@@ -634,6 +735,18 @@ class ConfirmVerifyView(View):
         if datetime.fromisoformat(vdata["expires"]) < datetime.now():
             verification_data.pop(interaction.user.id, None)
             return await interaction.followup.send("❌ Code expired. Start the verification again.", ephemeral=True)
+
+        # ✅ Re-check group membership at confirmation
+        in_group = await check_group_membership(vdata["roblox_id"])
+        if not in_group:
+            embed = _group_embed(
+                "🚫 Not in Required Group",
+                f"**@{vdata['roblox_username']}** is still not in the YBS group.\n\n"
+                f"👉 Join: {REQUIRED_GROUP_URL}\n"
+                f"Then try confirming again.",
+            )
+            return await interaction.followup.send(embed=embed, ephemeral=True)
+
         try:
             async with aiohttp.ClientSession() as s:
                 r = await s.get(f"https://users.roblox.com/v1/users/{vdata['roblox_id']}")
@@ -688,7 +801,7 @@ class VerifyPanelView(View):
         await interaction.response.send_modal(VerifyModal())
 
 # ============================================================
-# APPLICATION SYSTEM
+# APPLICATION SYSTEM — group-gated
 # ============================================================
 class ApplicationModal(Modal):
     def __init__(self, role: str = "Developer"):
@@ -720,7 +833,7 @@ class ApplicationModal(Modal):
         }
         applications_data[interaction.user.id] = app
         if channel:
-            embed = discord.Embed(title=f"📋 New Application — {real_name}", color=0x5865F2, timestamp=datetime.now())
+            embed = discord.Embed(title=f"📋 New Application — {real_name}", color=0x5865F2, timestamp=utcnow())
             embed.set_author(name=str(interaction.user), icon_url=interaction.user.display_avatar.url)
             embed.set_thumbnail(url=interaction.user.display_avatar.url)
             embed.add_field(name="🎮 Roblox", value=self.roblox_name.value, inline=True)
@@ -814,6 +927,9 @@ class ApplicationRoleDropdown(Select):
         super().__init__(placeholder="🎮 Select the role you're applying for...", options=options, custom_id="apply_role_select_v4")
 
     async def callback(self, interaction):
+        # ✅ GROUP CHECK before opening application modal
+        if not await require_group(interaction):
+            return
         await interaction.response.send_modal(ApplicationModal(self.values[0]))
 
 class ApplyView(View):
@@ -898,7 +1014,7 @@ async def on_message_delete(message):
         embed.add_field(name="Author", value=message.author.mention)
         embed.add_field(name="Channel", value=message.channel.mention)
         embed.add_field(name="Content", value=message.content[:500] or "*(no text)*", inline=False)
-        embed.timestamp = discord.utils.utcnow()
+        embed.timestamp = utcnow()
         await log.send(embed=embed)
 
 @bot.event
@@ -913,7 +1029,7 @@ async def on_message_edit(before, after):
         embed.add_field(name="Channel", value=before.channel.mention)
         embed.add_field(name="Before", value=before.content[:400] or "*(empty)*", inline=False)
         embed.add_field(name="After", value=after.content[:400] or "*(empty)*", inline=False)
-        embed.timestamp = discord.utils.utcnow()
+        embed.timestamp = utcnow()
         await log.send(embed=embed)
 
 @bot.event
@@ -926,67 +1042,46 @@ async def on_message(message):
     content = message.content
     guild   = message.guild
 
-    # ---- Staff are exempt from AutoMod ----
     is_exempt = member.guild_permissions.administrator or member.guild_permissions.manage_messages
 
     if not is_exempt:
         flagged = False
 
-        # 1. Discord invite links
         if not flagged and contains_invite(content):
             await automod_warn_and_escalate(message, "Discord invite link", content[:200])
             flagged = True
-
-        # 2. Blocked external links
         if not flagged and contains_blocked_link(content):
             await automod_warn_and_escalate(message, "Blocked link / URL", content[:200])
             flagged = True
-
-        # 3. Message spam (too fast)
         if not flagged and is_message_spam(member.id):
             await automod_warn_and_escalate(message, f"Message spam ({automod_spam_threshold}+ msgs/{automod_spam_window}s)", "")
             flagged = True
-
-        # 4. Duplicate message spam
         if not flagged and is_duplicate_spam(member.id, content):
             await automod_warn_and_escalate(message, "Duplicate message spam", content[:200])
             flagged = True
-
-        # 5. Mass mentions
         if not flagged and count_mentions(message) >= automod_mention_limit:
             await automod_warn_and_escalate(message, f"Mass mentions ({count_mentions(message)} pings)", content[:200])
             flagged = True
-
-        # 6. Emoji spam
         if not flagged and count_emojis(content) >= automod_emoji_limit:
             await automod_warn_and_escalate(message, f"Emoji spam ({count_emojis(content)} emojis)", content[:100])
             flagged = True
-
-        # 7. Caps spam
         if not flagged and is_caps_spam(content):
             await automod_warn_and_escalate(message, "Excessive caps spam", content[:200])
             flagged = True
-
-        # 8. Wall of text
         if not flagged and content.count('\n') >= automod_newline_limit:
             await automod_warn_and_escalate(message, f"Wall of text ({content.count(chr(10))} newlines)", content[:100])
             flagged = True
-
-        # 9. Custom word filter
         if not flagged:
             guild_words = automod_data.get(str(guild.id), [])
             if guild_words and any(w.lower() in content.lower() for w in guild_words):
                 await automod_warn_and_escalate(message, "Banned word/phrase", content[:200])
                 flagged = True
-
-        # 10. Ban check (previously kicked member reoffending)
         if not flagged:
             await automod_check_ban(member, guild)
-
         if flagged:
-            return  # message was deleted — skip AFK/XP/commands
+            return
 
-    # ---- AFK check ----
+    # AFK check
     if member.id in afk_data:
         afk_data.pop(member.id)
         await message.channel.send(f"✅ Welcome back, {member.mention}! AFK removed.", delete_after=5)
@@ -995,7 +1090,7 @@ async def on_message(message):
             info = afk_data[mentioned.id]
             await message.channel.send(f"💤 **{mentioned.display_name}** is AFK: {info['reason']} *(since {info['time']})*", delete_after=10)
 
-    # ---- XP system ----
+    # XP system
     now  = datetime.now()
     last = xp_cooldowns.get(member.id)
     if not last or (now - last).total_seconds() >= 60:
@@ -1039,16 +1134,13 @@ async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None:
         voice_log.insert(0, {"action": "joined", "member": str(member), "channel": after.channel.name, "time": datetime.now().strftime("%H:%M · %d %b")})
         add_activity("🎙️", f"{member.display_name} joined voice #{after.channel.name}")
-        if log:
-            await log.send(f"🎙️ **{member}** joined **{after.channel.name}**")
+        if log: await log.send(f"🎙️ **{member}** joined **{after.channel.name}**")
     elif before.channel is not None and after.channel is None:
         voice_log.insert(0, {"action": "left", "member": str(member), "channel": before.channel.name, "time": datetime.now().strftime("%H:%M · %d %b")})
-        if log:
-            await log.send(f"🔇 **{member}** left **{before.channel.name}**")
+        if log: await log.send(f"🔇 **{member}** left **{before.channel.name}**")
     elif before.channel != after.channel:
         voice_log.insert(0, {"action": "moved", "member": str(member), "channel": after.channel.name, "time": datetime.now().strftime("%H:%M · %d %b")})
-        if log:
-            await log.send(f"↔️ **{member}** moved **{before.channel.name}** → **{after.channel.name}**")
+        if log: await log.send(f"↔️ **{member}** moved **{before.channel.name}** → **{after.channel.name}**")
     while len(voice_log) > 100:
         voice_log.pop()
 
@@ -1060,7 +1152,7 @@ async def on_member_ban(guild, user):
     if log:
         embed = discord.Embed(title="🔨 Member Banned", color=0xED4245)
         embed.add_field(name="User", value=f"{user} (`{user.id}`)")
-        embed.timestamp = discord.utils.utcnow()
+        embed.timestamp = utcnow()
         await log.send(embed=embed)
 
 @bot.event
@@ -1070,7 +1162,7 @@ async def on_member_unban(guild, user):
     if log:
         embed = discord.Embed(title="✅ Member Unbanned", color=0x3BA55C)
         embed.add_field(name="User", value=f"{user} (`{user.id}`)")
-        embed.timestamp = discord.utils.utcnow()
+        embed.timestamp = utcnow()
         await log.send(embed=embed)
 
 # ============================================================
@@ -1111,11 +1203,12 @@ async def showconfig(ctx):
     await ctx.send(embed=embed)
 
 # ============================================================
-# PREFIX COMMANDS — MODERATION
+# PREFIX COMMANDS — MODERATION (all group-gated)
 # ============================================================
 @bot.command()
 async def kick(ctx, member: discord.Member, *, reason="No reason provided"):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     await member.kick(reason=reason)
     await ctx.send(f"👢 **{member}** kicked. Reason: {reason}")
     add_mod_log("Kick", str(member), str(ctx.author), reason, "#faa61a")
@@ -1124,6 +1217,7 @@ async def kick(ctx, member: discord.Member, *, reason="No reason provided"):
 @bot.command()
 async def ban(ctx, member: discord.Member, *, reason="No reason provided"):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     await member.ban(reason=reason)
     await ctx.send(f"🔨 **{member}** banned. Reason: {reason}")
     add_mod_log("Ban", str(member), str(ctx.author), reason, "#ed4245")
@@ -1132,6 +1226,7 @@ async def ban(ctx, member: discord.Member, *, reason="No reason provided"):
 @bot.command()
 async def unban(ctx, *, name):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     banned = [entry async for entry in ctx.guild.bans()]
     for entry in banned:
         if str(entry.user) == name:
@@ -1142,8 +1237,10 @@ async def unban(ctx, *, name):
 @bot.command()
 async def mute(ctx, member: discord.Member, duration: int = 10, *, reason="No reason"):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     try:
-        await member.timeout(timedelta(minutes=duration), reason=reason)
+        # ✅ FIXED: timezone-aware
+        await member.timeout(utcnow() + timedelta(minutes=duration), reason=reason)
         await ctx.send(f"🔇 **{member}** muted for {duration} mins. Reason: {reason}")
         add_mod_log("Mute", str(member), str(ctx.author), f"{duration}min — {reason}", "#faa61a")
     except Exception as e:
@@ -1158,6 +1255,7 @@ async def unmute(ctx, member: discord.Member):
 @bot.command()
 async def warn(ctx, member: discord.Member, *, reason="No reason"):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     if member.id not in warnings_data:
         warnings_data[member.id] = []
     warnings_data[member.id].append({"reason": reason, "by": str(ctx.author), "time": datetime.now().isoformat()})
@@ -1170,7 +1268,7 @@ async def warn(ctx, member: discord.Member, *, reason="No reason"):
     except:
         pass
     if count >= 3:
-        await ctx.send(f"🚨 {member.mention} has reached 3 warnings! Consider taking further action.")
+        await ctx.send(f"🚨 {member.mention} has reached 3 warnings!")
 
 @bot.command()
 async def warnings(ctx, member: discord.Member = None):
@@ -1242,8 +1340,10 @@ async def removerole(ctx, member: discord.Member, *, role_name):
 @bot.command()
 async def timeout(ctx, member: discord.Member, minutes: int = 10, *, reason="No reason"):
     if not is_staff(ctx): return await ctx.send("❌ No permission.")
+    if not await require_group_prefix(ctx): return
     try:
-        await member.timeout(timedelta(minutes=minutes), reason=reason)
+        # ✅ FIXED: timezone-aware
+        await member.timeout(utcnow() + timedelta(minutes=minutes), reason=reason)
         await ctx.send(f"⏰ **{member}** timed out for **{minutes} minutes**. Reason: {reason}")
         add_mod_log("Timeout", str(member), str(ctx.author), f"{minutes}min — {reason}", "#faa61a")
     except discord.Forbidden:
@@ -1256,7 +1356,7 @@ async def untimeout(ctx, member: discord.Member):
     await ctx.send(f"✅ **{member}**'s timeout removed.")
 
 # ============================================================
-# PREFIX COMMANDS — INFO
+# PREFIX COMMANDS — INFO (group-gated for non-info commands)
 # ============================================================
 @bot.command()
 async def userinfo(ctx, member: discord.Member = None):
@@ -1294,6 +1394,7 @@ async def uptime(ctx):
 
 @bot.command()
 async def rank(ctx, member: discord.Member = None):
+    if not await require_group_prefix(ctx): return
     member = member or ctx.author
     data = xp_data.get(member.id, {"xp": 0, "level": 0, "messages": 0, "name": str(member)})
     xp = data["xp"]
@@ -1314,6 +1415,7 @@ async def rank(ctx, member: discord.Member = None):
 
 @bot.command(aliases=["lb", "top"])
 async def leaderboard(ctx):
+    if not await require_group_prefix(ctx): return
     if not xp_data:
         return await ctx.send("❌ No XP data yet!")
     top = sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True)[:10]
@@ -1328,10 +1430,11 @@ async def leaderboard(ctx):
     await ctx.send(embed=embed)
 
 # ============================================================
-# ECONOMY PREFIX
+# ECONOMY PREFIX (group-gated)
 # ============================================================
 @bot.command(aliases=["bal"])
 async def balance(ctx, member: discord.Member = None):
+    if not await require_group_prefix(ctx): return
     member = member or ctx.author
     eco = get_economy(member.id, str(member))
     embed = discord.Embed(title=f"💰 {member.display_name}'s Wallet", color=0xFAA61A)
@@ -1341,6 +1444,7 @@ async def balance(ctx, member: discord.Member = None):
 
 @bot.command()
 async def daily(ctx):
+    if not await require_group_prefix(ctx): return
     eco = get_economy(ctx.author.id, str(ctx.author))
     now = datetime.now()
     if eco["last_daily"] and (now - datetime.fromisoformat(eco["last_daily"])).total_seconds() < 86400:
@@ -1356,6 +1460,7 @@ async def daily(ctx):
 
 @bot.command()
 async def work(ctx):
+    if not await require_group_prefix(ctx): return
     eco = get_economy(ctx.author.id, str(ctx.author))
     now = datetime.now()
     if eco["last_work"] and (now - datetime.fromisoformat(eco["last_work"])).total_seconds() < 3600:
@@ -1371,6 +1476,7 @@ async def work(ctx):
 
 @bot.command(aliases=["give"])
 async def pay(ctx, member: discord.Member, amount: int):
+    if not await require_group_prefix(ctx): return
     if amount <= 0: return await ctx.send("❌ Positive amount only.")
     payer = get_economy(ctx.author.id, str(ctx.author))
     if payer["balance"] < amount: return await ctx.send(f"❌ Only **{payer['balance']:,} coins**.")
@@ -1382,6 +1488,7 @@ async def pay(ctx, member: discord.Member, amount: int):
 
 @bot.command()
 async def gamble(ctx, amount: int):
+    if not await require_group_prefix(ctx): return
     if amount <= 0: return await ctx.send("❌ Positive amount only.")
     eco = get_economy(ctx.author.id, str(ctx.author))
     if eco["balance"] < amount: return await ctx.send(f"❌ Only **{eco['balance']:,} coins**.")
@@ -1395,6 +1502,7 @@ async def gamble(ctx, amount: int):
 
 @bot.command()
 async def slots(ctx, bet: int = 50):
+    if not await require_group_prefix(ctx): return
     eco = get_economy(ctx.author.id, str(ctx.author))
     if eco["balance"] < bet: return await ctx.send(f"❌ Only **{eco['balance']:,} coins**.")
     symbols = ["🍒", "🍋", "🍇", "⭐", "💎", "🎰"]
@@ -1416,12 +1524,13 @@ async def slots(ctx, bet: int = 50):
     await ctx.send(f"🎰 | {reels[0]} | {reels[1]} | {reels[2]} |\n{result}\nBalance: **{eco['balance']:,}**")
 
 # ============================================================
-# FUN PREFIX
+# FUN PREFIX (group-gated)
 # ============================================================
 EIGHTBALL = ["It is certain. ✅","It is decidedly so. ✅","Without a doubt. ✅","Yes, definitely. ✅","Most likely. 🟡","Outlook good. 🟡","Reply hazy, try again. ❓","Ask again later. ❓","Don't count on it. ❌","My reply is no. ❌","Very doubtful. ❌"]
 
 @bot.command(name="8ball")
 async def eightball(ctx, *, question: str):
+    if not await require_group_prefix(ctx): return
     embed = discord.Embed(title="🎱 Magic 8-Ball", color=0x5865F2)
     embed.add_field(name="❓ Question", value=question, inline=False)
     embed.add_field(name="🎱 Answer", value=random.choice(EIGHTBALL), inline=False)
@@ -1429,14 +1538,17 @@ async def eightball(ctx, *, question: str):
 
 @bot.command()
 async def coinflip(ctx):
+    if not await require_group_prefix(ctx): return
     await ctx.send(f"🪙 **{random.choice(['Heads', 'Tails'])}!**")
 
 @bot.command()
 async def dice(ctx):
+    if not await require_group_prefix(ctx): return
     await ctx.send(f"🎲 You rolled a **{random.randint(1, 6)}**!")
 
 @bot.command()
 async def snipe(ctx):
+    if not await require_group_prefix(ctx): return
     data = snipe_data.get(ctx.channel.id)
     if not data: return await ctx.send("❌ Nothing to snipe here!")
     embed = discord.Embed(description=data["content"], color=0xED4245)
@@ -1449,12 +1561,13 @@ async def announce(ctx, *, message):
     if not is_staff(ctx): return await ctx.send("❌ Staff only!")
     ann_id = get(ctx.guild.id, "announcements_channel")
     channel = bot.get_channel(ann_id) if ann_id else ctx.channel
-    embed = discord.Embed(title="📢 Announcement", description=message, color=0x5865F2, timestamp=datetime.now())
+    embed = discord.Embed(title="📢 Announcement", description=message, color=0x5865F2, timestamp=utcnow())
     embed.set_footer(text=f"Posted by {ctx.author}")
     await channel.send("@everyone", embed=embed)
 
 @bot.command()
 async def suggest(ctx, *, suggestion):
+    if not await require_group_prefix(ctx): return
     general_id = get(ctx.guild.id, "general_channel")
     channel = bot.get_channel(general_id) if general_id else ctx.channel
     embed = discord.Embed(title="💡 New Suggestion", description=suggestion, color=0x00FF00)
@@ -1486,6 +1599,7 @@ async def notes(ctx, member: discord.Member):
 @bot.command()
 async def giveaway(ctx, duration: int, *, prize):
     if not is_staff(ctx): return await ctx.send("❌ Staff only!")
+    if not await require_group_prefix(ctx): return
     gw_ch_id = get(ctx.guild.id, "giveaway_channel")
     channel = bot.get_channel(gw_ch_id) if gw_ch_id else ctx.channel
     embed = discord.Embed(title="🎉 GIVEAWAY!", description=f"**{prize}**\n\nReact with 🎉 to enter!\nEnds in **{duration} minutes**", color=0xFF79C6, timestamp=datetime.now() + timedelta(minutes=duration))
@@ -1518,7 +1632,7 @@ async def help(ctx):
     embed.add_field(name="ℹ️ Info", value="`!userinfo` `!serverinfo` `!ping` `!uptime` `!rank` `!leaderboard`", inline=False)
     embed.add_field(name="💰 Economy", value="`!balance` `!daily` `!work` `!pay` `!gamble` `!slots`", inline=False)
     embed.add_field(name="🎮 Fun", value="`!8ball` `!coinflip` `!dice` `!snipe` `!suggest` `!announce`", inline=False)
-    embed.set_footer(text="Prefix: ! · Use /help for full slash command menu")
+    embed.set_footer(text="Prefix: ! · Use /help for full slash command menu · Requires YBS Group Membership")
     await ctx.send(embed=embed)
 
 # ============================================================
@@ -1537,7 +1651,7 @@ class WarnModal(Modal, title="⚠️ Warn Member"):
         add_activity("⚠️", f"{self.member.display_name} warned", self.reason.value)
         try: await self.member.send(f"⚠️ You were warned in **{interaction.guild.name}**\nReason: {self.reason.value}")
         except: pass
-        await interaction.response.send_message(f"⚠️ **{self.member}** warned. Total: **{len(warnings_data[uid])}** warning(s).", ephemeral=True)
+        await interaction.response.send_message(f"⚠️ **{self.member}** warned. Total: **{len(warnings_data[uid])}**.", ephemeral=True)
 
 class BanModal(Modal, title="🔨 Ban Member"):
     reason = TextInput(label="Reason", placeholder="Enter ban reason…", max_length=500)
@@ -1565,10 +1679,12 @@ class TimeoutModal(Modal, title="⏰ Timeout Member"):
         try: mins = max(1, min(40320, int(self.duration.value)))
         except: mins = 10
         try:
-            await self.member.timeout(discord.utils.utcnow() + timedelta(minutes=mins), reason=self.reason.value or "No reason")
+            # ✅ FIXED: timezone-aware
+            await self.member.timeout(utcnow() + timedelta(minutes=mins), reason=self.reason.value or "No reason")
             add_mod_log("Timeout", str(self.member), str(interaction.user), f"{mins}m — {self.reason.value or 'No reason'}", "#faa61a")
             await interaction.response.send_message(f"⏰ **{self.member}** timed out for **{mins} minutes**.", ephemeral=True)
-        except: await interaction.response.send_message("❌ Couldn't timeout.", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Couldn't timeout: {e}", ephemeral=True)
 
 class NoteModal(Modal, title="📝 Add Staff Note"):
     note = TextInput(label="Note", style=discord.TextStyle.paragraph, placeholder="Enter your staff note…", max_length=1000)
@@ -1658,7 +1774,8 @@ class ModMenuView(View):
     async def mute1h_btn(self, interaction, button):
         if not interaction.user.guild_permissions.moderate_members: return await interaction.response.send_message("❌ No permission.", ephemeral=True)
         try:
-            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=1), reason=f"Muted 1h by {interaction.user}")
+            # ✅ FIXED: timezone-aware
+            await self.member.timeout(utcnow() + timedelta(hours=1), reason=f"Muted 1h by {interaction.user}")
             add_mod_log("Mute", str(self.member), str(interaction.user), "1 hour", "#faa61a")
             await interaction.response.send_message(f"🔇 **{self.member}** muted for 1 hour.", ephemeral=True)
         except: await interaction.response.send_message("❌ Failed.", ephemeral=True)
@@ -1667,7 +1784,8 @@ class ModMenuView(View):
     async def mute24h_btn(self, interaction, button):
         if not interaction.user.guild_permissions.moderate_members: return await interaction.response.send_message("❌ No permission.", ephemeral=True)
         try:
-            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=24), reason=f"Muted 24h by {interaction.user}")
+            # ✅ FIXED: timezone-aware
+            await self.member.timeout(utcnow() + timedelta(hours=24), reason=f"Muted 24h by {interaction.user}")
             add_mod_log("Mute", str(self.member), str(interaction.user), "24 hours", "#faa61a")
             await interaction.response.send_message(f"🔇 **{self.member}** muted for 24 hours.", ephemeral=True)
         except: await interaction.response.send_message("❌ Failed.", ephemeral=True)
@@ -1796,16 +1914,16 @@ class HelpCategorySelect(Select):
             "economy": ("💰 Economy", "`/economy-menu` — All economy in one place\n`/balance` `/daily` `/work` `/pay` `/gamble` `/slots` `/rob` `/richlist` `/givecoins`"),
             "fun": ("🎮 Fun & Games", "`/8ball` `/joke` `/rps` `/rate` `/ship` `/truth` `/dare` `/coinflip` `/dice` `/choose` `/mock` `/compliment` `/pp` `/iq` `/snipe` `/roblox-fact`"),
             "utility": ("🛠️ Utility", "`/calc` `/afk` `/remindme` `/snipe` `/embed` `/say`"),
-            "mod": ("🔨 Moderation", "`/modmenu` — Full mod panel\n`/mod-tools` — Staff data viewer\n`/warn` `/kick` `/ban` `/unban` `/timeout` `/mute` `/softban` `/tempban` `/purge` `/lock` `/unlock` `/slowmode` `/nuke` `/nick` `/addrole` `/removerole` `/massrole` `/warnings` `/clearwarnings` `/history` `/note` `/notes` `/staffpanel`"),
+            "mod": ("🔨 Moderation", "`/modmenu` `/mod-tools` `/warn` `/kick` `/ban` `/unban` `/timeout` `/mute` `/softban` `/tempban` `/purge` `/lock` `/unlock` `/slowmode` `/nuke` `/nick` `/addrole` `/removerole` `/massrole` `/warnings` `/clearwarnings` `/history` `/note` `/notes` `/staffpanel`"),
             "tickets": ("🎫 Tickets & AutoMod", "`/ticket` `/closeticket` `/addword` `/removeword` `/wordlist`"),
-            "info": ("ℹ️ Info & Server", "`/member-info` — Full member card\n`/server-menu` — Server info hub\n`/userinfo` `/serverinfo` `/avatar` `/roleinfo` `/ping` `/uptime` `/botinfo` `/membercount` `/stafflist` `/newmembers`"),
+            "info": ("ℹ️ Info & Server", "`/member-info` `/server-menu` `/userinfo` `/serverinfo` `/avatar` `/roleinfo` `/ping` `/uptime` `/botinfo` `/membercount` `/stafflist` `/newmembers`"),
             "roblox": ("🎮 Roblox", "`/roblox` `/roblox-verify` `/roblox-link` `/roblox-unlink` `/roblox-whois` `/roblox-fact`"),
             "events": ("🎉 Events", "`/giveaway` `/poll` `/announce` `/suggest` `/serverrules`"),
-            "admin": ("👑 Admin", "`/premium` — Grant/revoke premium\n`/shutdown` `/shutdown-confirm` `/lockdown` `/unlockdown` `/config` `/massrole`"),
+            "admin": ("👑 Admin", "`/premium` `/shutdown` `/shutdown-confirm` `/lockdown` `/unlockdown` `/config` `/massrole`"),
         }
         title, desc = cats.get(self.values[0], ("Help", "—"))
         embed = discord.Embed(title=title, description=desc, color=0x5865F2)
-        embed.set_footer(text="Use ! prefix for most commands too")
+        embed.set_footer(text="⚠️ All commands require YBS Roblox Group membership")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class HelpView(View):
@@ -1815,7 +1933,7 @@ class HelpView(View):
 
 @tree.command(name="help", description="Browse all bot commands by category")
 async def slash_help(interaction: discord.Interaction):
-    embed = discord.Embed(title="📚 Young Boy Studios Bot", description="Select a category below to see all available commands.", color=0x5865F2)
+    embed = discord.Embed(title="📚 Young Boy Studios Bot", description="Select a category below to see all available commands.\n\n⚠️ **All commands require YBS Roblox Group membership.**\nJoin: " + REQUIRED_GROUP_URL, color=0x5865F2)
     embed.add_field(name="🔨 Moderation", value="Warn, kick, ban, timeout, purge…", inline=True)
     embed.add_field(name="🏅 XP & Levels", value="Rank, leaderboard, level roles…", inline=True)
     embed.add_field(name="💰 Economy", value="Daily, work, gamble, shop…", inline=True)
@@ -1831,6 +1949,7 @@ async def slash_help(interaction: discord.Interaction):
 @tree.command(name="roblox", description="Look up a Roblox profile")
 @app_commands.describe(username="Roblox username to look up")
 async def slash_roblox(interaction: discord.Interaction, username: str):
+    if not await require_group(interaction): return
     await interaction.response.defer()
     data = await fetch_roblox(username)
     if not data:
@@ -1847,7 +1966,7 @@ async def slash_roblox(interaction: discord.Interaction, username: str):
 async def slash_roblox_verify(interaction: discord.Interaction):
     if interaction.user.id in roblox_links and roblox_links[interaction.user.id].get("verified"):
         linked = roblox_links[interaction.user.id]
-        embed = discord.Embed(title="✅ Already Verified!", description=f"Linked to **{linked['display']}** (@{linked['username']})\n\nUse `/roblox-unlink` to remove the link.", color=0x3BA55C)
+        embed = discord.Embed(title="✅ Already Verified!", description=f"Linked to **{linked['display']}** (@{linked['username']})\n\nUse `/roblox-unlink` to remove.", color=0x3BA55C)
         return await interaction.response.send_message(embed=embed, ephemeral=True)
     await interaction.response.send_modal(VerifyModal())
 
@@ -1873,7 +1992,7 @@ async def slash_roblox_link(interaction: discord.Interaction, member: discord.Me
 @tree.command(name="roblox-unlink", description="Remove your Roblox account link")
 async def slash_roblox_unlink(interaction: discord.Interaction):
     if interaction.user.id not in roblox_links:
-        return await interaction.response.send_message("❌ You don't have a linked Roblox account.", ephemeral=True)
+        return await interaction.response.send_message("❌ No linked account.", ephemeral=True)
     old = roblox_links.pop(interaction.user.id)
     verified_role_id = get(interaction.guild.id, "verified_role")
     if verified_role_id:
@@ -1886,9 +2005,10 @@ async def slash_roblox_unlink(interaction: discord.Interaction):
 @tree.command(name="roblox-whois", description="Find a Discord user by Roblox username")
 @app_commands.describe(username="Roblox username to search for")
 async def slash_roblox_whois(interaction: discord.Interaction, username: str):
+    if not await require_group(interaction): return
     match = next((uid for uid, v in roblox_links.items() if v["username"].lower() == username.lower()), None)
     if not match:
-        return await interaction.response.send_message(f"❌ No linked Discord user found for **@{username}**.", ephemeral=True)
+        return await interaction.response.send_message(f"❌ No linked Discord user for **@{username}**.", ephemeral=True)
     member = interaction.guild.get_member(match)
     rb = roblox_links[match]
     embed = discord.Embed(title="🔍 Roblox → Discord Lookup", color=0x00B2FF)
@@ -1901,6 +2021,7 @@ async def slash_roblox_whois(interaction: discord.Interaction, username: str):
 
 @tree.command(name="roblox-fact", description="Get a random Roblox development fact")
 async def slash_roblox_fact(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     facts = [
         "Roblox uses Lua 5.1 as its scripting language, but extends it with a custom runtime called Luau.",
         "The `game` object in Roblox is the root of the DataModel — everything lives inside it.",
@@ -1918,13 +2039,14 @@ async def slash_roblox_fact(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 # ============================================================
-# SLASH — MODERATION
+# SLASH — MODERATION (all group-gated)
 # ============================================================
 @tree.command(name="modmenu", description="Open full moderation control panel for a member [Staff]")
 @app_commands.describe(member="Member to moderate")
 async def slash_modmenu(interaction: discord.Interaction, member: discord.Member):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     warns = len(warnings_data.get(member.id, []))
     notes_count = len(notes_data.get(str(member.id), []))
     rb = roblox_links.get(member.id)
@@ -1946,6 +2068,7 @@ async def slash_modmenu(interaction: discord.Interaction, member: discord.Member
 async def slash_warn(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     if member.id not in warnings_data: warnings_data[member.id] = []
     warnings_data[member.id].append({"reason": reason, "by": str(interaction.user), "time": datetime.now().isoformat()})
     add_mod_log("Warn", str(member), str(interaction.user), reason, "#faa61a")
@@ -1959,6 +2082,7 @@ async def slash_warn(interaction: discord.Interaction, member: discord.Member, r
 async def slash_kick(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.kick(reason=reason)
         add_mod_log("Kick", str(member), str(interaction.user), reason, "#faa61a")
@@ -1970,6 +2094,7 @@ async def slash_kick(interaction: discord.Interaction, member: discord.Member, r
 async def slash_ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
     if not interaction.user.guild_permissions.ban_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.ban(reason=reason)
         add_mod_log("Ban", str(member), str(interaction.user), reason, "#ed4245")
@@ -1981,6 +2106,7 @@ async def slash_ban(interaction: discord.Interaction, member: discord.Member, re
 async def slash_unban(interaction: discord.Interaction, user_id: str, reason: str = "No reason"):
     if not interaction.user.guild_permissions.ban_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         user = await bot.fetch_user(int(user_id))
         await interaction.guild.unban(user, reason=reason)
@@ -1993,11 +2119,14 @@ async def slash_unban(interaction: discord.Interaction, user_id: str, reason: st
 async def slash_timeout(interaction: discord.Interaction, member: discord.Member, minutes: int = 5, reason: str = "No reason"):
     if not interaction.user.guild_permissions.moderate_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
-        await member.timeout(discord.utils.utcnow() + timedelta(minutes=minutes), reason=reason)
+        # ✅ FIXED: timezone-aware
+        await member.timeout(utcnow() + timedelta(minutes=minutes), reason=reason)
         add_mod_log("Timeout", str(member), str(interaction.user), f"{minutes}m — {reason}", "#faa61a")
         await interaction.response.send_message(f"⏰ **{member}** timed out for {minutes}m.")
-    except: await interaction.response.send_message("❌ Couldn't timeout.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Couldn't timeout: {e}", ephemeral=True)
 
 @tree.command(name="untimeout", description="Remove a member's timeout [Staff]")
 @app_commands.describe(member="Member to untimeout")
@@ -2014,11 +2143,14 @@ async def slash_untimeout(interaction: discord.Interaction, member: discord.Memb
 async def slash_mute(interaction: discord.Interaction, member: discord.Member, hours: float = 1.0, reason: str = "No reason"):
     if not interaction.user.guild_permissions.moderate_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
-        await member.timeout(discord.utils.utcnow() + timedelta(hours=min(hours, 672)), reason=reason)
+        # ✅ FIXED: timezone-aware
+        await member.timeout(utcnow() + timedelta(hours=min(hours, 672)), reason=reason)
         add_mod_log("Mute", str(member), str(interaction.user), f"{hours}h — {reason}", "#faa61a")
         await interaction.response.send_message(f"🔇 **{member}** muted for **{hours}h**.")
-    except: await interaction.response.send_message("❌ Couldn't mute.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Couldn't mute: {e}", ephemeral=True)
 
 @tree.command(name="unmute", description="Unmute a member [Staff]")
 async def slash_unmute(interaction: discord.Interaction, member: discord.Member):
@@ -2034,11 +2166,12 @@ async def slash_unmute(interaction: discord.Interaction, member: discord.Member)
 async def slash_softban(interaction: discord.Interaction, member: discord.Member, reason: str = "Softban", delete_days: int = 3):
     if not interaction.user.guild_permissions.ban_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.ban(reason=f"Softban: {reason}", delete_message_days=max(1, min(7, delete_days)))
         await interaction.guild.unban(member, reason="Softban")
         add_mod_log("Softban", str(member), str(interaction.user), reason, "#faa61a")
-        await interaction.response.send_message(f"🪃 **{member}** softbanned. Can rejoin.")
+        await interaction.response.send_message(f"🪃 **{member}** softbanned.")
     except: await interaction.response.send_message("❌ Couldn't softban.", ephemeral=True)
 
 @tree.command(name="tempban", description="Temporarily ban a member [Staff]")
@@ -2046,6 +2179,7 @@ async def slash_softban(interaction: discord.Interaction, member: discord.Member
 async def slash_tempban(interaction: discord.Interaction, member: discord.Member, hours: float = 24.0, reason: str = "No reason"):
     if not interaction.user.guild_permissions.ban_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.ban(reason=f"Tempban {hours}h: {reason}", delete_message_days=1)
         add_mod_log("Tempban", str(member), str(interaction.user), f"{hours}h — {reason}", "#ed4245")
@@ -2058,6 +2192,7 @@ async def slash_tempban(interaction: discord.Interaction, member: discord.Member
 async def slash_purge(interaction: discord.Interaction, amount: int = 10):
     if not interaction.user.guild_permissions.manage_messages:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     await interaction.response.defer(ephemeral=True)
     deleted = await interaction.channel.purge(limit=max(1, min(100, amount)))
     await interaction.followup.send(f"🗑️ Deleted **{len(deleted)}** messages.", ephemeral=True)
@@ -2067,6 +2202,7 @@ async def slash_purge(interaction: discord.Interaction, amount: int = 10):
 async def slash_lock(interaction: discord.Interaction, channel: discord.TextChannel = None, reason: str = "No reason"):
     if not interaction.user.guild_permissions.manage_channels:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     ch = channel or interaction.channel
     await ch.set_permissions(interaction.guild.default_role, send_messages=False)
     embed = discord.Embed(title="🔒 Channel Locked", description=f"**Reason:** {reason}\n**By:** {interaction.user.mention}", color=0xed4245)
@@ -2078,6 +2214,7 @@ async def slash_lock(interaction: discord.Interaction, channel: discord.TextChan
 async def slash_unlock(interaction: discord.Interaction, channel: discord.TextChannel = None):
     if not interaction.user.guild_permissions.manage_channels:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     ch = channel or interaction.channel
     await ch.set_permissions(interaction.guild.default_role, send_messages=None)
     embed = discord.Embed(title="🔓 Channel Unlocked", description=f"Unlocked by {interaction.user.mention}.", color=0x3ba55c)
@@ -2089,6 +2226,7 @@ async def slash_unlock(interaction: discord.Interaction, channel: discord.TextCh
 async def slash_slowmode(interaction: discord.Interaction, seconds: int = 0, channel: discord.TextChannel = None):
     if not interaction.user.guild_permissions.manage_channels:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     ch = channel or interaction.channel
     await ch.edit(slowmode_delay=max(0, min(21600, seconds)))
     msg = f"⏱️ Slowmode **disabled** in {ch.mention}." if seconds == 0 else f"⏱️ Slowmode **{seconds}s** in {ch.mention}."
@@ -2099,6 +2237,7 @@ async def slash_slowmode(interaction: discord.Interaction, seconds: int = 0, cha
 async def slash_nuke(interaction: discord.Interaction, reason: str = "Channel nuke"):
     if not interaction.user.guild_permissions.manage_channels:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     ch = interaction.channel
     await interaction.response.send_message("💥 Nuking...", ephemeral=True)
     new_ch = await ch.clone(reason=f"Nuked by {interaction.user}: {reason}")
@@ -2122,6 +2261,7 @@ async def slash_nick(interaction: discord.Interaction, member: discord.Member, n
 async def slash_addrole(interaction: discord.Interaction, member: discord.Member, role: discord.Role):
     if not interaction.user.guild_permissions.manage_roles:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.add_roles(role)
         await interaction.response.send_message(f"✅ {role.mention} added to **{member}**.")
@@ -2132,6 +2272,7 @@ async def slash_addrole(interaction: discord.Interaction, member: discord.Member
 async def slash_removerole(interaction: discord.Interaction, member: discord.Member, role: discord.Role):
     if not interaction.user.guild_permissions.manage_roles:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         await member.remove_roles(role)
         await interaction.response.send_message(f"✅ {role.mention} removed from **{member}**.")
@@ -2158,6 +2299,7 @@ async def slash_massrole(interaction: discord.Interaction, action: str, role: di
 @tree.command(name="warnings", description="View warnings for a member")
 @app_commands.describe(member="Member to check")
 async def slash_warnings(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     warns = warnings_data.get(member.id, [])
     embed = discord.Embed(title=f"⚠️ Warnings — {member.display_name}", color=0xfaa61a)
@@ -2183,6 +2325,7 @@ async def slash_clearwarnings(interaction: discord.Interaction, member: discord.
 async def slash_history(interaction: discord.Interaction, member: discord.Member):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     warns = warnings_data.get(member.id, [])
     logs = [l for l in mod_log_data if member.name in l.get("target", "")]
     user_notes = notes_data.get(str(member.id), [])
@@ -2231,6 +2374,7 @@ async def slash_notes(interaction: discord.Interaction, member: discord.Member):
 @tree.command(name="userinfo", description="View info about a user")
 @app_commands.describe(member="Member")
 async def slash_userinfo(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     embed = discord.Embed(title=f"👤 {member}", color=member.color)
     embed.add_field(name="ID", value=str(member.id))
@@ -2251,6 +2395,7 @@ async def slash_userinfo(interaction: discord.Interaction, member: discord.Membe
 
 @tree.command(name="serverinfo", description="View server info")
 async def slash_serverinfo(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     g = interaction.guild
     embed = discord.Embed(title=f"🏠 {g.name}", color=0x5865F2)
     embed.add_field(name="Members", value=str(g.member_count))
@@ -2265,6 +2410,7 @@ async def slash_serverinfo(interaction: discord.Interaction):
 @tree.command(name="avatar", description="View a member's avatar")
 @app_commands.describe(member="Member")
 async def slash_avatar(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     embed = discord.Embed(title=f"🖼️ {member.display_name}'s Avatar", color=0x5865F2)
     embed.set_image(url=member.display_avatar.url)
@@ -2305,6 +2451,7 @@ async def slash_botinfo(interaction: discord.Interaction):
 
 @tree.command(name="membercount", description="Member count breakdown")
 async def slash_membercount(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     g = interaction.guild
     bots = sum(1 for m in g.members if m.bot)
     humans = g.member_count - bots
@@ -2319,6 +2466,7 @@ async def slash_membercount(interaction: discord.Interaction):
 @tree.command(name="roleinfo", description="View info about a role")
 @app_commands.describe(role="Role to inspect")
 async def slash_roleinfo(interaction: discord.Interaction, role: discord.Role):
+    if not await require_group(interaction): return
     perms = [p.replace("_", " ").title() for p, v in role.permissions if v]
     embed = discord.Embed(title=f"🎭 {role.name}", color=role.color)
     embed.add_field(name="ID", value=f"`{role.id}`")
@@ -2330,6 +2478,7 @@ async def slash_roleinfo(interaction: discord.Interaction, role: discord.Role):
 
 @tree.command(name="stafflist", description="View all staff members")
 async def slash_stafflist(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     staff = []
     for member in interaction.guild.members:
         if member.bot: continue
@@ -2344,6 +2493,7 @@ async def slash_stafflist(interaction: discord.Interaction):
 
 @tree.command(name="newmembers", description="View 10 most recently joined members")
 async def slash_newmembers(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     members = sorted([m for m in interaction.guild.members if not m.bot], key=lambda m: m.joined_at or datetime.min, reverse=True)[:10]
     embed = discord.Embed(title="🆕 Newest Members", color=0x5865f2)
     embed.description = "\n".join(f"`{i+1}.` **{m.display_name}** — {m.joined_at.strftime('%d %b %Y') if m.joined_at else '?'}" for i, m in enumerate(members))
@@ -2355,6 +2505,7 @@ async def slash_newmembers(interaction: discord.Interaction):
 @tree.command(name="rank", description="View your rank card")
 @app_commands.describe(member="Member to check")
 async def slash_rank(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     d = xp_data.get(member.id, {"xp": 0, "messages": 0, "name": str(member)})
     xp = d["xp"]
@@ -2375,6 +2526,7 @@ async def slash_rank(interaction: discord.Interaction, member: discord.Member = 
 
 @tree.command(name="leaderboard", description="XP and coin leaderboards")
 async def slash_leaderboard(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     embed = discord.Embed(title="🏆 Leaderboards", color=0x5865F2)
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     if xp_data:
@@ -2407,11 +2559,12 @@ async def slash_resetxp(interaction: discord.Interaction, member: discord.Member
     await interaction.response.send_message(f"🔄 Reset XP for {member.mention}.")
 
 # ============================================================
-# SLASH — ECONOMY
+# SLASH — ECONOMY (group-gated)
 # ============================================================
 @tree.command(name="balance", description="Check YBS Coins balance")
 @app_commands.describe(member="Member to check")
 async def slash_balance(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     eco = get_economy(member.id, str(member))
     embed = discord.Embed(title=f"💰 {member.display_name}'s Wallet", color=0xFAA61A)
@@ -2422,6 +2575,7 @@ async def slash_balance(interaction: discord.Interaction, member: discord.Member
 
 @tree.command(name="daily", description="Claim your daily YBS Coins")
 async def slash_daily(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     eco = get_economy(interaction.user.id, str(interaction.user))
     now = datetime.now()
     if eco["last_daily"] and (now - datetime.fromisoformat(eco["last_daily"])).total_seconds() < 86400:
@@ -2437,6 +2591,7 @@ async def slash_daily(interaction: discord.Interaction):
 
 @tree.command(name="work", description="Work to earn YBS Coins")
 async def slash_work(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     eco = get_economy(interaction.user.id, str(interaction.user))
     now = datetime.now()
     if eco["last_work"] and (now - datetime.fromisoformat(eco["last_work"])).total_seconds() < 3600:
@@ -2452,6 +2607,7 @@ async def slash_work(interaction: discord.Interaction):
 @tree.command(name="pay", description="Send YBS Coins to another member")
 @app_commands.describe(member="Who to pay", amount="How many coins")
 async def slash_pay(interaction: discord.Interaction, member: discord.Member, amount: int):
+    if not await require_group(interaction): return
     if amount <= 0: return await interaction.response.send_message("❌ Positive amount only.", ephemeral=True)
     payer = get_economy(interaction.user.id, str(interaction.user))
     if payer["balance"] < amount: return await interaction.response.send_message(f"❌ Only **{payer['balance']:,} coins**.", ephemeral=True)
@@ -2463,6 +2619,7 @@ async def slash_pay(interaction: discord.Interaction, member: discord.Member, am
 @tree.command(name="gamble", description="Gamble your YBS Coins")
 @app_commands.describe(amount="Coins to bet")
 async def slash_gamble(interaction: discord.Interaction, amount: int):
+    if not await require_group(interaction): return
     if amount <= 0: return await interaction.response.send_message("❌ Positive only.", ephemeral=True)
     eco = get_economy(interaction.user.id, str(interaction.user))
     if eco["balance"] < amount: return await interaction.response.send_message(f"❌ Only **{eco['balance']:,}**.", ephemeral=True)
@@ -2476,6 +2633,7 @@ async def slash_gamble(interaction: discord.Interaction, amount: int):
 @tree.command(name="slots", description="Play the slot machine")
 @app_commands.describe(bet="Coins to bet (default 50)")
 async def slash_slots(interaction: discord.Interaction, bet: int = 50):
+    if not await require_group(interaction): return
     eco = get_economy(interaction.user.id, str(interaction.user))
     if eco["balance"] < bet: return await interaction.response.send_message(f"❌ Only **{eco['balance']:,}**.", ephemeral=True)
     syms = ["🍒", "🍋", "🍇", "⭐", "💎", "🎰"]
@@ -2491,6 +2649,7 @@ async def slash_slots(interaction: discord.Interaction, bet: int = 50):
 @tree.command(name="rob", description="Try to rob another member")
 @app_commands.describe(member="Who to rob")
 async def slash_rob(interaction: discord.Interaction, member: discord.Member):
+    if not await require_group(interaction): return
     if member.id == interaction.user.id:
         return await interaction.response.send_message("❌ You can't rob yourself!", ephemeral=True)
     robber = get_economy(interaction.user.id, str(interaction.user))
@@ -2509,6 +2668,7 @@ async def slash_rob(interaction: discord.Interaction, member: discord.Member):
 
 @tree.command(name="richlist", description="Top 10 richest members")
 async def slash_richlist(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     if not economy_data: return await interaction.response.send_message("❌ No economy data yet!")
     top = sorted(economy_data.items(), key=lambda x: x[1]["balance"], reverse=True)[:10]
     embed = discord.Embed(title="💰 Rich List", color=0xFAA61A)
@@ -2527,11 +2687,12 @@ async def slash_givecoins(interaction: discord.Interaction, member: discord.Memb
     await interaction.response.send_message(f"✅ Gave **{amount:,} coins** to {member.mention}.")
 
 # ============================================================
-# SLASH — FUN
+# SLASH — FUN (group-gated)
 # ============================================================
 @tree.command(name="8ball", description="Ask the magic 8-ball")
 @app_commands.describe(question="Your question")
 async def slash_8ball(interaction: discord.Interaction, question: str):
+    if not await require_group(interaction): return
     embed = discord.Embed(title="🎱 Magic 8-Ball", color=0x5865F2)
     embed.add_field(name="❓ Question", value=question, inline=False)
     embed.add_field(name="🎱 Answer", value=random.choice(EIGHTBALL), inline=False)
@@ -2539,6 +2700,7 @@ async def slash_8ball(interaction: discord.Interaction, question: str):
 
 @tree.command(name="joke", description="Get a random dev joke")
 async def slash_joke(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     jokes = [("Why do programmers prefer dark mode?","Because light attracts bugs! 🐛"),("Why did the Roblox player refuse to leave?","He was ROBLOXed in! 🎮"),("Why did the developer go broke?","He used up all his cache! 💸"),("Why do Java devs wear glasses?","Because they don't C#!")]
     q, a = random.choice(jokes)
     embed = discord.Embed(title="😂 Joke!", color=0xFAA61A)
@@ -2549,6 +2711,7 @@ async def slash_joke(interaction: discord.Interaction):
 @tree.command(name="rps", description="Rock Paper Scissors vs the bot")
 @app_commands.choices(choice=[app_commands.Choice(name="🪨 Rock", value="rock"), app_commands.Choice(name="📄 Paper", value="paper"), app_commands.Choice(name="✂️ Scissors", value="scissors")])
 async def slash_rps(interaction: discord.Interaction, choice: str):
+    if not await require_group(interaction): return
     ch = {"rock": "🪨", "paper": "📄", "scissors": "✂️"}
     bot_c = random.choice(list(ch.keys()))
     wins = {"rock": "scissors", "paper": "rock", "scissors": "paper"}
@@ -2558,6 +2721,7 @@ async def slash_rps(interaction: discord.Interaction, choice: str):
 @tree.command(name="rate", description="Rate something out of 100")
 @app_commands.describe(thing="What to rate")
 async def slash_rate(interaction: discord.Interaction, thing: str):
+    if not await require_group(interaction): return
     score = random.randint(0, 100)
     bar = "█" * (score // 10) + "░" * (10 - score // 10)
     color = 0x3BA55C if score >= 70 else 0xFAA61A if score >= 40 else 0xED4245
@@ -2566,6 +2730,7 @@ async def slash_rate(interaction: discord.Interaction, thing: str):
 @tree.command(name="ship", description="Check compatibility")
 @app_commands.describe(user1="First member", user2="Second member")
 async def slash_ship(interaction: discord.Interaction, user1: discord.Member, user2: discord.Member = None):
+    if not await require_group(interaction): return
     user2 = user2 or interaction.user
     score = (user1.id + user2.id) % 101
     bar = "💗" * (score // 10) + "🖤" * (10 - score // 10)
@@ -2573,22 +2738,25 @@ async def slash_ship(interaction: discord.Interaction, user1: discord.Member, us
 
 @tree.command(name="truth", description="Get a truth question")
 async def slash_truth(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     ts = ["What's your most embarrassing coding mistake?","What game are you secretly working on?","Have you ever copy-pasted code you didn't understand?","What's the longest you've spent on one bug?","What dev skill do you wish you had?"]
     await interaction.response.send_message(embed=discord.Embed(title="😳 Truth!", description=random.choice(ts), color=0xFF79C6))
 
 @tree.command(name="dare", description="Get a dare challenge")
 async def slash_dare(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     ds = ["Make a mini-game in 30 minutes!","Build a noob character and screenshot it!","Write hello world in 3 languages!","Script a random feature in 5 minutes!","Draw your game idea in MS Paint!"]
     await interaction.response.send_message(embed=discord.Embed(title="😈 Dare!", description=random.choice(ds), color=0xED4245))
 
 @tree.command(name="coinflip", description="Flip a coin")
 async def slash_coinflip(interaction: discord.Interaction):
-    result = random.choice(["Heads", "Tails"])
-    await interaction.response.send_message(embed=discord.Embed(title="🪙 Coin Flip!", description=f"**{result}!**", color=0x5865f2))
+    if not await require_group(interaction): return
+    await interaction.response.send_message(embed=discord.Embed(title="🪙 Coin Flip!", description=f"**{random.choice(['Heads', 'Tails'])}!**", color=0x5865f2))
 
 @tree.command(name="dice", description="Roll dice")
 @app_commands.describe(sides="Number of sides", count="Number of dice")
 async def slash_dice(interaction: discord.Interaction, sides: int = 6, count: int = 1):
+    if not await require_group(interaction): return
     sides = max(2, min(1000, sides)); count = max(1, min(10, count))
     rolls = [random.randint(1, sides) for _ in range(count)]
     embed = discord.Embed(title=f"🎲 {count}d{sides}", color=0x5865f2)
@@ -2601,6 +2769,7 @@ async def slash_dice(interaction: discord.Interaction, sides: int = 6, count: in
 @tree.command(name="choose", description="Pick randomly from options")
 @app_commands.describe(choices="Comma-separated options")
 async def slash_choose(interaction: discord.Interaction, choices: str):
+    if not await require_group(interaction): return
     options = [c.strip() for c in choices.split(",") if c.strip()]
     if len(options) < 2: return await interaction.response.send_message("❌ Need at least 2 options.", ephemeral=True)
     await interaction.response.send_message(embed=discord.Embed(title="🎯 I Choose...", description=f"**{random.choice(options)}**", color=0x5865f2))
@@ -2608,11 +2777,13 @@ async def slash_choose(interaction: discord.Interaction, choices: str):
 @tree.command(name="mock", description="MoCkIfY some text")
 @app_commands.describe(text="Text to mockify")
 async def slash_mock(interaction: discord.Interaction, text: str):
+    if not await require_group(interaction): return
     await interaction.response.send_message("".join(c.upper() if i % 2 else c.lower() for i, c in enumerate(text)))
 
 @tree.command(name="compliment", description="Compliment a member")
 @app_commands.describe(member="Who to compliment")
 async def slash_compliment(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     cs = ["is an absolute legend! 🌟","makes this server better! 💪","is the most talented dev here! 🎮","is going to build something incredible! 🚀"]
     await interaction.response.send_message(f"💝 {member.mention} {random.choice(cs)}")
@@ -2620,6 +2791,7 @@ async def slash_compliment(interaction: discord.Interaction, member: discord.Mem
 @tree.command(name="pp", description="Check pp size (not real)")
 @app_commands.describe(member="Member")
 async def slash_pp(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     size = member.id % 15
     await interaction.response.send_message(f"🍆 **{member.display_name}:** `8{'=' * size}D` ({size} inches)")
@@ -2627,6 +2799,7 @@ async def slash_pp(interaction: discord.Interaction, member: discord.Member = No
 @tree.command(name="iq", description="Check IQ (not real)")
 @app_commands.describe(member="Member")
 async def slash_iq(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     member = member or interaction.user
     iq = (member.id + 47) % 201
     rating = "needs help 💀" if iq < 70 else "average 😐" if iq < 100 else "smart 🧠" if iq < 130 else "genius 🎓" if iq < 160 else "BIG BRAIN 🤯"
@@ -2634,6 +2807,7 @@ async def slash_iq(interaction: discord.Interaction, member: discord.Member = No
 
 @tree.command(name="snipe", description="See the last deleted message")
 async def slash_snipe(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     data = snipe_data.get(interaction.channel.id)
     if not data: return await interaction.response.send_message("❌ Nothing to snipe!", ephemeral=True)
     embed = discord.Embed(description=data["content"], color=0xED4245)
@@ -2644,6 +2818,7 @@ async def slash_snipe(interaction: discord.Interaction):
 @tree.command(name="calc", description="Calculate a math expression")
 @app_commands.describe(expression="Math expression")
 async def slash_calc(interaction: discord.Interaction, expression: str):
+    if not await require_group(interaction): return
     if not all(c in "0123456789+-*/.() " for c in expression):
         return await interaction.response.send_message("❌ Only basic math operators!", ephemeral=True)
     try:
@@ -2654,6 +2829,7 @@ async def slash_calc(interaction: discord.Interaction, expression: str):
 @tree.command(name="afk", description="Set or clear your AFK status")
 @app_commands.describe(reason="AFK reason (blank to clear)")
 async def slash_afk(interaction: discord.Interaction, reason: str = None):
+    if not await require_group(interaction): return
     if reason:
         afk_data[interaction.user.id] = {"reason": reason, "time": datetime.now().strftime("%H:%M")}
         await interaction.response.send_message(f"💤 **{interaction.user.display_name}** is now AFK: *{reason}*")
@@ -2664,6 +2840,7 @@ async def slash_afk(interaction: discord.Interaction, reason: str = None):
 @tree.command(name="remindme", description="Set a reminder")
 @app_commands.describe(minutes="Minutes until reminder", reminder="What to remind you of")
 async def slash_remindme(interaction: discord.Interaction, minutes: int, reminder: str):
+    if not await require_group(interaction): return
     await interaction.response.send_message(f"⏰ I'll remind you in **{minutes} minute{'s' if minutes != 1 else ''}**!", ephemeral=True)
     await asyncio.sleep(minutes * 60)
     try: await interaction.user.send(f"⏰ **Reminder:** {reminder}")
@@ -2672,13 +2849,14 @@ async def slash_remindme(interaction: discord.Interaction, minutes: int, reminde
         if ch: await ch.send(f"⏰ {interaction.user.mention} — reminder: {reminder}")
 
 # ============================================================
-# SLASH — EVENTS
+# SLASH — EVENTS (group-gated)
 # ============================================================
 @tree.command(name="giveaway", description="Start a giveaway [Staff]")
-@app_commands.describe(duration="Duration in minutes", prize="What to give away", channel="Channel (default: giveaway channel)")
+@app_commands.describe(duration="Duration in minutes", prize="What to give away", channel="Channel")
 async def slash_giveaway(interaction: discord.Interaction, duration: int, prize: str, channel: discord.TextChannel = None):
     if not interaction.user.guild_permissions.manage_guild:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     gw_ch_id = get(interaction.guild.id, "giveaway_channel")
     ch = channel or (bot.get_channel(gw_ch_id) if gw_ch_id else interaction.channel)
     embed = discord.Embed(title="🎉 GIVEAWAY!", description=f"**{prize}**\n\nReact with 🎉 to enter!\nEnds in **{duration} minutes**", color=0xFF79C6, timestamp=datetime.now() + timedelta(minutes=duration))
@@ -2705,6 +2883,7 @@ async def slash_giveaway(interaction: discord.Interaction, duration: int, prize:
 @tree.command(name="poll", description="Create an interactive poll")
 @app_commands.describe(question="Poll question", option1="Option 1", option2="Option 2", option3="Option 3", option4="Option 4")
 async def slash_poll(interaction: discord.Interaction, question: str, option1: str, option2: str, option3: str = None, option4: str = None):
+    if not await require_group(interaction): return
     options = [o for o in [option1, option2, option3, option4] if o]
     emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
     embed = discord.Embed(title=f"📊 {question}", color=0x5865f2)
@@ -2724,6 +2903,7 @@ async def slash_announce(interaction: discord.Interaction, channel: discord.Text
 @tree.command(name="suggest", description="Submit a suggestion")
 @app_commands.describe(suggestion="Your suggestion")
 async def slash_suggest(interaction: discord.Interaction, suggestion: str):
+    if not await require_group(interaction): return
     general_id = get(interaction.guild.id, "general_channel")
     channel = bot.get_channel(general_id) if general_id else interaction.channel
     embed = discord.Embed(title="💡 New Suggestion", description=suggestion, color=0x00FF00)
@@ -2763,6 +2943,7 @@ async def slash_say(interaction: discord.Interaction, message: str, channel: dis
 async def slash_dm(interaction: discord.Interaction, member: discord.Member, message: str):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     try:
         embed = discord.Embed(title=f"📬 Message from {interaction.guild.name} Staff", description=message, color=0x5865f2)
         await member.send(embed=embed)
@@ -2770,11 +2951,12 @@ async def slash_dm(interaction: discord.Interaction, member: discord.Member, mes
     except: await interaction.response.send_message("❌ Couldn't DM.", ephemeral=True)
 
 # ============================================================
-# SLASH — TICKETS
+# SLASH — TICKETS (group-gated)
 # ============================================================
 @tree.command(name="ticket", description="Open a support ticket")
 @app_commands.describe(reason="Reason")
 async def slash_ticket(interaction: discord.Interaction, reason: str = "General support"):
+    if not await require_group(interaction): return
     guild = interaction.guild
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -2926,6 +3108,7 @@ class StaffPanelView(View):
 async def slash_staffpanel(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.manage_messages:
         return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    if not await require_group(interaction): return
     embed = discord.Embed(title="🛠️ Staff Quick-Action Panel", description="Fast access to common staff tools.", color=0x5865f2)
     embed.add_field(name="🔒 Row 1", value="Lock · Unlock · Purge 10 · Purge 50 · Nuke", inline=False)
     embed.add_field(name="⏱️ Row 2", value="Slow 10s · Slow 30s · Slow Off · Server Stats", inline=False)
@@ -2981,7 +3164,7 @@ async def slash_lockdown(interaction: discord.Interaction, reason: str = "Emerge
             except: pass
     add_activity("🔒", f"SERVER LOCKDOWN by {interaction.user.display_name}", reason)
     add_mod_log("Lockdown", "All channels", str(interaction.user), reason, "#ed4245")
-    await interaction.followup.send(f"🔒 **Server locked down!** {count} channels locked.\nUse `/unlockdown` to restore.", ephemeral=True)
+    await interaction.followup.send(f"🔒 **Server locked down!** {count} channels locked.", ephemeral=True)
 
 @tree.command(name="unlockdown", description="Lift server lockdown [Admin]")
 async def slash_unlockdown(interaction: discord.Interaction):
@@ -3006,7 +3189,7 @@ async def slash_config(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=SetupMainView(), ephemeral=True)
 
 # ============================================================
-# NEW SLASH COMMANDS — BUG REPORTS
+# BUG REPORTS
 # ============================================================
 class BugReportModal(Modal, title="🐛 Submit Bug Report"):
     bug_title = TextInput(label="Bug Title", placeholder="Short description of the bug", max_length=100)
@@ -3047,7 +3230,7 @@ class BugReportModal(Modal, title="🐛 Submit Bug Report"):
             embed.set_footer(text=f"Reported at {datetime.now().strftime('%d %b %Y %H:%M')}")
             await log_ch.send(embed=embed)
         add_activity("🐛", f"Bug report: {self.bug_title.value}", self.severity)
-        await interaction.response.send_message(f"✅ Bug report **{report['id']}** submitted! Our dev team will look into it. 🔍", ephemeral=True)
+        await interaction.response.send_message(f"✅ Bug report **{report['id']}** submitted!", ephemeral=True)
 
 class BugSeverityView(View):
     def __init__(self):
@@ -3071,6 +3254,7 @@ class BugSeverityView(View):
 
 @tree.command(name="bugreport", description="Submit a bug report for the game")
 async def slash_bugreport(interaction: discord.Interaction):
+    if not await require_group(interaction): return
     embed = discord.Embed(title="🐛 Submit a Bug Report", description="Select the severity of the bug, then fill in the details.", color=0xED4245)
     embed.add_field(name="🟢 Low", value="Minor visual glitch, no gameplay impact", inline=False)
     embed.add_field(name="🟡 Medium", value="Noticeable issue affecting gameplay", inline=False)
@@ -3079,7 +3263,7 @@ async def slash_bugreport(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=BugSeverityView(), ephemeral=True)
 
 # ============================================================
-# NEW SLASH COMMANDS — PREMIUM
+# PREMIUM
 # ============================================================
 @tree.command(name="premium", description="Grant or revoke premium for a member [Admin]")
 @app_commands.describe(member="Member", action="Grant or revoke", tier="premium / vip / supporter", days="Days until expiry (0 = permanent)")
@@ -3095,9 +3279,9 @@ async def slash_premium(interaction: discord.Interaction, member: discord.Member
         premium_data[member.id] = {"tier": tier, "granted_by": str(interaction.user), "expires": expires, "granted_at": datetime.now().isoformat()}
         add_activity("👑", f"Premium granted to {member.display_name}", f"{tier} · {'permanent' if days == 0 else f'{days}d'}")
         try:
-            await member.send(f"👑 You've been granted **{tier.title()}** in **{interaction.guild.name}**! {'(Permanent)' if days == 0 else f'Expires in {days} days.'}")
+            await member.send(f"👑 You've been granted **{tier.title()}** in **{interaction.guild.name}**!")
         except: pass
-        await interaction.response.send_message(f"✅ Granted **{tier.title()}** to {member.mention}. {'Permanent' if days == 0 else f'Expires in {days} days.'}", ephemeral=True)
+        await interaction.response.send_message(f"✅ Granted **{tier.title()}** to {member.mention}.", ephemeral=True)
     else:
         if member.id not in premium_data:
             return await interaction.response.send_message(f"❌ **{member}** doesn't have premium.", ephemeral=True)
@@ -3106,7 +3290,7 @@ async def slash_premium(interaction: discord.Interaction, member: discord.Member
         await interaction.response.send_message(f"✅ Revoked **{old_tier.title()}** from {member.mention}.", ephemeral=True)
 
 # ============================================================
-# NEW SLASH COMMANDS — ECONOMY MENU
+# ECONOMY MENU
 # ============================================================
 class EconomyMenuView(View):
     def __init__(self, user: discord.Member):
@@ -3130,8 +3314,6 @@ class EconomyMenuView(View):
             h, rem = divmod(int(diff), 3600); m = rem // 60
             return await interaction.response.send_message(f"⏰ Come back in **{h}h {m}m**.", ephemeral=True)
         amt = random.randint(200, 500)
-        if interaction.user.id in roblox_links and roblox_links[interaction.user.id].get("verified"):
-            amt += random.randint(50, 100)
         eco["balance"] += amt; eco["total_earned"] += amt
         eco["last_daily"] = now.isoformat()
         await interaction.response.send_message(f"✅ Claimed **{amt:,} coins!** 💰", ephemeral=True)
@@ -3170,9 +3352,9 @@ class EconomyMenuView(View):
 
     @discord.ui.button(label="🎰 Slots", style=discord.ButtonStyle.secondary, row=1)
     async def slots_btn(self, interaction, button):
-        eco = get_economy(interaction.user.id, str(interaction.user))
-        syms = ["🍒", "🍋", "🍇", "⭐", "💎", "🎰"]; bet = 50
+        eco = get_economy(interaction.user.id, str(interaction.user)); bet = 50
         if eco["balance"] < bet: return await interaction.response.send_message(f"❌ Need at least {bet} coins.", ephemeral=True)
+        syms = ["🍒", "🍋", "🍇", "⭐", "💎", "🎰"]
         r = [random.choice(syms) for _ in range(3)]
         if r[0] == r[1] == r[2]:
             win = bet * (10 if r[0] == "💎" else 5); eco["balance"] += win - bet; eco["total_earned"] += win - bet; result = f"🎉 JACKPOT! Won **{win:,}**!"
@@ -3213,6 +3395,7 @@ class EconomyMenuView(View):
 @tree.command(name="economy-menu", description="All economy actions in one place")
 @app_commands.describe(member="Member to view (defaults to you)")
 async def slash_economy_menu(interaction: discord.Interaction, member: discord.Member = None):
+    if not await require_group(interaction): return
     target = member or interaction.user
     eco = get_economy(target.id, str(target))
     lv_data = xp_data.get(target.id, {"xp": 0})
@@ -3230,7 +3413,7 @@ async def slash_economy_menu(interaction: discord.Interaction, member: discord.M
     await interaction.response.send_message(embed=embed, view=EconomyMenuView(target), ephemeral=True)
 
 # ============================================================
-# NEW SLASH COMMANDS — MOD TOOLS MENU
+# MOD TOOLS MENU
 # ============================================================
 class ModToolsSelect(Select):
     def __init__(self):
@@ -3252,7 +3435,6 @@ class ModToolsSelect(Select):
             return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
         val = self.values[0]
         embed = discord.Embed(color=0x5865F2)
-
         if val == "overview":
             g = interaction.guild
             bots = sum(1 for m in g.members if m.bot)
@@ -3272,135 +3454,171 @@ class ModToolsSelect(Select):
             if mod_log_data:
                 lines = [f"**{m['action']}** → {m['target']} *by {m['by'].split('#')[0]}* · {m['time']}" for m in mod_log_data[:10]]
                 embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{len(mod_log_data)} total actions")
             else: embed.description = "No mod actions yet."
         elif val == "warnings":
             embed.title = "⚠️ Members with Warnings"
             if warnings_data:
-                lines = [f"`{uid}` — **{len(wlist)}** warn(s) · Last: {wlist[-1]['reason'][:40]}" for uid, wlist in sorted(warnings_data.items(), key=lambda x: len(x[1]), reverse=True)[:15]]
+                lines = [f"`{uid}` — **{len(wlist)}** warn(s)" for uid, wlist in sorted(warnings_data.items(), key=lambda x: len(x[1]), reverse=True)[:15]]
                 embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{len(warnings_data)} warned users total")
-            else: embed.description = "✅ No warnings on record."
+            else: embed.description = "✅ No warnings."
         elif val == "notes":
             embed.title = "📝 Staff Notes Summary"
-            if notes_data:
-                total = sum(len(v) for v in notes_data.values())
-                lines = [f"`{uid}` — **{len(nlist)}** note(s)" for uid, nlist in list(notes_data.items())[:15]]
-                embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{total} total notes across {len(notes_data)} members")
-            else: embed.description = "No notes yet."
+            total = sum(len(v) for v in notes_data.values())
+            embed.description = f"{total} total notes across {len(notes_data)} members." if notes_data else "No notes yet."
         elif val == "tickets":
             embed.title = "🎫 Open Tickets"
             open_tickets = [(ch, t) for ch, t in ticket_data.items() if t.get("status") == "open"]
             if open_tickets:
                 lines = [f"**{t['user_name'].split('#')[0]}** — {t['reason'][:50]} · {t['created']}" for _, t in open_tickets[:15]]
                 embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{len(open_tickets)} open tickets")
             else: embed.description = "✅ No open tickets."
         elif val == "bugs":
             embed.title = "🐛 Bug Reports"
             if bug_reports_data:
-                lines = [f"**{b['id']}** [{b['severity']}] — {b['title'][:50]} · *{b['status']}*" for b in bug_reports_data[:15]]
+                lines = [f"**{b['id']}** [{b['severity']}] — {b['title'][:50]}" for b in bug_reports_data[:15]]
                 embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{len(bug_reports_data)} total reports")
             else: embed.description = "No bug reports yet."
         elif val == "automod":
             embed.title = "🤖 AutoMod Word Filter"
             words = automod_data.get(str(interaction.guild.id), [])
             embed.description = " · ".join(f"`{w}`" for w in words) if words else "No words in filter."
-            if words: embed.set_footer(text=f"{len(words)} banned word(s)")
         elif val == "premium":
             embed.title = "👑 Premium Members"
             if premium_data:
-                lines = [f"`{uid}` — **{d['tier'].title()}** · by {d.get('granted_by','?').split('#')[0]} · expires {d['expires'][:10] if d['expires'] != 'permanent' else 'Never'}" for uid, d in list(premium_data.items())[:15]]
+                lines = [
+                    f"`{uid}` — **{d['tier'].title()}** · by {d.get('granted_by','?').split('#')[0]} · "
+                    f"expires {d['expires'][:10] if d['expires'] != 'permanent' else 'Never'}"
+                    for uid, d in list(premium_data.items())[:15]
+                ]
                 embed.description = "\n".join(lines)
                 embed.set_footer(text=f"{len(premium_data)} premium members")
-            else: embed.description = "No premium members yet."
+            else:
+                embed.description = "No premium members yet."
         elif val == "roblox":
             embed.title = "🎮 Roblox Linked Accounts"
             if roblox_links:
-                lines = [f"**{v.get('display', v['username'])}** (@{v['username']}) → {v.get('discord_name','?').split('#')[0]} {'✅' if v.get('verified') else '🔗'}" for v in list(roblox_links.values())[:15]]
+                lines = [
+                    f"**{v.get('display', v['username'])}** (@{v['username']}) → "
+                    f"{v.get('discord_name','?').split('#')[0]} {'✅' if v.get('verified') else '🔗'}"
+                    for v in list(roblox_links.values())[:15]
+                ]
                 embed.description = "\n".join(lines)
-                embed.set_footer(text=f"{len(roblox_links)} linked · {sum(1 for v in roblox_links.values() if v.get('verified'))} verified")
-            else: embed.description = "No Roblox accounts linked yet."
+                embed.set_footer(
+                    text=f"{len(roblox_links)} linked · "
+                         f"{sum(1 for v in roblox_links.values() if v.get('verified'))} verified"
+                )
+            else:
+                embed.description = "No Roblox accounts linked yet."
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 class ModToolsView(View):
     def __init__(self):
         super().__init__(timeout=180)
         self.add_item(ModToolsSelect())
 
+
 @tree.command(name="mod-tools", description="Staff data viewer — warnings, notes, bugs, tickets & more [Staff]")
 async def slash_mod_tools(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.kick_members:
         return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
-    embed = discord.Embed(title="🛠️ Staff Data Viewer", description="Use the dropdown to quickly view any section of server data.", color=0x5865F2)
-    embed.add_field(name="Available Views", value="📊 Overview · 📜 Mod Logs · ⚠️ Warnings · 📝 Notes\n🎫 Tickets · 🐛 Bugs · 🤖 AutoMod · 👑 Premium · 🎮 Roblox", inline=False)
+    if not await require_group(interaction):
+        return
+    embed = discord.Embed(
+        title="🛠️ Staff Data Viewer",
+        description="Use the dropdown to quickly view any section of server data.",
+        color=0x5865F2,
+    )
+    embed.add_field(
+        name="Available Views",
+        value="📊 Overview · 📜 Mod Logs · ⚠️ Warnings · 📝 Notes\n🎫 Tickets · 🐛 Bugs · 🤖 AutoMod · 👑 Premium · 🎮 Roblox",
+        inline=False,
+    )
     embed.set_footer(text="For full details visit the dashboard")
     await interaction.response.send_message(embed=embed, view=ModToolsView(), ephemeral=True)
 
+
 # ============================================================
-# NEW SLASH COMMANDS — SERVER MENU
+# SLASH — SERVER MENU
 # ============================================================
 class ServerMenuSelect(Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="🏠 Server Info", value="server", emoji="🏠"),
-            discord.SelectOption(label="👥 Member Count", value="members", emoji="👥"),
-            discord.SelectOption(label="🆕 Newest Members", value="new", emoji="🆕"),
-            discord.SelectOption(label="👮 Staff List", value="staff", emoji="👮"),
-            discord.SelectOption(label="📢 Channels List", value="channels", emoji="📢"),
-            discord.SelectOption(label="🎭 Roles List", value="roles", emoji="🎭"),
-            discord.SelectOption(label="⚙️ Bot Config", value="config", emoji="⚙️"),
-            discord.SelectOption(label="🏓 Bot Status", value="ping", emoji="🏓"),
+            discord.SelectOption(label="🏠 Server Info",      value="server",   emoji="🏠"),
+            discord.SelectOption(label="👥 Member Count",     value="members",  emoji="👥"),
+            discord.SelectOption(label="🆕 Newest Members",   value="new",      emoji="🆕"),
+            discord.SelectOption(label="👮 Staff List",       value="staff",    emoji="👮"),
+            discord.SelectOption(label="📢 Channels List",    value="channels", emoji="📢"),
+            discord.SelectOption(label="🎭 Roles List",       value="roles",    emoji="🎭"),
+            discord.SelectOption(label="⚙️ Bot Config",       value="config",   emoji="⚙️"),
+            discord.SelectOption(label="🏓 Bot Status",       value="ping",     emoji="🏓"),
         ]
         super().__init__(placeholder="Select a server view…", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         val = self.values[0]
-        g = interaction.guild
+        g   = interaction.guild
         embed = discord.Embed(color=0x5865F2)
 
         if val == "server":
             embed.title = f"🏠 {g.name}"
-            embed.add_field(name="Owner", value=str(g.owner))
-            embed.add_field(name="Members", value=str(g.member_count))
+            embed.add_field(name="Owner",    value=str(g.owner))
+            embed.add_field(name="Members",  value=str(g.member_count))
             embed.add_field(name="Channels", value=str(len(g.channels)))
-            embed.add_field(name="Roles", value=str(len(g.roles)))
-            embed.add_field(name="Created", value=g.created_at.strftime("%d %b %Y"))
-            embed.add_field(name="Boosts", value=str(g.premium_subscription_count))
-            if g.icon: embed.set_thumbnail(url=g.icon.url)
+            embed.add_field(name="Roles",    value=str(len(g.roles)))
+            embed.add_field(name="Created",  value=g.created_at.strftime("%d %b %Y"))
+            embed.add_field(name="Boosts",   value=str(g.premium_subscription_count))
+            if g.icon:
+                embed.set_thumbnail(url=g.icon.url)
+
         elif val == "members":
-            bots = sum(1 for m in g.members if m.bot)
+            bots   = sum(1 for m in g.members if m.bot)
             online = sum(1 for m in g.members if m.status != discord.Status.offline and not m.bot)
             embed.title = f"👥 {g.name} — Members"
-            embed.add_field(name="Total", value=f"`{g.member_count}`")
+            embed.add_field(name="Total",  value=f"`{g.member_count}`")
             embed.add_field(name="Humans", value=f"`{g.member_count - bots}`")
-            embed.add_field(name="Bots", value=f"`{bots}`")
+            embed.add_field(name="Bots",   value=f"`{bots}`")
             embed.add_field(name="Online", value=f"`{online}`")
+
         elif val == "new":
-            recents = sorted([m for m in g.members if not m.bot], key=lambda m: m.joined_at or datetime.min, reverse=True)[:10]
+            recents = sorted(
+                [m for m in g.members if not m.bot],
+                key=lambda m: m.joined_at or datetime.min,
+                reverse=True,
+            )[:10]
             embed.title = "🆕 Newest Members"
-            embed.description = "\n".join(f"`{i+1}.` **{m.display_name}** — {m.joined_at.strftime('%d %b %Y') if m.joined_at else '?'}" for i, m in enumerate(recents))
+            embed.description = "\n".join(
+                f"`{i+1}.` **{m.display_name}** — {m.joined_at.strftime('%d %b %Y') if m.joined_at else '?'}"
+                for i, m in enumerate(recents)
+            )
+
         elif val == "staff":
             staff = []
             for m in g.members:
-                if m.bot: continue
-                if m.guild_permissions.administrator: staff.append((m, "🔴 Admin"))
-                elif m.guild_permissions.ban_members: staff.append((m, "🟠 Mod"))
-                elif m.guild_permissions.kick_members: staff.append((m, "🟡 Jr.Mod"))
-                elif m.guild_permissions.manage_messages: staff.append((m, "🟢 Helper"))
+                if m.bot:
+                    continue
+                if m.guild_permissions.administrator:
+                    staff.append((m, "🔴 Admin"))
+                elif m.guild_permissions.ban_members:
+                    staff.append((m, "🟠 Mod"))
+                elif m.guild_permissions.kick_members:
+                    staff.append((m, "🟡 Jr.Mod"))
+                elif m.guild_permissions.manage_messages:
+                    staff.append((m, "🟢 Helper"))
             embed.title = "👮 Staff List"
             embed.description = "\n".join(f"{r} **{m.display_name}**" for m, r in staff[:25]) or "No staff found."
+
         elif val == "channels":
             text = [c for c in g.channels if isinstance(c, discord.TextChannel)][:20]
             embed.title = "📢 Text Channels"
             embed.description = " · ".join(c.mention for c in text)
+
         elif val == "roles":
             roles = [r for r in g.roles if r.name != "@everyone"][-20:]
             embed.title = "🎭 Roles"
             embed.description = " · ".join(r.mention for r in reversed(roles))
+
         elif val == "config":
             if not interaction.user.guild_permissions.administrator:
                 return await interaction.response.send_message("❌ Admin only.", ephemeral=True)
@@ -3409,35 +3627,51 @@ class ServerMenuSelect(Select):
             if config:
                 for key, value in list(config.items())[:15]:
                     obj = g.get_role(value) or g.get_channel(value)
-                    embed.add_field(name=key.replace("_", " ").title(), value=obj.mention if obj else str(value), inline=True)
-            else: embed.description = "No config yet. Use `/config` to set up."
+                    embed.add_field(
+                        name=key.replace("_", " ").title(),
+                        value=obj.mention if obj else str(value),
+                        inline=True,
+                    )
+            else:
+                embed.description = "No config yet. Use `/config` to set up."
+
         elif val == "ping":
             ws = round(bot.latency * 1000)
             embed.title = "🏓 Bot Status"
             embed.add_field(name="WebSocket", value=f"`{ws}ms`")
-            embed.add_field(name="Uptime", value=f"`{uptime_str() or '—'}`")
-            embed.add_field(name="Servers", value=f"`{len(bot.guilds)}`")
-            embed.add_field(name="XP Users", value=f"`{len(xp_data)}`")
+            embed.add_field(name="Uptime",    value=f"`{uptime_str() or '—'}`")
+            embed.add_field(name="Servers",   value=f"`{len(bot.guilds)}`")
+            embed.add_field(name="XP Users",  value=f"`{len(xp_data)}`")
             embed.add_field(name="Eco Users", value=f"`{len(economy_data)}`")
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 class ServerMenuView(View):
     def __init__(self):
         super().__init__(timeout=180)
         self.add_item(ServerMenuSelect())
 
+
 @tree.command(name="server-menu", description="Server info, member stats, roles, config & more")
 async def slash_server_menu(interaction: discord.Interaction):
-    embed = discord.Embed(title=f"🏠 {interaction.guild.name}", description="Browse server information using the dropdown below.", color=0x5865F2)
-    if interaction.guild.icon: embed.set_thumbnail(url=interaction.guild.icon.url)
-    embed.add_field(name="Members", value=str(interaction.guild.member_count), inline=True)
+    if not await require_group(interaction):
+        return
+    embed = discord.Embed(
+        title=f"🏠 {interaction.guild.name}",
+        description="Browse server information using the dropdown below.",
+        color=0x5865F2,
+    )
+    if interaction.guild.icon:
+        embed.set_thumbnail(url=interaction.guild.icon.url)
+    embed.add_field(name="Members",  value=str(interaction.guild.member_count), inline=True)
     embed.add_field(name="Channels", value=str(len(interaction.guild.channels)), inline=True)
-    embed.add_field(name="Roles", value=str(len(interaction.guild.roles)), inline=True)
+    embed.add_field(name="Roles",    value=str(len(interaction.guild.roles)),    inline=True)
     await interaction.response.send_message(embed=embed, view=ServerMenuView(), ephemeral=True)
 
+
 # ============================================================
-# NEW SLASH COMMANDS — MEMBER INFO
+# SLASH — MEMBER INFO
 # ============================================================
 class MemberInfoView(View):
     def __init__(self, member: discord.Member):
@@ -3446,45 +3680,70 @@ class MemberInfoView(View):
 
     @discord.ui.button(label="📊 Full Stats", style=discord.ButtonStyle.primary, row=0)
     async def stats_btn(self, interaction, button):
-        m = self.member
+        m  = self.member
         xd = xp_data.get(m.id, {})
         ed = economy_data.get(m.id, {})
         rb = roblox_links.get(m.id)
         embed = discord.Embed(title=f"📊 {m.display_name} — Full Stats", color=m.color)
         embed.set_thumbnail(url=m.display_avatar.url)
-        embed.add_field(name="🏅 Level", value=str(get_level(xd.get("xp", 0))))
-        embed.add_field(name="✨ XP", value=str(xd.get("xp", 0)))
-        embed.add_field(name="💬 Messages", value=str(xd.get("messages", 0)))
-        embed.add_field(name="💰 Balance", value=f"{ed.get('balance', 0):,} coins")
-        embed.add_field(name="📈 Total Earned", value=f"{ed.get('total_earned', 0):,}")
-        embed.add_field(name="⚠️ Warnings", value=str(len(warnings_data.get(m.id, []))))
-        embed.add_field(name="📝 Notes", value=str(len(notes_data.get(str(m.id), []))))
-        embed.add_field(name="🎮 Roblox", value=f"@{rb['username']} {'✅' if rb.get('verified') else '🔗'}" if rb else "Not linked")
-        embed.add_field(name="👑 Premium", value=premium_data[m.id]["tier"].title() if m.id in premium_data else "None")
+        embed.add_field(name="🏅 Level",       value=str(get_level(xd.get("xp", 0))))
+        embed.add_field(name="✨ XP",          value=str(xd.get("xp", 0)))
+        embed.add_field(name="💬 Messages",    value=str(xd.get("messages", 0)))
+        embed.add_field(name="💰 Balance",     value=f"{ed.get('balance', 0):,} coins")
+        embed.add_field(name="📈 Total Earned",value=f"{ed.get('total_earned', 0):,}")
+        embed.add_field(name="⚠️ Warnings",    value=str(len(warnings_data.get(m.id, []))))
+        embed.add_field(name="📝 Notes",       value=str(len(notes_data.get(str(m.id), []))))
+        embed.add_field(
+            name="🎮 Roblox",
+            value=f"@{rb['username']} {'✅' if rb.get('verified') else '🔗'}" if rb else "Not linked",
+        )
+        embed.add_field(
+            name="👑 Premium",
+            value=premium_data[m.id]["tier"].title() if m.id in premium_data else "None",
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="🛠️ Mod Menu", style=discord.ButtonStyle.danger, row=0)
     async def mod_btn(self, interaction, button):
         if not interaction.user.guild_permissions.kick_members:
             return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
-        await interaction.response.send_message(f"Opening mod panel for **{self.member.display_name}**…", view=ModMenuView(self.member), ephemeral=True)
+        await interaction.response.send_message(
+            f"Opening mod panel for **{self.member.display_name}**…",
+            view=ModMenuView(self.member),
+            ephemeral=True,
+        )
 
     @discord.ui.button(label="🎮 Roblox Profile", style=discord.ButtonStyle.blurple, row=0)
     async def roblox_btn(self, interaction, button):
         rb = roblox_links.get(self.member.id)
-        if not rb: return await interaction.response.send_message(f"❌ **{self.member.display_name}** hasn't linked Roblox.", ephemeral=True)
-        embed = discord.Embed(title=f"🎮 {rb['display']} (@{rb['username']})", url=f"https://www.roblox.com/users/{rb['roblox_id']}/profile", color=0x00B2FF)
-        embed.add_field(name="ID", value=str(rb["roblox_id"]))
+        if not rb:
+            return await interaction.response.send_message(
+                f"❌ **{self.member.display_name}** hasn't linked Roblox.", ephemeral=True
+            )
+        embed = discord.Embed(
+            title=f"🎮 {rb['display']} (@{rb['username']})",
+            url=f"https://www.roblox.com/users/{rb['roblox_id']}/profile",
+            color=0x00B2FF,
+        )
+        embed.add_field(name="ID",       value=str(rb["roblox_id"]))
         embed.add_field(name="Verified", value="✅ Yes" if rb.get("verified") else "🔗 Manual")
-        embed.add_field(name="Linked", value=rb.get("linked_at", "—"))
-        if rb.get("thumb"): embed.set_thumbnail(url=rb["thumb"])
+        embed.add_field(name="Linked",   value=rb.get("linked_at", "—"))
+        if rb.get("thumb"):
+            embed.set_thumbnail(url=rb["thumb"])
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="⚠️ Warning History", style=discord.ButtonStyle.secondary, row=1)
     async def warn_btn(self, interaction, button):
         warns = warnings_data.get(self.member.id, [])
         embed = discord.Embed(title=f"⚠️ Warnings — {self.member.display_name}", color=0xFAA61A)
-        embed.description = "\n".join(f"**#{i+1}** {w['reason']} *— by {w['by'].split('#')[0]}, {w['time'][:10]}*" for i, w in enumerate(warns)) if warns else "✅ No warnings."
+        embed.description = (
+            "\n".join(
+                f"**#{i+1}** {w['reason']} *— by {w['by'].split('#')[0]}, {w['time'][:10]}*"
+                for i, w in enumerate(warns)
+            )
+            if warns
+            else "✅ No warnings."
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="📝 Staff Notes", style=discord.ButtonStyle.secondary, row=1)
@@ -3493,7 +3752,14 @@ class MemberInfoView(View):
             return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
         nlist = notes_data.get(str(self.member.id), [])
         embed = discord.Embed(title=f"📝 Notes — {self.member.display_name}", color=0x5865F2)
-        embed.description = "\n".join(f"**#{i+1}** {n['note']} *— {n['by'].split('#')[0]}, {n['time']}*" for i, n in enumerate(nlist)) if nlist else "No notes."
+        embed.description = (
+            "\n".join(
+                f"**#{i+1}** {n['note']} *— {n['by'].split('#')[0]}, {n['time']}*"
+                for i, n in enumerate(nlist)
+            )
+            if nlist
+            else "No notes."
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="🗓️ Account Details", style=discord.ButtonStyle.secondary, row=1)
@@ -3501,31 +3767,51 @@ class MemberInfoView(View):
         m = self.member
         embed = discord.Embed(title=f"🗓️ Account — {m}", color=m.color)
         embed.set_thumbnail(url=m.display_avatar.url)
-        embed.add_field(name="Discord ID", value=f"`{m.id}`")
-        embed.add_field(name="Joined Server", value=m.joined_at.strftime("%d %b %Y %H:%M") if m.joined_at else "?")
+        embed.add_field(name="Discord ID",      value=f"`{m.id}`")
+        embed.add_field(name="Joined Server",   value=m.joined_at.strftime("%d %b %Y %H:%M") if m.joined_at else "?")
         embed.add_field(name="Account Created", value=m.created_at.strftime("%d %b %Y %H:%M"))
-        embed.add_field(name="Top Role", value=m.top_role.mention)
-        embed.add_field(name="Roles", value=str(len(m.roles) - 1))
-        embed.add_field(name="Timed Out?", value="⏰ Yes" if m.is_timed_out() else "✅ No")
+        embed.add_field(name="Top Role",        value=m.top_role.mention)
+        embed.add_field(name="Roles",           value=str(len(m.roles) - 1))
+        embed.add_field(name="Timed Out?",      value="⏰ Yes" if m.is_timed_out() else "✅ No")
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 @tree.command(name="member-info", description="Full member info with stats, mod tools, Roblox & history")
 @app_commands.describe(member="Member to inspect (defaults to you)")
 async def slash_member_info(interaction: discord.Interaction, member: discord.Member = None):
-    m = member or interaction.user
+    if not await require_group(interaction):
+        return
+    m  = member or interaction.user
     xd = xp_data.get(m.id, {})
     ed = economy_data.get(m.id, {})
     rb = roblox_links.get(m.id)
-    embed = discord.Embed(title=f"👤 {m.display_name}", description=f"{m.mention} · `{m.id}`", color=m.color or 0x5865F2)
+    embed = discord.Embed(
+        title=f"👤 {m.display_name}",
+        description=f"{m.mention} · `{m.id}`",
+        color=m.color or 0x5865F2,
+    )
     embed.set_thumbnail(url=m.display_avatar.url)
-    embed.add_field(name="🏅 Level", value=f"`{get_level(xd.get('xp', 0))}`", inline=True)
-    embed.add_field(name="💰 Coins", value=f"`{ed.get('balance', 0):,}`", inline=True)
-    embed.add_field(name="⚠️ Warns", value=f"`{len(warnings_data.get(m.id, []))}`", inline=True)
-    embed.add_field(name="🎮 Roblox", value=f"@{rb['username']} {'✅' if rb.get('verified') else '🔗'}" if rb else "Not linked", inline=True)
-    embed.add_field(name="👑 Premium", value=premium_data[m.id]["tier"].title() if m.id in premium_data else "None", inline=True)
-    embed.add_field(name="📅 Joined", value=m.joined_at.strftime("%d %b %Y") if m.joined_at else "?", inline=True)
+    embed.add_field(name="🏅 Level",  value=f"`{get_level(xd.get('xp', 0))}`",    inline=True)
+    embed.add_field(name="💰 Coins",  value=f"`{ed.get('balance', 0):,}`",         inline=True)
+    embed.add_field(name="⚠️ Warns",  value=f"`{len(warnings_data.get(m.id, []))}`", inline=True)
+    embed.add_field(
+        name="🎮 Roblox",
+        value=f"@{rb['username']} {'✅' if rb.get('verified') else '🔗'}" if rb else "Not linked",
+        inline=True,
+    )
+    embed.add_field(
+        name="👑 Premium",
+        value=premium_data[m.id]["tier"].title() if m.id in premium_data else "None",
+        inline=True,
+    )
+    embed.add_field(
+        name="📅 Joined",
+        value=m.joined_at.strftime("%d %b %Y") if m.joined_at else "?",
+        inline=True,
+    )
     embed.set_footer(text="Use the buttons below to explore more")
     await interaction.response.send_message(embed=embed, view=MemberInfoView(m), ephemeral=True)
+
 
 # ============================================================
 # SLASH — AUTOMOD PANEL
@@ -3539,18 +3825,26 @@ class AutoModConfigView(View):
     async def view_settings(self, interaction, button):
         words = automod_data.get(str(self.guild_id), [])
         embed = discord.Embed(title="🤖 AutoMod Settings", color=0x6C63FF)
-        embed.add_field(name="🔗 Link Blocking",   value="✅ Active",                                     inline=True)
-        embed.add_field(name="💌 Invite Blocking", value="✅ Active",                                     inline=True)
+        embed.add_field(name="🔗 Link Blocking",   value="✅ Active",                                          inline=True)
+        embed.add_field(name="💌 Invite Blocking", value="✅ Active",                                          inline=True)
         embed.add_field(name="⚡ Spam",            value=f"✅ {automod_spam_threshold}msg/{automod_spam_window}s", inline=True)
-        embed.add_field(name="🔁 Duplicate",       value=f"✅ ×{automod_duplicate_count} same msg",       inline=True)
-        embed.add_field(name="📢 Mass Mention",    value=f"✅ >{automod_mention_limit} pings",            inline=True)
-        embed.add_field(name="😂 Emoji Spam",      value=f"✅ >{automod_emoji_limit} emojis",             inline=True)
-        embed.add_field(name="🔠 Caps Spam",       value=f"✅ >{int(automod_caps_threshold*100)}% caps",  inline=True)
-        embed.add_field(name="📜 Wall of Text",    value=f"✅ >{automod_newline_limit} newlines",         inline=True)
-        embed.add_field(name="🚫 Banned Words",    value=f"**{len(words)}** words" if words else "None",  inline=True)
-        embed.add_field(name="📈 Escalation",
-            value="**×1** Alert + DM\n**×2** Final warning + DM\n**×3** Mute 10min + Log\n**Post-mute ×3** Kick\n**Rejoin + ×3** Permanent Ban",
-            inline=False)
+        embed.add_field(name="🔁 Duplicate",       value=f"✅ ×{automod_duplicate_count} same msg",            inline=True)
+        embed.add_field(name="📢 Mass Mention",    value=f"✅ >{automod_mention_limit} pings",                 inline=True)
+        embed.add_field(name="😂 Emoji Spam",      value=f"✅ >{automod_emoji_limit} emojis",                  inline=True)
+        embed.add_field(name="🔠 Caps Spam",       value=f"✅ >{int(automod_caps_threshold*100)}% caps",       inline=True)
+        embed.add_field(name="📜 Wall of Text",    value=f"✅ >{automod_newline_limit} newlines",              inline=True)
+        embed.add_field(name="🚫 Banned Words",    value=f"**{len(words)}** words" if words else "None",       inline=True)
+        embed.add_field(
+            name="📈 Escalation",
+            value=(
+                "**×1** Alert + DM\n"
+                "**×2** Final warning + DM\n"
+                "**×3** Mute 10min + Log\n"
+                "**Post-mute ×3** Kick\n"
+                "**Rejoin + ×3** Permanent Ban"
+            ),
+            inline=False,
+        )
         embed.set_footer(text="Admins and Manage Messages are exempt")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -3566,7 +3860,9 @@ class AutoModConfigView(View):
         for uid, inf in top:
             m = interaction.guild.get_member(uid)
             name = m.display_name if m else f"User {uid}"
-            lines.append(f"**{name}** — ⚠️ {inf['warns']} · 🦶 {inf['kicks']} kicks {'🔇' if inf['muted'] else ''}")
+            lines.append(
+                f"**{name}** — ⚠️ {inf['warns']} · 🦶 {inf['kicks']} kicks {'🔇' if inf['muted'] else ''}"
+            )
         embed.description = "\n".join(lines)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -3574,8 +3870,14 @@ class AutoModConfigView(View):
     async def clear_member(self, interaction, button):
         if not interaction.user.guild_permissions.kick_members:
             return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
+
         class ClearModal(Modal, title="🧹 Clear AutoMod Strikes"):
-            uid_input = TextInput(label="Member ID or Username", placeholder="e.g. 123456789 or PlayerName", max_length=50)
+            uid_input = TextInput(
+                label="Member ID or Username",
+                placeholder="e.g. 123456789 or PlayerName",
+                max_length=50,
+            )
+
             async def on_submit(self2, i2):
                 val = self2.uid_input.value.strip()
                 if val.isdigit():
@@ -3583,15 +3885,24 @@ class AutoModConfigView(View):
                     target = i2.guild.get_member(tid)
                     if not target:
                         automod_infractions.pop(tid, None)
-                        return await i2.response.send_message(f"✅ Cleared strikes for ID `{tid}`.", ephemeral=True)
+                        return await i2.response.send_message(
+                            f"✅ Cleared strikes for ID `{tid}`.", ephemeral=True
+                        )
                 else:
-                    target = discord.utils.find(lambda m: val.lower() in m.name.lower() or val.lower() in m.display_name.lower(), i2.guild.members)
+                    target = discord.utils.find(
+                        lambda m: val.lower() in m.name.lower() or val.lower() in m.display_name.lower(),
+                        i2.guild.members,
+                    )
                 if not target:
                     return await i2.response.send_message("❌ Member not found.", ephemeral=True)
                 automod_infractions.pop(target.id, None)
                 automod_duplicate_times.pop(target.id, None)
-                if target.id in automod_message_times: automod_message_times[target.id].clear()
-                await i2.response.send_message(f"✅ Strikes cleared for **{target.display_name}**.", ephemeral=True)
+                if target.id in automod_message_times:
+                    automod_message_times[target.id].clear()
+                await i2.response.send_message(
+                    f"✅ Strikes cleared for **{target.display_name}**.", ephemeral=True
+                )
+
         await interaction.response.send_modal(ClearModal())
 
     @discord.ui.button(label="🔄 Reset ALL Strikes", style=discord.ButtonStyle.danger, row=1)
@@ -3603,19 +3914,56 @@ class AutoModConfigView(View):
         automod_message_times.clear()
         await interaction.response.send_message("🔄 All AutoMod strikes cleared.", ephemeral=True)
 
+
 @tree.command(name="automod", description="AutoMod live settings, strike board & management [Staff]")
 async def slash_automod_panel(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.manage_messages:
         return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
-    words = automod_data.get(str(interaction.guild.id), [])
+    if not await require_group(interaction):
+        return
+    words        = automod_data.get(str(interaction.guild.id), [])
     muted_count  = sum(1 for inf in automod_infractions.values() if inf["muted"])
     kicked_count = sum(inf["kicks"] for inf in automod_infractions.values())
-    embed = discord.Embed(title="🤖 Advanced AutoMod", description="YBS auto-moderation is **fully active** watching all messages in real time.", color=0x6C63FF)
-    embed.add_field(name="⚡ Detects",      value="Invite links · External URLs\nMessage spam · Duplicate spam\nMass mentions · Emoji spam\nCaps spam · Wall of text\nCustom word filter", inline=True)
-    embed.add_field(name="📈 Escalation",   value="**×1** Alert + DM\n**×2** Final warning\n**×3** Mute 10min\n**Post-mute ×3** Kick\n**Rejoin + ×3** Ban",                              inline=True)
-    embed.add_field(name="📊 Live Stats",   value=f"⚠️ **{len(automod_infractions)}** tracked\n🔇 **{muted_count}** muted\n👢 **{kicked_count}** auto-kicks\n🚫 **{len(words)}** banned words", inline=True)
+    embed = discord.Embed(
+        title="🤖 Advanced AutoMod",
+        description="YBS auto-moderation is **fully active** watching all messages in real time.",
+        color=0x6C63FF,
+    )
+    embed.add_field(
+        name="⚡ Detects",
+        value=(
+            "Invite links · External URLs\n"
+            "Message spam · Duplicate spam\n"
+            "Mass mentions · Emoji spam\n"
+            "Caps spam · Wall of text\n"
+            "Custom word filter"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="📈 Escalation",
+        value=(
+            "**×1** Alert + DM\n"
+            "**×2** Final warning\n"
+            "**×3** Mute 10min\n"
+            "**Post-mute ×3** Kick\n"
+            "**Rejoin + ×3** Ban"
+        ),
+        inline=True,
+    )
+    embed.add_field(
+        name="📊 Live Stats",
+        value=(
+            f"⚠️ **{len(automod_infractions)}** tracked\n"
+            f"🔇 **{muted_count}** muted\n"
+            f"👢 **{kicked_count}** auto-kicks\n"
+            f"🚫 **{len(words)}** banned words"
+        ),
+        inline=True,
+    )
     embed.set_footer(text="Staff with Manage Messages are exempt from all AutoMod checks")
     await interaction.response.send_message(embed=embed, view=AutoModConfigView(interaction.guild.id), ephemeral=True)
+
 
 # ============================================================
 # DASHBOARD (Flask)
@@ -3623,18 +3971,29 @@ async def slash_automod_panel(interaction: discord.Interaction):
 flask_app = Flask(__name__)
 flask_app.jinja_env.globals.update(enumerate=enumerate)
 
+
 def build_xp_leaderboard():
     result = []
     for uid, d in sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True):
-        lv = get_level(d["xp"])
-        next_lv_xp = xp_for_level(lv + 1)
-        prev_lv_xp = xp_for_level(lv)
-        pct = int((d["xp"] - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
-        result.append({"uid": uid, "name": d.get("name", "Unknown"), "xp": d["xp"], "level": lv, "messages": d.get("messages", 0), "pct": pct})
+        lv          = get_level(d["xp"])
+        next_lv_xp  = xp_for_level(lv + 1)
+        prev_lv_xp  = xp_for_level(lv)
+        pct         = int((d["xp"] - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
+        result.append({
+            "uid": uid, "name": d.get("name", "Unknown"),
+            "xp": d["xp"], "level": lv,
+            "messages": d.get("messages", 0), "pct": pct,
+        })
     return result
 
+
 def build_eco_leaderboard():
-    return [{"uid": uid, "name": d.get("name", "Unknown"), "balance": d["balance"], "total_earned": d["total_earned"]} for uid, d in sorted(economy_data.items(), key=lambda x: x[1]["balance"], reverse=True)]
+    return [
+        {"uid": uid, "name": d.get("name", "Unknown"),
+         "balance": d["balance"], "total_earned": d["total_earned"]}
+        for uid, d in sorted(economy_data.items(), key=lambda x: x[1]["balance"], reverse=True)
+    ]
+
 
 def common():
     role_counts = {}
@@ -3650,38 +4009,48 @@ def common():
     recent_warns = []
     for uid, wlist in warnings_data.items():
         if wlist:
-            recent_warns.append({"user_id": uid, "count": len(wlist), "last_reason": wlist[-1].get("reason", "—")})
+            recent_warns.append({
+                "user_id": uid,
+                "count": len(wlist),
+                "last_reason": wlist[-1].get("reason", "—"),
+            })
     recent_warns.sort(key=lambda x: x["count"], reverse=True)
 
     all_member_ids = set(list(xp_data.keys()) + list(economy_data.keys()))
-    members_list = []
+    members_list   = []
     for uid in all_member_ids:
-        xd = xp_data.get(uid, {})
-        ed = economy_data.get(uid, {})
-        xp_val = xd.get("xp", 0)
-        lv = get_level(xp_val)
+        xd      = xp_data.get(uid, {})
+        ed      = economy_data.get(uid, {})
+        xp_val  = xd.get("xp", 0)
+        lv      = get_level(xp_val)
         next_lv_xp = xp_for_level(lv + 1)
         prev_lv_xp = xp_for_level(lv)
         pct = int((xp_val - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
         members_list.append({
-            "uid": uid,
-            "name": xd.get("name", ed.get("name", str(uid))),
-            "xp": xp_val, "level": lv, "pct": pct,
+            "uid":      uid,
+            "name":     xd.get("name", ed.get("name", str(uid))),
+            "xp":       xp_val, "level": lv, "pct": pct,
             "messages": xd.get("messages", 0),
-            "balance": ed.get("balance", 0),
+            "balance":  ed.get("balance", 0),
             "warnings": len(warnings_data.get(uid, [])),
         })
     members_list.sort(key=lambda x: x["xp"], reverse=True)
 
-    eco_lb = build_eco_leaderboard()
-    total_coins = sum(d["balance"] for d in economy_data.values())
-    total_earned_ever = sum(d["total_earned"] for d in economy_data.values())
-    richest = max((d["balance"] for d in economy_data.values()), default=0)
+    eco_lb            = build_eco_leaderboard()
+    total_coins       = sum(d["balance"]       for d in economy_data.values())
+    total_earned_ever = sum(d["total_earned"]  for d in economy_data.values())
+    richest           = max((d["balance"] for d in economy_data.values()), default=0)
 
     roblox_accounts = [
-        {"discord_name": v.get("discord_name", "Unknown"), "username": v["username"],
-         "display": v.get("display", v["username"]), "roblox_id": v["roblox_id"],
-         "thumb": v.get("thumb"), "linked_at": v.get("linked_at", "—"), "verified": v.get("verified", False)}
+        {
+            "discord_name": v.get("discord_name", "Unknown"),
+            "username":     v["username"],
+            "display":      v.get("display", v["username"]),
+            "roblox_id":    v["roblox_id"],
+            "thumb":        v.get("thumb"),
+            "linked_at":    v.get("linked_at", "—"),
+            "verified":     v.get("verified", False),
+        }
         for v in roblox_links.values()
     ]
 
@@ -3725,6 +4094,7 @@ def common():
         recent_warns=recent_warns[:5],
         recent_apps=list(applications_data.values())[-5:],
     )
+
 
 @flask_app.route("/")
 def dashboard_home():
@@ -3797,29 +4167,30 @@ def dashboard_premium():
 @flask_app.route("/api/stats")
 def api_stats():
     return jsonify({
-        "members": sum(g.member_count for g in bot.guilds),
-        "servers": len(bot.guilds),
-        "uptime": uptime_str(),
-        "ping": round(bot.latency * 1000),
-        "xp_users": len(xp_data),
-        "economy_users": len(economy_data),
-        "roblox_linked": len(roblox_links),
-        "verified": sum(1 for v in roblox_links.values() if v.get("verified")),
-        "applications": len(applications_data),
-        "mod_actions": len(mod_log_data),
-        "bug_reports": len(bug_reports_data),
+        "members":         sum(g.member_count for g in bot.guilds),
+        "servers":         len(bot.guilds),
+        "uptime":          uptime_str(),
+        "ping":            round(bot.latency * 1000),
+        "xp_users":        len(xp_data),
+        "economy_users":   len(economy_data),
+        "roblox_linked":   len(roblox_links),
+        "verified":        sum(1 for v in roblox_links.values() if v.get("verified")),
+        "applications":    len(applications_data),
+        "mod_actions":     len(mod_log_data),
+        "bug_reports":     len(bug_reports_data),
         "premium_members": len(premium_data),
     })
 
 @flask_app.route("/api/shutdown", methods=["POST"])
 def api_shutdown():
     global bot_shutdown_flag
-    data = request.json or {}
+    data   = request.json or {}
     secret = os.environ.get("DASHBOARD_SECRET", "changeme")
     if data.get("secret") != secret:
         return jsonify({"error": "Unauthorized"}), 403
     bot_shutdown_flag = True
     return jsonify({"status": "shutdown initiated"})
+
 
 # ============================================================
 # RUN BOTH
@@ -3829,10 +4200,8 @@ from threading import Thread
 def run_flask():
     flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
 
-# Run Flask in background
+# Run Flask in background thread
 Thread(target=run_flask, daemon=True).start()
 
-# Run bot in main thread (IMPORTANT)
+# Run bot on the main thread
 bot.run(TOKEN)
-
-flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

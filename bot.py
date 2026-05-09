@@ -3824,12 +3824,15 @@ def api_shutdown():
 # ============================================================
 # RUN BOTH
 # ============================================================
-def run_bot():
-    try:
-        bot.run(TOKEN)
-    except Exception as e:
-        print(f"Bot error: {e}")
+from threading import Thread
 
-bot_thread = threading.Thread(target=run_bot, daemon=True)
-bot_thread.start()
+def run_flask():
+    flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+# Run Flask in background
+Thread(target=run_flask, daemon=True).start()
+
+# Run bot in main thread (IMPORTANT)
+bot.run(TOKEN)
+
 flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

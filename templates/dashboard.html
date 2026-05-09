@@ -3,940 +3,1779 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YBS Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>YBS Dashboard · Young Boy Studios</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#080a0f;
-  --s1:#0d0f17;
-  --s2:#12151f;
-  --s3:#181b27;
-  --bd:#1e2235;
-  --ac:#6c63ff;
-  --ac2:#8b83ff;
-  --ac-glow:rgba(108,99,255,0.15);
-  --gn:#00d4aa;
-  --rd:#ff4d6d;
-  --yw:#ffd166;
-  --pu:#c77dff;
-  --pk:#ff79c6;
-  --cy:#00cfff;
-  --or:#ff9f43;
-  --tx:#d4d8f0;
-  --mt:#4a5068;
-  --sw:240px;
-  --radius:14px;
+/* ═══════════════════════════════════════════
+   ROOT TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg:     #07090e;
+  --s1:     #0b0d16;
+  --s2:     #10131e;
+  --s3:     #151926;
+  --bd:     rgba(255,255,255,0.055);
+  --bd2:    rgba(255,255,255,0.10);
+  --bd3:    rgba(255,255,255,0.16);
+  --ac:     #7c6fff;
+  --ac2:    #a998ff;
+  --ac-g:   rgba(124,111,255,0.10);
+  --gn:     #22d3a0;
+  --rd:     #f05d7a;
+  --yw:     #f5c842;
+  --cy:     #34c8ff;
+  --or:     #ff9040;
+  --pk:     #e879b4;
+  --tx:     #c4cae6;
+  --tx2:    #8890b0;
+  --mt:     #464e6e;
+  --sw:     228px;
+  --r:      12px;
+  --rb:     8px;
 }
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;overflow-x:hidden}
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bd);border-radius:99px}
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box }
+html, body { height:100%; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--tx); font-size:13px; overflow-x:hidden; line-height:1.5 }
+button { font-family:'DM Sans',sans-serif; cursor:pointer }
+a { text-decoration:none }
+::-webkit-scrollbar { width:3px; height:3px }
+::-webkit-scrollbar-track { background:transparent }
+::-webkit-scrollbar-thumb { background:var(--bd2); border-radius:99px }
+::selection { background:rgba(124,111,255,.3); color:#fff }
 
-/* ── Sidebar ── */
-.sb{position:fixed;top:0;left:0;bottom:0;width:var(--sw);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:100;overflow-y:auto}
-.sb-brand{padding:22px 18px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px;flex-shrink:0}
-.sb-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 0 20px var(--ac-glow)}
-.sb-title{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;line-height:1.2;letter-spacing:-.2px}
-.sb-sub{font-size:11px;color:var(--mt);margin-top:1px}
-.sb-nav{flex:1;padding:12px 10px}
-.nl{font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;padding:14px 8px 5px}
-.nl:first-child{padding-top:6px}
-.na{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;color:var(--mt);text-decoration:none;font-size:13px;font-weight:500;transition:all .18s;position:relative;margin-bottom:1px}
-.na:hover{background:var(--s2);color:var(--tx)}
-.na.on{background:linear-gradient(90deg,rgba(108,99,255,0.18),transparent);color:var(--ac);border-left:2px solid var(--ac)}
-.na .ic{font-size:15px;width:20px;text-align:center;flex-shrink:0}
-.nb{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--ac);color:#fff;min-width:20px;text-align:center}
-.nb.r{background:var(--rd)}
-.nb.g{background:var(--gn)}
-.nb.y{background:var(--yw);color:#000}
-.nb.p{background:var(--pu)}
-.nb.c{background:var(--cy);color:#000}
-.sb-foot{padding:14px;border-top:1px solid var(--bd);flex-shrink:0}
-.bot-card{background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.dot.on{background:var(--gn);box-shadow:0 0 8px var(--gn)}
-.dot.off{background:var(--rd)}
-.bn{font-size:12px;font-weight:600;color:#fff;font-family:'Syne',sans-serif}
-.bs{font-size:11px;color:var(--mt)}
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.wrap { display:flex; min-height:100vh }
+.main { flex:1; display:flex; flex-direction:column; min-width:0 }
 
-/* ── Main ── */
-.main{margin-left:var(--sw);min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:rgba(13,15,23,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);padding:16px 28px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
-.tb-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:-.3px}
-.tb-sub{font-size:12px;color:var(--mt);margin-top:1px}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.pill{background:var(--s2);border:1px solid var(--bd);padding:5px 14px;border-radius:99px;font-size:12px;color:var(--mt)}
-.pill span{color:var(--tx);font-weight:600}
-.rbtn{background:var(--s2);border:1px solid var(--bd);color:var(--mt);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:12px;transition:all .15s;font-family:'DM Sans',sans-serif}
-.rbtn:hover{border-color:var(--ac);color:var(--ac)}
-.content{padding:24px 28px;flex:1}
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+.sb {
+  width:var(--sw);
+  background:var(--s1);
+  border-right:1px solid var(--bd);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+}
 
-/* ── Notification Bell ── */
-.notif-btn{position:relative;background:var(--s2);border:1px solid var(--bd);width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--mt)}
-.notif-btn:hover{border-color:var(--ac);color:var(--ac)}
-.notif-badge{position:absolute;top:-4px;right:-4px;background:var(--rd);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;min-width:16px;text-align:center;display:none}
-.notif-badge.show{display:block}
-.notif-panel{position:fixed;top:65px;right:20px;width:340px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);z-index:200;display:none;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.notif-panel.show{display:block;animation:slideDown .2s ease}
-@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.notif-hd{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.notif-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff}
-.notif-clear{font-size:11px;color:var(--ac);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif}
-.notif-clear:hover{text-decoration:underline}
-.notif-list{max-height:320px;overflow-y:auto}
-.notif-item{display:flex;align-items:flex-start;gap:10px;padding:12px 18px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s;position:relative}
-.notif-item:hover{background:var(--s2)}
-.notif-item.read{opacity:.5}
-.notif-item:last-child{border-bottom:none}
-.notif-ic{width:32px;height:32px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.notif-txt{flex:1}
-.notif-msg{font-size:12px;color:var(--tx);font-weight:500;line-height:1.4}
-.notif-tm{font-size:11px;color:var(--mt);margin-top:2px}
-.notif-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);flex-shrink:0;margin-top:4px}
-.notif-dot.read{background:transparent}
-.notif-empty{text-align:center;padding:30px;color:var(--mt);font-size:13px}
+.sb-brand {
+  padding:18px 14px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.sb-logo {
+  width:36px; height:36px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#7c6fff,#b89aff);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  position:relative;
+}
+.sb-logo::after {
+  content:'';
+  position:absolute; inset:-1px;
+  border-radius:11px;
+  background:linear-gradient(135deg,rgba(124,111,255,.4),rgba(184,154,255,.2));
+  z-index:-1;
+}
+.sb-logo i { font-size:18px; color:#fff }
+.sb-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:#fff; letter-spacing:-.3px }
+.sb-tag { font-size:10px; color:var(--mt); margin-top:1px; letter-spacing:.2px }
 
-/* ── Stats Grid ── */
-.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
-.sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:all .2s;cursor:default}
-.sc:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
-.sc.b::before{background:linear-gradient(90deg,var(--ac),var(--ac2))}
-.sc.g::before{background:linear-gradient(90deg,var(--gn),#00ffcc)}
-.sc.r::before{background:linear-gradient(90deg,var(--rd),#ff8fa3)}
-.sc.y::before{background:linear-gradient(90deg,var(--yw),#ffe599)}
-.sc.p::before{background:linear-gradient(90deg,var(--pu),var(--pk))}
-.sc.c::before{background:linear-gradient(90deg,var(--cy),#7ae7ff)}
-.sc.k::before{background:linear-gradient(90deg,var(--pk),#ff9fd7)}
-.sc.o::before{background:linear-gradient(90deg,var(--or),#ffcc4d)}
-.s-icon{font-size:22px;margin-bottom:10px}
-.s-lbl{font-size:11px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;font-weight:600}
-.s-val{font-size:28px;font-weight:800;color:#fff;line-height:1;font-family:'Syne',sans-serif}
-.s-sub{font-size:11px;color:var(--mt);margin-top:4px}
-.s-trend{position:absolute;top:16px;right:16px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
-.s-trend.up{background:rgba(0,212,170,.15);color:var(--gn)}
-.s-trend.dn{background:rgba(255,77,109,.15);color:var(--rd)}
+.sb-nav { flex:1; padding:8px 8px; overflow-y:auto }
+.nl {
+  font-size:9px; font-weight:700; color:var(--mt);
+  text-transform:uppercase; letter-spacing:1.4px;
+  padding:14px 8px 5px;
+}
+.nl:first-child { padding-top:8px }
 
-/* ── Layout ── */
-.row2{display:grid;grid-template-columns:1fr 360px;gap:14px;margin-bottom:14px}
-.row2b{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.na {
+  display:flex; align-items:center; gap:9px;
+  padding:8px 10px; border-radius:var(--rb);
+  color:var(--tx2); border:none; background:none;
+  width:100%; text-align:left; font-size:12px; font-weight:500;
+  transition:all .15s; margin-bottom:1px; position:relative;
+}
+.na:hover { background:var(--s2); color:var(--tx) }
+.na.on {
+  background:rgba(124,111,255,.12);
+  color:var(--ac);
+}
+.na.on::before {
+  content:'';
+  position:absolute; left:0; top:6px; bottom:6px;
+  width:2px; border-radius:0 2px 2px 0;
+  background:var(--ac);
+}
+.na i { font-size:15px; width:18px; flex-shrink:0; opacity:.8 }
+.na.on i { opacity:1 }
+.na-lbl { flex:1 }
 
-/* ── Panels ── */
-.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
-.pn.mb0{margin-bottom:0}
-.ph{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.pt{font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
-.pa{font-size:12px;color:var(--ac);text-decoration:none;opacity:.8}
-.pa:hover{opacity:1;text-decoration:underline}
+.na-badge {
+  font-size:9px; font-weight:700;
+  padding:1px 6px; border-radius:99px;
+  min-width:18px; text-align:center;
+}
+.nba { background:rgba(124,111,255,.2); color:var(--ac2) }
+.nbr { background:rgba(240,93,122,.18); color:var(--rd) }
+.nbg { background:rgba(34,211,160,.15); color:var(--gn) }
+.nby { background:rgba(245,200,66,.15); color:var(--yw) }
+.nbc { background:rgba(52,200,255,.15); color:var(--cy) }
+.nbp { background:rgba(232,121,180,.15); color:var(--pk) }
 
-/* ── Activity ── */
-.al{max-height:340px;overflow-y:auto}
-.ai{display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--bd);transition:background .1s}
-.ai:last-child{border-bottom:none}
-.ai:hover{background:var(--s2)}
-.a-ic{width:32px;height:32px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1px solid var(--bd)}
-.a-txt{flex:1}
-.a-act{font-size:13px;color:var(--tx);font-weight:500}
-.a-det{font-size:11.5px;color:var(--mt);margin-top:1px}
-.a-tm{font-size:11px;color:var(--mt);white-space:nowrap;flex-shrink:0}
+.sb-foot { padding:12px; border-top:1px solid var(--bd); flex-shrink:0 }
+.bot-pill {
+  display:flex; align-items:center; gap:10px;
+  background:var(--s2); border:1px solid var(--bd);
+  border-radius:var(--r); padding:10px 12px;
+}
+.pulse {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--gn); flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(34,211,160,.5);
+  animation:pulse 2.5s infinite;
+}
+.pulse.off { background:var(--rd); box-shadow:none; animation:none }
+@keyframes pulse {
+  0%   { box-shadow:0 0 0 0 rgba(34,211,160,.5) }
+  70%  { box-shadow:0 0 0 7px rgba(34,211,160,0) }
+  100% { box-shadow:0 0 0 0 rgba(34,211,160,0) }
+}
+.bot-name { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; color:#fff }
+.bot-st { font-size:10px; color:var(--gn) }
+.bot-st.off { color:var(--rd) }
 
-/* ── Tables ── */
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{padding:11px 18px;text-align:left;font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd)}
-.tbl td{padding:11px 18px;border-bottom:1px solid var(--bd);font-size:13px}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tbody tr{transition:background .1s}
-.tbl tbody tr:hover td{background:var(--s2)}
+/* ═══════════════════════════════════════════
+   LIVE TICKER (top of sidebar above nav)
+═══════════════════════════════════════════ */
+.ticker-wrap {
+  border-bottom:1px solid var(--bd);
+  overflow:hidden;
+  height:30px;
+  display:flex;
+  align-items:center;
+  background:rgba(34,211,160,.03);
+  flex-shrink:0;
+}
+.ticker-label {
+  font-size:9px; font-weight:700; color:var(--gn);
+  text-transform:uppercase; letter-spacing:1px;
+  padding:0 10px;
+  white-space:nowrap;
+  border-right:1px solid var(--bd);
+  height:100%;
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+}
+.ticker-scroll { flex:1; overflow:hidden; position:relative; height:100% }
+.ticker-inner {
+  display:flex;
+  align-items:center;
+  height:100%;
+  white-space:nowrap;
+  animation:ticker 28s linear infinite;
+}
+.ticker-item {
+  font-size:10px;
+  color:var(--tx2);
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.ticker-item i { font-size:11px }
+@keyframes ticker {
+  0%   { transform:translateX(0) }
+  100% { transform:translateX(-50%) }
+}
 
-/* ── Badges ── */
-.bg{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
-.bb{background:rgba(108,99,255,.15);color:var(--ac)}
-.bg_{background:rgba(0,212,170,.15);color:var(--gn)}
-.br{background:rgba(255,77,109,.15);color:var(--rd)}
-.by{background:rgba(255,209,102,.15);color:var(--yw)}
-.bp{background:rgba(199,125,255,.15);color:var(--pu)}
-.bk{background:rgba(255,121,198,.15);color:var(--pk)}
-.bc{background:rgba(0,207,255,.15);color:var(--cy)}
-.bo{background:rgba(255,159,67,.15);color:var(--or)}
+/* ═══════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════ */
+.topbar {
+  background:rgba(11,13,22,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);
+  padding:13px 24px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  position:sticky; top:0; z-index:200;
+  flex-shrink:0;
+}
+.tb-crumb { display:flex; align-items:center; gap:6px }
+.tb-crumb .tbc-root { font-size:11px; color:var(--mt) }
+.tb-crumb .tbc-sep { font-size:10px; color:var(--mt) }
+.tb-crumb .tbc-page { font-size:14px; font-family:'Syne',sans-serif; font-weight:700; color:#fff; letter-spacing:-.2px }
+.tb-sub { font-size:11px; color:var(--mt); margin-left:2px }
 
-/* ── XP Bar ── */
-.xp-bar{height:5px;background:var(--bd);border-radius:99px;overflow:hidden;margin-top:5px}
-.xp-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--pu));border-radius:99px;transition:width .4s}
+.tb-right { margin-left:auto; display:flex; align-items:center; gap:8px }
+.tb-clock {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; color:var(--mt);
+  background:var(--s2); border:1px solid var(--bd);
+  padding:5px 12px; border-radius:99px;
+  letter-spacing:.5px;
+}
+.tb-btn {
+  background:var(--s2); border:1px solid var(--bd);
+  color:var(--tx2); padding:6px 12px; border-radius:var(--rb);
+  font-size:12px; display:flex; align-items:center; gap:5px;
+  transition:all .15s;
+}
+.tb-btn:hover { border-color:var(--bd2); color:var(--tx) }
+.tb-btn i { font-size:14px }
+.tb-notif-btn {
+  position:relative;
+  background:var(--s2); border:1px solid var(--bd);
+  color:var(--tx2); width:34px; height:34px;
+  border-radius:var(--rb);
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; flex-shrink:0;
+}
+.tb-notif-btn:hover { border-color:var(--bd2); color:var(--tx) }
+.tb-notif-btn.has-unread { border-color:rgba(240,93,122,.3); color:var(--rd) }
+.notif-pip {
+  position:absolute; top:-3px; right:-3px;
+  width:16px; height:16px; border-radius:50%;
+  background:var(--rd); color:#fff;
+  font-size:8px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--s1);
+  display:none;
+}
+.notif-pip.show { display:flex }
 
-/* ── Member rows ── */
-.mr{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--bd);transition:background .1s}
-.mr:last-child{border-bottom:none}
-.mr:hover{background:var(--s2)}
-.m-av{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex-shrink:0;font-family:'Syne',sans-serif}
-.m-inf{flex:1;min-width:0}
-.m-nm{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m-mt{font-size:11.5px;color:var(--mt)}
-.rank-num{width:30px;text-align:center;font-size:16px;font-weight:800;color:var(--mt);font-family:'Syne',sans-serif;flex-shrink:0}
+/* ═══════════════════════════════════════════
+   NOTIFICATION PANEL
+═══════════════════════════════════════════ */
+.notif-panel {
+  position:fixed;
+  top:58px; right:16px;
+  width:340px;
+  background:var(--s1);
+  border:1px solid var(--bd2);
+  border-radius:var(--r);
+  z-index:500;
+  box-shadow:0 24px 64px rgba(0,0,0,.7);
+  display:none;
+  overflow:hidden;
+}
+.notif-panel.open {
+  display:block;
+  animation:popIn .18s ease;
+}
+@keyframes popIn {
+  from { opacity:0; transform:translateY(-8px) scale(.98) }
+  to   { opacity:1; transform:translateY(0) scale(1) }
+}
+.notif-ph {
+  padding:13px 16px;
+  border-bottom:1px solid var(--bd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.notif-title { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:#fff }
+.notif-clear {
+  font-size:11px; color:var(--ac);
+  background:none; border:none; cursor:pointer; opacity:.7;
+}
+.notif-clear:hover { opacity:1 }
+.notif-list { max-height:380px; overflow-y:auto }
+.notif-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:11px 16px;
+  border-bottom:1px solid var(--bd);
+  cursor:pointer; transition:background .1s;
+  position:relative;
+}
+.notif-item:last-child { border-bottom:none }
+.notif-item:hover { background:var(--s2) }
+.notif-item.read { opacity:.45 }
+.ni-icon {
+  width:30px; height:30px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.ni-icon i { font-size:13px }
+.ni-body { flex:1 }
+.ni-msg { font-size:12px; color:var(--tx); font-weight:500; line-height:1.4 }
+.ni-time { font-size:10px; color:var(--mt); margin-top:2px }
+.ni-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--ac); flex-shrink:0; margin-top:5px;
+}
+.ni-dot.read { background:transparent }
+.notif-empty { text-align:center; padding:30px; color:var(--mt); font-size:12px }
 
-/* ── Chart wrapper ── */
-.cw{padding:18px 20px}
-.cw canvas{max-height:240px}
+/* ═══════════════════════════════════════════
+   CONTENT
+═══════════════════════════════════════════ */
+.content { padding:20px 24px; flex:1 }
+.content > * { animation:fadeUp .25s ease both }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(7px) }
+  to   { opacity:1; transform:translateY(0) }
+}
 
-/* ── Application cards ── */
-.afc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;transition:border-color .2s}
-.afc:hover{border-color:rgba(108,99,255,.4)}
-.afh{padding:16px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--bd)}
-.afav{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif}
-.af-name{font-size:15px;font-weight:700;color:#fff;font-family:'Syne',sans-serif}
-.af-sub{font-size:12px;color:var(--mt);margin-top:1px}
-.afb{padding:16px 20px}
-.af-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.aff label{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px;font-weight:700}
-.aff p{font-size:13px;color:var(--tx);line-height:1.5}
-.aff.full{grid-column:1/-1}
-.aff.s2{grid-column:span 2}
+/* ═══════════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════════ */
+.sg { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px }
+.sg.sg-4 { grid-template-columns:repeat(4,1fr) }
 
-/* ── Mod log ── */
-.ml-item{display:flex;align-items:flex-start;gap:14px;padding:11px 20px;border-bottom:1px solid var(--bd);transition:background .1s}
-.ml-item:last-child{border-bottom:none}
-.ml-item:hover{background:var(--s2)}
-.ml-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.ml-content{flex:1}
-.ml-action{font-size:13px;font-weight:600;color:#fff}
-.ml-meta{font-size:11.5px;color:var(--mt);margin-top:2px}
+.sc {
+  background:var(--s1);
+  border:1px solid var(--bd);
+  border-radius:var(--r);
+  padding:16px 16px 14px;
+  position:relative; overflow:hidden;
+  cursor:default; transition:all .2s;
+}
+.sc:hover { border-color:var(--bd2); transform:translateY(-1px) }
+.sc-top-bar { position:absolute; top:0; left:0; right:0; height:2px; border-radius:var(--r) var(--r) 0 0 }
+.sc-trend {
+  position:absolute; top:13px; right:13px;
+  font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:99px;
+  display:flex; align-items:center; gap:3px;
+}
+.tup { background:rgba(34,211,160,.1); color:var(--gn) }
+.tdn { background:rgba(240,93,122,.1); color:var(--rd) }
+.tne { background:rgba(255,255,255,.05); color:var(--mt) }
+.sc-icon {
+  width:30px; height:30px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:12px;
+}
+.sc-icon i { font-size:15px }
+.sc-val {
+  font-family:'Syne',sans-serif;
+  font-size:26px; font-weight:800; color:#fff;
+  letter-spacing:-.5px; line-height:1;
+}
+.sc-lbl { font-size:10px; color:var(--mt); text-transform:uppercase; letter-spacing:.7px; margin-top:4px; font-weight:600 }
 
-/* ── Notes ── */
-.note-card{background:var(--s2);border-radius:10px;padding:14px 16px;margin:10px 20px;border:1px solid var(--bd);transition:border-color .15s}
-.note-card:hover{border-color:var(--ac)}
-.note-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.note-by{font-size:12px;font-weight:600;color:var(--ac)}
-.note-time{font-size:11px;color:var(--mt)}
-.note-content{font-size:13px;color:var(--tx);line-height:1.5}
-.note-user{font-size:11px;color:var(--pu);margin-top:4px;font-weight:600}
+.spark { display:flex; align-items:flex-end; gap:2px; height:26px; margin-top:10px }
+.spark-bar {
+  flex:1; border-radius:2px 2px 0 0;
+  min-width:3px;
+  background:rgba(255,255,255,.05);
+  transition:height .3s;
+}
+.spark-bar.hi { background:currentColor }
 
-/* ── Ticket ── */
-.tc{background:var(--s2);border-radius:10px;padding:14px 16px;margin:10px 20px;border:1px solid var(--bd)}
-.tc-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.tc-title{font-size:13px;font-weight:600;color:#fff}
-.tc-body{font-size:12px;color:var(--mt)}
+/* ═══════════════════════════════════════════
+   GRID LAYOUTS
+═══════════════════════════════════════════ */
+.g2  { display:grid; grid-template-columns:1fr 300px; gap:12px; margin-bottom:12px }
+.g22 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px }
+.g3  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px }
 
-/* ── Giveaway ── */
-.gwc{background:linear-gradient(135deg,rgba(255,121,198,.08),rgba(108,99,255,.08));border-radius:10px;padding:16px 18px;margin:10px 20px;border:1px solid rgba(255,121,198,.2)}
-.gw-p{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;font-family:'Syne',sans-serif}
-.gw-m{font-size:12px;color:var(--mt)}
+/* ═══════════════════════════════════════════
+   PANELS
+═══════════════════════════════════════════ */
+.pn { background:var(--s1); border:1px solid var(--bd); border-radius:var(--r); overflow:hidden; margin-bottom:12px }
+.pn.mb0 { margin-bottom:0 }
+.ph {
+  padding:13px 18px;
+  border-bottom:1px solid var(--bd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.pt { font-family:'Syne',sans-serif; font-size:12.5px; font-weight:700; color:#fff; display:flex; align-items:center; gap:7px }
+.pt i { font-size:14px; color:var(--mt) }
+.plink {
+  font-size:11px; color:var(--ac);
+  background:none; border:none; cursor:pointer;
+  display:flex; align-items:center; gap:3px;
+  opacity:.7; transition:opacity .15s;
+}
+.plink:hover { opacity:1 }
+.plink i { font-size:11px }
 
-/* ── Word list ── */
-.wl{display:flex;flex-wrap:wrap;gap:7px;padding:16px 20px}
-.wt{background:rgba(255,77,109,.12);color:var(--rd);border:1px solid rgba(255,77,109,.2);padding:4px 10px;border-radius:7px;font-size:12px;font-weight:600}
+/* ═══════════════════════════════════════════
+   ACTIVITY FEED
+═══════════════════════════════════════════ */
+.al { max-height:360px; overflow-y:auto }
+.ai {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 18px;
+  border-bottom:1px solid var(--bd);
+  transition:background .1s;
+  position:relative;
+}
+.ai:last-child { border-bottom:none }
+.ai:hover { background:var(--s2) }
+.ai.live-row::before {
+  content:'';
+  position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--gn);
+}
+.ai-ico {
+  width:30px; height:30px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.ai-ico i { font-size:13px }
+.ai-main { flex:1; min-width:0 }
+.ai-act { font-size:12px; color:var(--tx); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ai-det { font-size:11px; color:var(--mt); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ai-time { font-size:10px; color:var(--mt); white-space:nowrap; flex-shrink:0 }
+.live-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--gn); flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(34,211,160,.5);
+  animation:livePulse 1.8s infinite;
+}
+@keyframes livePulse {
+  0%   { box-shadow:0 0 0 0 rgba(34,211,160,.5) }
+  70%  { box-shadow:0 0 0 5px rgba(34,211,160,0) }
+  100% { box-shadow:0 0 0 0 rgba(34,211,160,0) }
+}
 
-/* ── Empty ── */
-.empty{text-align:center;padding:48px 20px;color:var(--mt)}
-.empty .emi{font-size:40px;margin-bottom:12px;opacity:.6}
-.empty p{font-size:13px;line-height:1.6}
+/* New activity slide-in animation */
+@keyframes slideInRow {
+  from { background:rgba(34,211,160,.08); }
+  to   { background:transparent; }
+}
+.ai.new-event { animation:slideInRow 2s ease forwards }
 
-/* ── Voice log ── */
-.vl-item{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--bd)}
-.vl-item:last-child{border-bottom:none}
-.vl-item:hover{background:var(--s2)}
+/* ═══════════════════════════════════════════
+   XP / MEMBER ROWS
+═══════════════════════════════════════════ */
+.mr {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 18px;
+  border-bottom:1px solid var(--bd);
+  transition:background .1s;
+}
+.mr:last-child { border-bottom:none }
+.mr:hover { background:var(--s2) }
+.rk { width:26px; text-align:center; font-size:13px; font-weight:700; color:var(--mt); flex-shrink:0 }
+.av {
+  width:32px; height:32px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; color:#fff;
+  flex-shrink:0; font-family:'Syne',sans-serif;
+}
+.m-info { flex:1; min-width:0 }
+.m-name { font-size:12px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.m-sub  { font-size:10px; color:var(--mt); margin-top:1px }
+.xpb { height:3px; background:rgba(255,255,255,.06); border-radius:99px; overflow:hidden; margin-top:5px }
+.xpf { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--ac),#b89aff); transition:width .6s ease }
 
-/* ── Search ── */
-.srch{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:9px 14px;color:var(--tx);font-size:13px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
-.srch:focus{border-color:var(--ac)}
-.srch::placeholder{color:var(--mt)}
+/* ═══════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════ */
+.bg {
+  display:inline-flex; align-items:center; gap:3px;
+  padding:2px 8px; border-radius:6px;
+  font-size:10px; font-weight:700; white-space:nowrap;
+}
+.bb  { background:rgba(124,111,255,.14); color:var(--ac2) }
+.bgg { background:rgba(34,211,160,.12);  color:var(--gn) }
+.br  { background:rgba(240,93,122,.12);  color:var(--rd) }
+.by  { background:rgba(245,200,66,.12);  color:var(--yw) }
+.bc  { background:rgba(52,200,255,.12);  color:var(--cy) }
+.bp  { background:rgba(232,121,180,.12); color:var(--pk) }
+.bo  { background:rgba(255,144,64,.12);  color:var(--or) }
 
-/* ── Bug reports ── */
-.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
-.bug-card:hover{border-color:rgba(255,77,109,.3)}
-.bug-hd{padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd)}
-.bug-id{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--rd);background:rgba(255,77,109,.1);padding:3px 8px;border-radius:6px}
-.bug-title{font-size:14px;font-weight:600;color:#fff;flex:1}
-.bug-body{padding:14px 20px}
-.bug-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.bug-field label{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;font-weight:700}
-.bug-field p{font-size:13px;color:var(--tx)}
-.bug-field.full{grid-column:1/-1}
+/* ═══════════════════════════════════════════
+   TABLES
+═══════════════════════════════════════════ */
+.tbl { width:100%; border-collapse:collapse }
+.tbl th {
+  padding:9px 18px; text-align:left;
+  font-size:9px; font-weight:700; color:var(--mt);
+  text-transform:uppercase; letter-spacing:.8px;
+  background:rgba(255,255,255,.02);
+  border-bottom:1px solid var(--bd);
+}
+.tbl td { padding:9px 18px; border-bottom:1px solid var(--bd); font-size:12px }
+.tbl tr:last-child td { border-bottom:none }
+.tbl tbody tr { transition:background .1s }
+.tbl tbody tr:hover td { background:rgba(255,255,255,.02) }
+.mono { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--mt) }
 
-/* ── Economy cards ── */
-.eco-stat{background:var(--s2);border-radius:10px;padding:14px 16px;border:1px solid var(--bd);text-align:center}
-.eco-stat .val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff}
-.eco-stat .lbl{font-size:11px;color:var(--mt);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+/* ═══════════════════════════════════════════
+   MOD LOGS
+═══════════════════════════════════════════ */
+.ml {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:11px 18px;
+  border-bottom:1px solid var(--bd);
+  transition:background .1s;
+}
+.ml:last-child { border-bottom:none }
+.ml:hover { background:var(--s2) }
+.ml-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px }
+.ml-action { font-size:12px; font-weight:600; color:#fff }
+.ml-meta   { font-size:10px; color:var(--mt); margin-top:2px }
 
-/* ── Roblox cards ── */
-.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:16px}
-.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--radius);padding:18px;transition:border-color .2s}
-.roblox-card:hover{border-color:var(--cy)}
+/* ═══════════════════════════════════════════
+   CHART WRAPPERS
+═══════════════════════════════════════════ */
+.cw { padding:16px 18px }
+.cw canvas { max-height:190px }
+.cw-sm canvas { max-height:150px }
 
-/* ── Section header ── */
-.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.section-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff}
+/* ═══════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════ */
+.tabs {
+  display:flex; gap:4px; margin-bottom:12px;
+  background:var(--s1); border:1px solid var(--bd);
+  border-radius:10px; padding:4px; width:fit-content;
+}
+.tab {
+  padding:6px 16px; border-radius:7px;
+  cursor:pointer; font-size:11px; font-weight:600;
+  color:var(--mt); transition:all .15s;
+  border:none; background:none;
+}
+.tab.on { background:var(--ac); color:#fff }
+.tab:hover:not(.on) { color:var(--tx) }
 
-/* ── Footer ── */
-.foot{text-align:center;padding:14px;color:var(--mt);font-size:11px;border-top:1px solid var(--bd);background:var(--s1)}
+/* ═══════════════════════════════════════════
+   SEARCH INPUT
+═══════════════════════════════════════════ */
+.srch {
+  background:var(--s2); border:1px solid var(--bd);
+  border-radius:var(--rb); padding:8px 12px;
+  color:var(--tx); font-size:12px; width:100%;
+  outline:none; transition:border-color .15s;
+  font-family:'DM Sans',sans-serif;
+}
+.srch:focus { border-color:rgba(124,111,255,.4) }
+.srch::placeholder { color:var(--mt) }
 
-/* ── Graph tabs ── */
-.tab-bar{display:flex;gap:6px;margin-bottom:14px}
-.tab-btn{background:var(--s2);border:1px solid var(--bd);color:var(--mt);padding:7px 16px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;font-family:'DM Sans',sans-serif}
-.tab-btn.on{background:var(--ac);border-color:var(--ac);color:#fff}
-.tab-btn:hover:not(.on){border-color:var(--ac);color:var(--ac)}
+/* ═══════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════ */
+.empty { text-align:center; padding:48px 20px; color:var(--mt) }
+.empty i { font-size:42px; opacity:.25; display:block; margin-bottom:12px }
+.empty p { font-size:13px; line-height:1.7 }
+.empty code {
+  background:var(--s2); padding:2px 7px;
+  border-radius:5px; font-family:'JetBrains Mono',monospace;
+  font-size:11px; color:var(--ac);
+}
 
-/* ── Responsive ── */
-@media(max-width:1100px){.row2{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr}}
-@media(max-width:768px){.sb{transform:translateX(-100%)}.main{margin-left:0}.sg{grid-template-columns:repeat(2,1fr)}}
+/* ═══════════════════════════════════════════
+   SPECIAL CARDS
+═══════════════════════════════════════════ */
+.giveaway-card {
+  margin:10px 18px;
+  background:linear-gradient(135deg,rgba(232,121,180,.07),rgba(124,111,255,.07));
+  border:1px solid rgba(232,121,180,.18);
+  border-radius:10px; padding:14px 16px;
+}
+.gw-prize { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; margin-bottom:4px }
+.gw-meta  { font-size:11px; color:var(--mt) }
 
-/* ── Animations ── */
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.content > *{animation:fadeIn .3s ease both}
+.ticket-card {
+  margin:8px 16px;
+  background:var(--s2); border:1px solid var(--bd);
+  border-radius:10px; padding:12px 14px;
+}
+.tc-head { display:flex; align-items:center; gap:8px; margin-bottom:5px }
+.tc-id { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--gn) }
+.tc-title { font-size:12px; font-weight:600; color:#fff }
+.tc-body { font-size:11px; color:var(--mt) }
+
+.note-card {
+  margin:8px 16px;
+  background:var(--s2); border:1px solid var(--bd);
+  border-radius:10px; padding:12px 14px;
+  transition:border-color .15s;
+}
+.note-card:hover { border-color:rgba(124,111,255,.25) }
+.note-by   { font-size:11px; font-weight:600; color:var(--ac) }
+.note-time { font-size:10px; color:var(--mt) }
+.note-text { font-size:12px; color:var(--tx); line-height:1.55; margin-top:5px }
+
+.bug-card {
+  background:var(--s1); border:1px solid var(--bd);
+  border-radius:var(--r); margin-bottom:10px; overflow:hidden;
+  transition:border-color .2s;
+}
+.bug-card:hover { border-color:rgba(240,93,122,.2) }
+.bug-hd {
+  padding:13px 18px; border-bottom:1px solid var(--bd);
+  display:flex; align-items:center; gap:10px;
+}
+.bug-id { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--rd); background:rgba(240,93,122,.1); padding:2px 7px; border-radius:5px }
+.bug-title { font-size:13px; font-weight:600; color:#fff; flex:1 }
+.bug-body { padding:13px 18px }
+.bug-fields { display:grid; grid-template-columns:repeat(3,1fr); gap:10px }
+.bug-field label { font-size:9px; color:var(--mt); text-transform:uppercase; letter-spacing:.7px; display:block; margin-bottom:3px; font-weight:700 }
+.bug-field p { font-size:12px; color:var(--tx) }
+.bug-field.full { grid-column:1/-1 }
+
+/* ═══════════════════════════════════════════
+   ROBLOX GRID
+═══════════════════════════════════════════ */
+.roblox-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; margin-bottom:14px }
+.roblox-card {
+  background:var(--s1); border:1px solid var(--bd);
+  border-radius:var(--r); padding:16px;
+  transition:border-color .2s;
+}
+.roblox-card:hover { border-color:rgba(52,200,255,.25) }
+.rb-avatar {
+  width:48px; height:48px; border-radius:50%;
+  background:linear-gradient(135deg,var(--cy),var(--ac));
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.rb-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff }
+.rb-user { font-size:11px; color:var(--mt) }
+.rb-id   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--cy); margin-top:2px }
+.rb-link {
+  display:block; margin-top:12px;
+  background:rgba(52,200,255,.08);
+  border:1px solid rgba(52,200,255,.18);
+  color:var(--cy); border-radius:8px;
+  padding:7px; font-size:11px; font-weight:600;
+  text-align:center;
+  transition:background .15s;
+}
+.rb-link:hover { background:rgba(52,200,255,.15) }
+
+/* ═══════════════════════════════════════════
+   WORD FILTER
+═══════════════════════════════════════════ */
+.word-list { display:flex; flex-wrap:wrap; gap:7px; padding:16px 18px }
+.word-tag {
+  background:rgba(240,93,122,.1); color:var(--rd);
+  border:1px solid rgba(240,93,122,.18);
+  padding:3px 10px; border-radius:6px;
+  font-size:11px; font-weight:600;
+}
+
+/* ═══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+.foot {
+  text-align:center; padding:12px;
+  color:var(--mt); font-size:10px;
+  border-top:1px solid var(--bd);
+  background:var(--s1);
+  letter-spacing:.3px; flex-shrink:0;
+}
+.foot span { color:var(--ac); font-weight:600 }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width:1200px) {
+  .g2  { grid-template-columns:1fr }
+  .sg  { grid-template-columns:repeat(4,1fr) }
+}
+@media (max-width:900px) {
+  .sg  { grid-template-columns:repeat(2,1fr) }
+  .g22 { grid-template-columns:1fr }
+  .g3  { grid-template-columns:1fr 1fr }
+  :root { --sw:200px }
+}
+@media (max-width:640px) {
+  .sb  { display:none }
+  .main{ margin-left:0 }
+  .sg  { grid-template-columns:repeat(2,1fr) }
+}
+
+/* ═══════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════ */
+.mb0 { margin-bottom:0 }
+.flex-col { display:flex; flex-direction:column; gap:10px }
 </style>
 </head>
 <body>
 
-<!-- Notification Panel -->
+<!-- Notification Panel (outside wrap, fixed) -->
 <div class="notif-panel" id="notifPanel">
-  <div class="notif-hd">
-    <span class="notif-title">🔔 Notifications</span>
-    <button class="notif-clear" onclick="clearAllNotifs()">Clear all</button>
+  <div class="notif-ph">
+    <span class="notif-title">Notifications</span>
+    <button class="notif-clear" onclick="clearNotifs()">Mark all read</button>
   </div>
   <div class="notif-list" id="notifList">
     <div class="notif-empty">No notifications yet</div>
   </div>
 </div>
 
-<!-- Sidebar -->
+<div class="wrap">
+
+<!-- ═══ SIDEBAR ═══ -->
 <aside class="sb">
   <div class="sb-brand">
-    <div class="sb-logo">🎮</div>
+    <div class="sb-logo">
+      <i class="ti ti-device-gamepad-2"></i>
+    </div>
     <div>
-      <div class="sb-title">Young Boy Studios</div>
-      <div class="sb-sub">Control Panel</div>
+      <div class="sb-name">Young Boy Studios</div>
+      <div class="sb-tag">Control Panel</div>
     </div>
   </div>
+
+  <!-- Live ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-label">Live</div>
+    <div class="ticker-scroll">
+      <div class="ticker-inner" id="tickerInner">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <nav class="sb-nav">
     <div class="nl">General</div>
-    <a href="/" class="na {{ 'on' if page=='home' }}"><span class="ic">📊</span>Overview</a>
-    <a href="/activity" class="na {{ 'on' if page=='activity' }}"><span class="ic">⚡</span>Live Activity{% if activity|length %}<span class="nb">{{ [activity|length,99]|min }}</span>{% endif %}</a>
+    <button class="na on" onclick="nav('home',this)"><i class="ti ti-layout-dashboard"></i><span class="na-lbl">Overview</span></button>
+    <button class="na" onclick="nav('activity',this)"><i class="ti ti-bolt"></i><span class="na-lbl">Live Activity</span><span class="na-badge nba" id="badgeActivity">12</span></button>
 
     <div class="nl">Members</div>
-    <a href="/applications" class="na {{ 'on' if page=='applications' }}"><span class="ic">📋</span>Applications{% if app_count %}<span class="nb">{{ app_count }}</span>{% endif %}</a>
-    <a href="/warnings" class="na {{ 'on' if page=='warnings' }}"><span class="ic">⚠️</span>Warnings{% if warn_count %}<span class="nb r">{{ warn_count }}</span>{% endif %}</a>
-    <a href="/notes" class="na {{ 'on' if page=='notes' }}"><span class="ic">📝</span>Staff Notes{% if notes_count %}<span class="nb p">{{ notes_count }}</span>{% endif %}</a>
-    <a href="/members" class="na {{ 'on' if page=='members' }}"><span class="ic">👥</span>Members</a>
-    <a href="/leaderboard" class="na {{ 'on' if page=='leaderboard' }}"><span class="ic">🏆</span>Leaderboard</a>
+    <button class="na" onclick="nav('applications',this)"><i class="ti ti-file-description"></i><span class="na-lbl">Applications</span><span class="na-badge nba">3</span></button>
+    <button class="na" onclick="nav('warnings',this)"><i class="ti ti-alert-triangle"></i><span class="na-lbl">Warnings</span><span class="na-badge nbr">7</span></button>
+    <button class="na" onclick="nav('notes',this)"><i class="ti ti-notes"></i><span class="na-lbl">Staff Notes</span><span class="na-badge nbp">4</span></button>
+    <button class="na" onclick="nav('members',this)"><i class="ti ti-users"></i><span class="na-lbl">Members</span></button>
+    <button class="na" onclick="nav('leaderboard',this)"><i class="ti ti-trophy"></i><span class="na-lbl">Leaderboard</span></button>
 
     <div class="nl">Moderation</div>
-    <a href="/modlogs" class="na {{ 'on' if page=='modlogs' }}"><span class="ic">📜</span>Mod Logs{% if mod_log_count %}<span class="nb r">{{ mod_log_count }}</span>{% endif %}</a>
-    <a href="/automod" class="na {{ 'on' if page=='automod' }}"><span class="ic">🤖</span>Auto-Mod</a>
-    <a href="/tickets" class="na {{ 'on' if page=='tickets' }}"><span class="ic">🎫</span>Tickets{% if ticket_count %}<span class="nb g">{{ ticket_count }}</span>{% endif %}</a>
-    <a href="/bugs" class="na {{ 'on' if page=='bugs' }}"><span class="ic">🐛</span>Bug Reports{% if bug_count %}<span class="nb r">{{ bug_count }}</span>{% endif %}</a>
+    <button class="na" onclick="nav('modlogs',this)"><i class="ti ti-scroll"></i><span class="na-lbl">Mod Logs</span><span class="na-badge nbr">23</span></button>
+    <button class="na" onclick="nav('automod',this)"><i class="ti ti-robot"></i><span class="na-lbl">Auto-Mod</span></button>
+    <button class="na" onclick="nav('tickets',this)"><i class="ti ti-ticket"></i><span class="na-lbl">Tickets</span><span class="na-badge nbg">2</span></button>
+    <button class="na" onclick="nav('bugs',this)"><i class="ti ti-bug"></i><span class="na-lbl">Bug Reports</span><span class="na-badge nbr">5</span></button>
 
     <div class="nl">Events</div>
-    <a href="/giveaways" class="na {{ 'on' if page=='giveaways' }}"><span class="ic">🎉</span>Giveaways{% if giveaway_count %}<span class="nb p">{{ giveaway_count }}</span>{% endif %}</a>
-    <a href="/voice" class="na {{ 'on' if page=='voice' }}"><span class="ic">🎙️</span>Voice Log</a>
-    <a href="/economy" class="na {{ 'on' if page=='economy' }}"><span class="ic">💰</span>Economy</a>
-    <a href="/analytics" class="na {{ 'on' if page=='analytics' }}"><span class="ic">📈</span>Analytics</a>
+    <button class="na" onclick="nav('giveaways',this)"><i class="ti ti-confetti"></i><span class="na-lbl">Giveaways</span><span class="na-badge nbp">1</span></button>
+    <button class="na" onclick="nav('voice',this)"><i class="ti ti-microphone"></i><span class="na-lbl">Voice Log</span></button>
+    <button class="na" onclick="nav('economy',this)"><i class="ti ti-coin"></i><span class="na-lbl">Economy</span></button>
+    <button class="na" onclick="nav('analytics',this)"><i class="ti ti-chart-bar"></i><span class="na-lbl">Analytics</span></button>
 
     <div class="nl">Roblox</div>
-    <a href="/roblox" class="na {{ 'on' if page=='roblox' }}"><span class="ic">🎮</span>Roblox Profiles{% if roblox_count %}<span class="nb c">{{ roblox_count }}</span>{% endif %}</a>
-    <a href="/premium" class="na {{ 'on' if page=='premium' }}"><span class="ic">👑</span>Premium{% if premium_count %}<span class="nb y">{{ premium_count }}</span>{% endif %}</a>
+    <button class="na" onclick="nav('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">8</span></button>
+    <button class="na" onclick="nav('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span><span class="na-badge nby">3</span></button>
   </nav>
+
   <div class="sb-foot">
-    <div class="bot-card">
-      <div class="dot {{ 'on' if bot_online else 'off' }}"></div>
+    <div class="bot-pill">
+      <div class="pulse" id="botPulse"></div>
       <div>
-        <div class="bn">{{ bot_name or 'YBS Bot' }}</div>
-        <div class="bs">{{ 'Online' if bot_online else 'Offline' }}{% if uptime %} · {{ uptime }}{% endif %}</div>
+        <div class="bot-name">YBS Bot</div>
+        <div class="bot-st" id="botStatus">Online · 14d 6h uptime</div>
       </div>
     </div>
   </div>
 </aside>
 
-<!-- Main -->
+<!-- ═══ MAIN ═══ -->
 <div class="main">
-<div class="topbar">
-  <div>
-    <div class="tb-title">
-      {% if page=='home' %}Overview
-      {% elif page=='activity' %}Live Activity
-      {% elif page=='applications' %}Applications
-      {% elif page=='warnings' %}Warnings
-      {% elif page=='notes' %}Staff Notes
-      {% elif page=='members' %}Members
-      {% elif page=='leaderboard' %}Leaderboard
-      {% elif page=='modlogs' %}Mod Logs
-      {% elif page=='automod' %}Auto-Mod
-      {% elif page=='tickets' %}Tickets
-      {% elif page=='bugs' %}Bug Reports
-      {% elif page=='giveaways' %}Giveaways
-      {% elif page=='voice' %}Voice Log
-      {% elif page=='economy' %}Economy
-      {% elif page=='analytics' %}Analytics
-      {% elif page=='roblox' %}Roblox Profiles
-      {% elif page=='premium' %}Premium Members
-      {% endif %}
-    </div>
-    <div class="tb-sub">Young Boy Studios · Roblox Dev Studio</div>
-  </div>
-  <div class="tb-right">
-    {% if uptime %}<div class="pill">⏱ <span>{{ uptime }}</span></div>{% endif %}
-    <div class="notif-btn" onclick="toggleNotif()" title="Notifications">
-      🔔
-      <span class="notif-badge" id="notifBadge">0</span>
-    </div>
-    <button class="rbtn" onclick="location.reload()">⟳ Refresh</button>
-  </div>
-</div>
-<div class="content">
 
-{# ══════════ OVERVIEW ══════════ #}
-{% if page == 'home' %}
-<div class="sg">
-  <div class="sc b"><div class="s-icon">📋</div><div class="s-lbl">Applications</div><div class="s-val">{{ app_count }}</div><div class="s-sub">Total received</div></div>
-  <div class="sc r"><div class="s-icon">⚠️</div><div class="s-lbl">Warned Users</div><div class="s-val">{{ warn_count }}</div><div class="s-sub">Active warnings</div></div>
-  <div class="sc p"><div class="s-icon">📝</div><div class="s-lbl">Staff Notes</div><div class="s-val">{{ notes_count }}</div><div class="s-sub">Total notes</div></div>
-  <div class="sc k"><div class="s-icon">🎉</div><div class="s-lbl">Giveaways</div><div class="s-val">{{ giveaway_count }}</div><div class="s-sub">Active</div></div>
-  <div class="sc g"><div class="s-icon">🏅</div><div class="s-lbl">XP Members</div><div class="s-val">{{ xp_count }}</div><div class="s-sub">Earning XP</div></div>
-  <div class="sc y"><div class="s-icon">💰</div><div class="s-lbl">Economy Users</div><div class="s-val">{{ eco_count }}</div><div class="s-sub">Using economy</div></div>
-  <div class="sc c"><div class="s-icon">🎫</div><div class="s-lbl">Open Tickets</div><div class="s-val">{{ ticket_count }}</div><div class="s-sub">Needs attention</div></div>
-  <div class="sc o"><div class="s-icon">📜</div><div class="s-lbl">Mod Actions</div><div class="s-val">{{ mod_log_count }}</div><div class="s-sub">Total logged</div></div>
-  <div class="sc b"><div class="s-icon">🐛</div><div class="s-lbl">Bug Reports</div><div class="s-val">{{ bug_count }}</div><div class="s-sub">Submitted</div></div>
-  <div class="sc p"><div class="s-icon">👑</div><div class="s-lbl">Premium</div><div class="s-val">{{ premium_count }}</div><div class="s-sub">Active members</div></div>
-</div>
-
-<div class="row2">
-  <!-- Activity Feed -->
-  <div class="pn mb0">
-    <div class="ph"><div class="pt">⚡ Live Activity</div><a href="/activity" class="pa">View all →</a></div>
-    {% if activity %}
-    <div class="al">{% for e in activity[:15] %}
-      <div class="ai">
-        <div class="a-ic">{{ e.icon }}</div>
-        <div class="a-txt"><div class="a-act">{{ e.action }}</div>{% if e.detail %}<div class="a-det">{{ e.detail }}</div>{% endif %}</div>
-        <div class="a-tm">{{ e.time }}</div>
-      </div>
-    {% endfor %}</div>
-    {% else %}<div class="empty"><div class="emi">📭</div><p>No events yet.</p></div>{% endif %}
-  </div>
-
-  <!-- Right column -->
-  <div style="display:flex;flex-direction:column;gap:12px">
-    <div class="pn mb0">
-      <div class="ph"><div class="pt">🎭 Apps by Role</div></div>
-      <div class="cw">{% if app_count %}<canvas id="roleChart"></canvas>{% else %}<div class="empty" style="padding:20px"><p>No data yet.</p></div>{% endif %}</div>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="tb-crumb">
+      <span class="tbc-root">YBS</span>
+      <i class="ti ti-chevron-right tbc-sep"></i>
+      <span class="tbc-page" id="pageTitle">Overview</span>
     </div>
-    <div class="pn mb0">
-      <div class="ph"><div class="pt">🏅 Top XP Members</div><a href="/leaderboard" class="pa">Full list →</a></div>
-      {% if top_xp %}{% for m in top_xp %}
-      <div class="mr">
-        <div class="rank-num">{% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
-        <div class="m-av" style="background:linear-gradient(135deg,#6c63ff,#c77dff)">{{ m.name[0]|upper }}</div>
-        <div class="m-inf">
-          <div class="m-nm">{{ m.name.split('#')[0] }}</div>
-          <div class="xp-bar"><div class="xp-fill" style="width:{{ m.pct }}%"></div></div>
-        </div>
-        <span class="bg bb">Lv {{ m.level }}</span>
-      </div>
-      {% endfor %}{% else %}<div class="empty" style="padding:20px"><p>No XP data yet.</p></div>{% endif %}
+    <div class="tb-right">
+      <div class="tb-clock" id="liveClock">00:00:00</div>
+      <button class="tb-notif-btn" id="notifToggle" onclick="toggleNotif()" title="Notifications" aria-label="Toggle notifications">
+        <i class="ti ti-bell" style="font-size:15px"></i>
+        <div class="notif-pip" id="notifPip">0</div>
+      </button>
+      <button class="tb-btn" onclick="location.reload()"><i class="ti ti-refresh"></i> Refresh</button>
     </div>
   </div>
-</div>
 
-<div class="row2b">
-  <div class="pn mb0">
-    <div class="ph"><div class="pt">⚠️ Recent Warnings</div><a href="/warnings" class="pa">View all →</a></div>
-    {% if recent_warns %}<table class="tbl"><thead><tr><th>User ID</th><th>Warns</th><th>Last Reason</th></tr></thead><tbody>
-    {% for w in recent_warns[:5] %}<tr><td style="font-size:12px;color:var(--mt);font-family:monospace">{{ w.user_id }}</td><td><span class="bg {{ 'br' if w.count>=3 else 'by' }}">{{ w.count }}×</span></td><td>{{ w.last_reason[:40] }}</td></tr>{% endfor %}
-    </tbody></table>
-    {% else %}<div class="empty" style="padding:20px"><p>No warnings yet ✅</p></div>{% endif %}
-  </div>
-  <div class="pn mb0">
-    <div class="ph"><div class="pt">📜 Recent Mod Actions</div><a href="/modlogs" class="pa">View all →</a></div>
-    {% if mod_logs %}<div style="max-height:200px;overflow-y:auto">{% for m in mod_logs[:8] %}
-    <div class="ml-item"><div class="ml-dot" style="background:{{ m.color }}"></div><div class="ml-content"><div class="ml-action">{{ m.action }}: {{ m.target }}</div><div class="ml-meta">by {{ m.by }}{% if m.reason %} · {{ m.reason[:40] }}{% endif %} · {{ m.time }}</div></div></div>
-    {% endfor %}</div>
-    {% else %}<div class="empty" style="padding:20px"><p>No mod actions yet.</p></div>{% endif %}
-  </div>
-</div>
+  <!-- Content injected here -->
+  <div class="content" id="content"></div>
 
-{% if app_count %}
-<script>
-const rd = {{ role_counts|tojson }};
-new Chart(document.getElementById('roleChart'),{
-  type:'doughnut',
-  data:{labels:Object.keys(rd),datasets:[{data:Object.values(rd),backgroundColor:['#6c63ff','#00d4aa','#ffd166','#c77dff','#ff79c6','#00cfff'],borderWidth:0,hoverOffset:6}]},
-  options:{plugins:{legend:{position:'bottom',labels:{color:'#4a5068',font:{size:11},padding:10}}},cutout:'68%',animation:{duration:800}}
-});
-</script>
-{% endif %}
-
-{# ══════════ ACTIVITY ══════════ #}
-{% elif page == 'activity' %}
-<div class="pn">
-  <div class="ph"><div class="pt">⚡ Full Activity Log</div><span style="font-size:12px;color:var(--mt)">{{ activity|length }} events</span></div>
-  {% if activity %}<div class="al" style="max-height:none">{% for e in activity %}
-    <div class="ai"><div class="a-ic">{{ e.icon }}</div><div class="a-txt"><div class="a-act">{{ e.action }}</div>{% if e.detail %}<div class="a-det">{{ e.detail }}</div>{% endif %}</div><div class="a-tm">{{ e.time }}</div></div>
-  {% endfor %}</div>
-  {% else %}<div class="empty"><div class="emi">📭</div><p>No activity yet.</p></div>{% endif %}
-</div>
-
-{# ══════════ APPLICATIONS ══════════ #}
-{% elif page == 'applications' %}
-<div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-  <span style="color:var(--mt);font-size:13px">{{ app_count }} application{{ 's' if app_count!=1 }}</span>
-  <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
-    <span class="bg by">🔨 Builder</span><span class="bg bb">💻 Scripter</span><span class="bg bg_">🎨 Modeller</span><span class="bg bp">🖥️ UI</span>
-  </div>
-</div>
-{% if applications %}{% for uid, app in applications.items() %}
-<div class="afc">
-  <div class="afh">
-    <div class="afav">{{ app.real_name[0]|upper if app.real_name else '?' }}</div>
-    <div style="flex:1">
-      <div class="af-name">{{ app.real_name }} <span style="color:var(--mt);font-weight:400;font-size:13px">· {{ app.roblox_name }}</span></div>
-      <div class="af-sub">Applied {{ app.timestamp[:10] if app.timestamp else '—' }} · Status: <span class="bg {{ 'bg_' if app.get('status')=='accepted' else 'br' if app.get('status')=='declined' else 'by' if app.get('status')=='interview' else 'bb' }}">{{ app.get('status','pending').title() }}</span></div>
-    </div>
-    {% if 'builder' in app.role|lower %}<span class="bg by">🔨 Builder</span>
-    {% elif 'script' in app.role|lower %}<span class="bg bb">💻 Scripter</span>
-    {% elif 'model' in app.role|lower %}<span class="bg bg_">🎨 Modeller</span>
-    {% else %}<span class="bg bp">🖥️ {{ app.role }}</span>{% endif %}
-  </div>
-  <div class="afb"><div class="af-fields">
-    <div class="aff"><label>Age</label><p>{{ app.age }}</p></div>
-    <div class="aff"><label>Role</label><p>{{ app.role }}</p></div>
-    <div class="aff"><label>Portfolio Images</label><p>{{ app.get('portfolio_images',[])|length }}</p></div>
-    <div class="aff full"><label>Experience</label><p>{{ app.experience }}</p></div>
-    {% if app.get('why_join') %}<div class="aff full"><label>Why Join</label><p>{{ app.why_join }}</p></div>{% endif %}
-    {% if app.get('portfolio') and app.get('portfolio') != 'N/A' %}<div class="aff full"><label>Portfolio</label><p>{{ app.portfolio }}</p></div>{% endif %}
-    {% if app.get('reviewed_by') %}<div class="aff s2"><label>Reviewed By</label><p>{{ app.reviewed_by }}</p></div>{% endif %}
-    {% if app.get('decline_reason') %}<div class="aff full"><label>Decline Reason</label><p style="color:var(--rd)">{{ app.decline_reason }}</p></div>{% endif %}
-  </div></div>
-</div>
-{% endfor %}{% else %}<div class="pn"><div class="empty"><div class="emi">📭</div><p>No applications yet.</p></div></div>{% endif %}
-
-{# ══════════ WARNINGS ══════════ #}
-{% elif page == 'warnings' %}
-{% if warnings %}
-<div class="pn">
-  <div class="ph"><div class="pt">⚠️ All Warnings</div><span style="font-size:12px;color:var(--mt)">{{ warn_count }} user{{ 's' if warn_count!=1 }}</span></div>
-  <table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
-  {% for user_id, wlist in warnings.items() %}{% for i, w in enumerate(wlist) %}
-  <tr>
-    <td style="font-family:monospace;font-size:12px;color:var(--mt)">{{ user_id }}</td>
-    <td>{% if loop.first %}<span class="bg {{ 'br' if wlist|length>=3 else 'by' }}">{{ wlist|length }} total</span>{% endif %}</td>
-    <td style="color:var(--mt)">#{{ i+1 }}</td>
-    <td>{{ w.reason }}</td><td style="color:var(--mt)">{{ w.by }}</td>
-    <td style="color:var(--mt)">{{ w.time[:10] if w.time else '—' }}</td>
-  </tr>
-  {% endfor %}{% endfor %}
-  </tbody></table>
-</div>
-{% else %}<div class="pn"><div class="empty"><div class="emi">✅</div><p>No warnings issued yet!</p></div></div>{% endif %}
-
-{# ══════════ STAFF NOTES ══════════ #}
-{% elif page == 'notes' %}
-<div class="pn">
-  <div class="ph"><div class="pt">📝 All Staff Notes</div><span style="font-size:12px;color:var(--mt)">{{ notes_count }} total notes</span></div>
-  {% if all_notes %}
-  {% for user_id, note_list in all_notes.items() %}
-  <div style="border-bottom:1px solid var(--bd);padding:10px 0">
-    <div style="padding:8px 20px 4px;font-size:11px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;font-weight:700">User ID: {{ user_id }}</div>
-    {% for note in note_list %}
-    <div class="note-card">
-      <div class="note-header">
-        <span class="note-by">📝 {{ note.by }}</span>
-        <span class="note-time">{{ note.time }}</span>
-      </div>
-      <div class="note-content">{{ note.note }}</div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endfor %}
-  {% else %}<div class="empty"><div class="emi">📝</div><p>No staff notes yet.<br>Add notes with <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/note @member text</code> in Discord.</p></div>{% endif %}
-</div>
-
-{# ══════════ MEMBERS ══════════ #}
-{% elif page == 'members' %}
-<div class="pn">
-  <div class="ph"><div class="pt">👥 All Tracked Members</div><span style="font-size:12px;color:var(--mt)">{{ members|length }} tracked</span></div>
-  <div style="padding:12px 20px;border-bottom:1px solid var(--bd)">
-    <input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)" id="memberSearch">
-  </div>
-  {% if members %}
-  <div id="memberTable">
-  <table class="tbl"><thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warnings</th></tr></thead><tbody>
-  {% for m in members %}
-  <tr class="member-row" data-name="{{ m.name.lower() }}">
-    <td><div style="display:flex;align-items:center;gap:10px">
-      <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#6c63ff,#c77dff);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif">{{ m.name[0]|upper }}</div>
-      <span style="font-size:13px;font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span>
-    </div></td>
-    <td><span class="bg bb">Lv {{ m.level }}</span></td>
-    <td><div>{{ m.xp }} XP<div class="xp-bar"><div class="xp-fill" style="width:{{ m.pct }}%"></div></div></div></td>
-    <td>💰 {{ m.balance }}</td>
-    <td style="color:var(--mt)">{{ m.messages }}</td>
-    <td>{% if m.warnings %}<span class="bg {{ 'br' if m.warnings>=3 else 'by' }}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td>
-  </tr>
-  {% endfor %}
-  </tbody></table>
-  </div>
-  {% else %}<div class="empty"><div class="emi">👥</div><p>No members tracked yet.</p></div>{% endif %}
-</div>
-
-{# ══════════ LEADERBOARD ══════════ #}
-{% elif page == 'leaderboard' %}
-<div class="tab-bar">
-  <button class="tab-btn on" onclick="showTab('xp',this)">🏅 XP Rankings</button>
-  <button class="tab-btn" onclick="showTab('eco',this)">💰 Rich List</button>
-</div>
-<div id="tab-xp">
-<div class="pn">
-  <div class="ph"><div class="pt">🏅 XP Leaderboard</div><span style="font-size:12px;color:var(--mt)">{{ xp_lb|length }} members</span></div>
-  {% if xp_lb %}{% for m in xp_lb %}
-  <div class="mr">
-    <div class="rank-num">{% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
-    <div class="m-av" style="background:linear-gradient(135deg,#6c63ff,#c77dff)">{{ m.name[0]|upper }}</div>
-    <div class="m-inf">
-      <div class="m-nm">{{ m.name.split('#')[0] }}</div>
-      <div class="m-mt">{{ m.xp }} XP · {{ m.messages }} msgs</div>
-      <div class="xp-bar"><div class="xp-fill" style="width:{{ m.pct }}%"></div></div>
-    </div>
-    <span class="bg bb">Lv {{ m.level }}</span>
-  </div>
-  {% endfor %}{% else %}<div class="empty"><p>No XP data yet.</p></div>{% endif %}
-</div>
-</div>
-<div id="tab-eco" style="display:none">
-<div class="pn">
-  <div class="ph"><div class="pt">💰 Rich List</div></div>
-  {% if eco_lb %}{% for m in eco_lb %}
-  <div class="mr">
-    <div class="rank-num">{% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
-    <div class="m-av" style="background:linear-gradient(135deg,#ffd166,#ff9f43)">{{ m.name[0]|upper }}</div>
-    <div class="m-inf"><div class="m-nm">{{ m.name.split('#')[0] }}</div><div class="m-mt">Total earned: {{ m.total_earned }} coins</div></div>
-    <span class="bg by">💰 {{ m.balance }}</span>
-  </div>
-  {% endfor %}{% else %}<div class="empty"><p>No economy data yet.</p></div>{% endif %}
-</div>
-</div>
-
-{# ══════════ MOD LOGS ══════════ #}
-{% elif page == 'modlogs' %}
-<div class="pn">
-  <div class="ph"><div class="pt">📜 Moderation Log</div><span style="font-size:12px;color:var(--mt)">{{ mod_log_count }} actions</span></div>
-  {% if mod_logs %}<div>{% for m in mod_logs %}
-  <div class="ml-item">
-    <div class="ml-dot" style="background:{{ m.color }}"></div>
-    <div class="ml-content">
-      <div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div>
-      <div class="ml-meta">by {{ m.by }}{% if m.reason %} · "{{ m.reason[:60] }}"{% endif %} · {{ m.time }}</div>
-    </div>
-  </div>
-  {% endfor %}</div>
-  {% else %}<div class="empty"><div class="emi">📜</div><p>No moderation actions logged yet.</p></div>{% endif %}
-</div>
-
-{# ══════════ AUTO-MOD ══════════ #}
-{% elif page == 'automod' %}
-<div class="pn">
-  <div class="ph"><div class="pt">🤖 Auto-Mod Word Filter</div><span style="font-size:12px;color:var(--mt)">{{ total_words }} word{{ 's' if total_words!=1 }}</span></div>
-  {% if automod_guilds %}{% for guild_id, words in automod_guilds.items() %}
-  <div style="padding:14px 20px;border-bottom:1px solid var(--bd)">
-    <div style="font-size:12px;color:var(--mt);margin-bottom:10px">Server ID: {{ guild_id }}</div>
-    <div class="wl">{% for w in words %}<span class="wt">{{ w }}</span>{% endfor %}</div>
-  </div>
-  {% endfor %}
-  {% else %}<div class="empty"><div class="emi">🤖</div><p>No banned words yet.<br>Use <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/addword</code> in Discord.</p></div>{% endif %}
-  <div style="padding:14px 20px;background:var(--s2);border-top:1px solid var(--bd)">
-    <div style="font-size:12px;color:var(--mt);margin-bottom:8px;font-weight:700">📌 Commands</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-size:12px;color:var(--ac)">/addword</code>
-      <code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-size:12px;color:var(--ac)">/removeword</code>
-      <code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-size:12px;color:var(--ac)">/wordlist</code>
-    </div>
-  </div>
-</div>
-
-{# ══════════ TICKETS ══════════ #}
-{% elif page == 'tickets' %}
-<div class="pn">
-  <div class="ph"><div class="pt">🎫 Support Tickets</div><span style="font-size:12px;color:var(--mt)">{{ ticket_count }} open</span></div>
-  {% if tickets %}{% for ch_id, tk in tickets.items() %}
-  <div class="tc">
-    <div class="tc-hd"><span>🎫</span><div class="tc-title">Ticket #{{ loop.index }} — {{ tk.user_name }}</div><span class="bg {{ 'bg_' if tk.status=='open' else 'br' }}">{{ tk.status }}</span></div>
-    <div class="tc-body">{% if tk.reason %}{{ tk.reason }}{% endif %} · Opened: {{ tk.created }}</div>
-  </div>
-  {% endfor %}{% else %}<div class="empty"><div class="emi">🎫</div><p>No tickets open. Use <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/ticket</code> in Discord.</p></div>{% endif %}
-</div>
-
-{# ══════════ BUG REPORTS ══════════ #}
-{% elif page == 'bugs' %}
-<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
-  <span style="color:var(--mt);font-size:13px">{{ bug_reports|length }} total report{{ 's' if bug_reports|length!=1 }}</span>
-</div>
-{% if bug_reports %}{% for r in bug_reports|reverse %}
-<div class="bug-card">
-  <div class="bug-hd">
-    <span class="bug-id">{{ r.id }}</span>
-    <span class="bug-title">{{ r.title }}</span>
-    <span class="bg {{ 'bg_' if r.status=='fixed' else 'br' if r.status=='open' else 'bc' if r.status=='in_progress' else 'by' }}">{{ r.status.replace('_',' ').title() }}</span>
-    <span class="bg {{ 'br' if 'critical' in r.severity.lower() else 'bo' if 'high' in r.severity.lower() else 'by' if 'medium' in r.severity.lower() else 'bg_' }}">{{ r.severity.title() }}</span>
-  </div>
-  <div class="bug-body"><div class="bug-fields">
-    <div class="bug-field"><label>Area</label><p>{{ r.game_area }}</p></div>
-    <div class="bug-field"><label>Reporter</label><p>{{ r.reporter_name }}</p></div>
-    <div class="bug-field"><label>Images</label><p>{{ r.images|length }}</p></div>
-    <div class="bug-field full"><label>Description</label><p>{{ r.description }}</p></div>
-    <div class="bug-field full"><label>Steps</label><p>{{ r.steps }}</p></div>
-    {% if r.get('fixed_by') %}<div class="bug-field"><label>Fixed By</label><p style="color:var(--gn)">{{ r.fixed_by }}</p></div>{% endif %}
-  </div></div>
-</div>
-{% endfor %}{% else %}<div class="pn"><div class="empty"><div class="emi">🐛</div><p>No bug reports yet.</p></div></div>{% endif %}
-
-{# ══════════ GIVEAWAYS ══════════ #}
-{% elif page == 'giveaways' %}
-<div class="pn">
-  <div class="ph"><div class="pt">🎉 Active Giveaways</div><span style="font-size:12px;color:var(--mt)">{{ giveaway_count }} running</span></div>
-  {% if giveaway_count %}{% for mid, gw in giveaways.items() %}
-  <div class="gwc"><div class="gw-p">🎁 {{ gw.prize }}</div><div class="gw-m">Hosted by {{ gw.host }} · Ends {{ gw.ends[:16]|replace('T',' ') }}</div></div>
-  {% endfor %}{% else %}<div class="empty"><div class="emi">🎉</div><p>No active giveaways.<br>Use <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/giveaway</code> in Discord.</p></div>{% endif %}
-</div>
-
-{# ══════════ VOICE ══════════ #}
-{% elif page == 'voice' %}
-<div class="pn">
-  <div class="ph"><div class="pt">🎙️ Voice Activity</div><span style="font-size:12px;color:var(--mt)">{{ voice_events|length }} events</span></div>
-  {% if voice_events %}
-  <table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>
-  {% for v in voice_events %}
-  <tr>
-    <td><span class="bg {{ 'bg_' if v.action=='joined' else 'br' if v.action=='left' else 'by' }}">{% if v.action=='joined' %}📥 Joined{% elif v.action=='left' %}📤 Left{% else %}↔️ Moved{% endif %}</span></td>
-    <td>{{ v.member }}</td><td style="color:var(--mt)">#{{ v.channel }}</td><td style="color:var(--mt)">{{ v.time }}</td>
-  </tr>
-  {% endfor %}</tbody></table>
-  {% else %}<div class="empty"><div class="emi">🎙️</div><p>No voice activity logged yet.</p></div>{% endif %}
-</div>
-
-{# ══════════ ECONOMY ══════════ #}
-{% elif page == 'economy' %}
-<div class="sg">
-  <div class="sc y"><div class="s-icon">💰</div><div class="s-lbl">Total Circulating</div><div class="s-val">{{ total_coins }}</div></div>
-  <div class="sc g"><div class="s-icon">👥</div><div class="s-lbl">Economy Users</div><div class="s-val">{{ eco_count }}</div></div>
-  <div class="sc b"><div class="s-icon">📈</div><div class="s-lbl">Total Ever Earned</div><div class="s-val">{{ total_earned_ever }}</div></div>
-  <div class="sc o"><div class="s-icon">🏆</div><div class="s-lbl">Richest Balance</div><div class="s-val">{{ richest }}</div></div>
-</div>
-<div class="pn">
-  <div class="ph"><div class="pt">💰 Economy Leaderboard</div></div>
-  {% if eco_lb %}{% for m in eco_lb %}
-  <div class="mr">
-    <div class="rank-num">{% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
-    <div class="m-av" style="background:linear-gradient(135deg,#ffd166,#ff9f43)">{{ m.name[0]|upper }}</div>
-    <div class="m-inf"><div class="m-nm">{{ m.name.split('#')[0] }}</div><div class="m-mt">Total earned: {{ m.total_earned }}</div></div>
-    <span class="bg by">💰 {{ m.balance }} coins</span>
-  </div>
-  {% endfor %}{% else %}<div class="empty"><div class="emi">💰</div><p>No economy activity yet.</p></div>{% endif %}
-</div>
-
-{# ══════════ ANALYTICS ══════════ #}
-{% elif page == 'analytics' %}
-<div class="sg">
-  <div class="sc b"><div class="s-icon">📊</div><div class="s-lbl">Total Activity Events</div><div class="s-val">{{ activity|length }}</div></div>
-  <div class="sc g"><div class="s-icon">🎮</div><div class="s-lbl">Roblox Linked</div><div class="s-val">{{ roblox_count }}</div></div>
-  <div class="sc p"><div class="s-icon">📋</div><div class="s-lbl">Applications</div><div class="s-val">{{ app_count }}</div></div>
-  <div class="sc r"><div class="s-icon">⚠️</div><div class="s-lbl">Total Warns</div><div class="s-val">{{ warn_count }}</div></div>
-</div>
-<div class="row2b">
-  <div class="pn mb0">
-    <div class="ph"><div class="pt">🎭 Applications by Role</div></div>
-    <div class="cw"><canvas id="analyticsRole"></canvas></div>
-  </div>
-  <div class="pn mb0">
-    <div class="ph"><div class="pt">📊 Mod Actions Breakdown</div></div>
-    <div class="cw"><canvas id="analyticsmod"></canvas></div>
-  </div>
-</div>
-<div class="pn">
-  <div class="ph"><div class="pt">📈 Server Growth (Activity)</div></div>
-  <div class="cw"><canvas id="analyticsGrowth" style="max-height:200px"></canvas></div>
-</div>
-<script>
-const rc = {{ role_counts|tojson }};
-if(Object.keys(rc).length){
-  new Chart(document.getElementById('analyticsRole'),{
-    type:'bar',
-    data:{labels:Object.keys(rc),datasets:[{data:Object.values(rc),backgroundColor:['#6c63ff','#00d4aa','#ffd166','#c77dff'],borderRadius:8,borderWidth:0}]},
-    options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a5068'}},y:{ticks:{color:'#4a5068'},grid:{color:'#1e2235'}}}}
-  });
-}
-
-const modActions = {{ mod_action_counts|tojson }};
-if(Object.keys(modActions).length){
-  new Chart(document.getElementById('analyticsmod'),{
-    type:'doughnut',
-    data:{labels:Object.keys(modActions),datasets:[{data:Object.values(modActions),backgroundColor:['#ff4d6d','#ffd166','#6c63ff','#00d4aa','#c77dff'],borderWidth:0}]},
-    options:{plugins:{legend:{position:'bottom',labels:{color:'#4a5068',font:{size:11}}}},cutout:'60%'}
-  });
-}
-
-// Growth chart (activity over time - last 20 events reversed)
-const acts = {{ activity|tojson }};
-const times = acts.slice(0,20).reverse().map((a,i) => a.time.split('·')[0].trim()||`Event ${i+1}`);
-const vals = acts.slice(0,20).map((_,i) => i+1).reverse();
-new Chart(document.getElementById('analyticsGrowth'),{
-  type:'line',
-  data:{labels:times,datasets:[{label:'Activity',data:vals,borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#6c63ff',pointRadius:4}]},
-  options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a5068',maxTicksLimit:8}},y:{ticks:{color:'#4a5068'},grid:{color:'#1e2235'}}}}
-});
-</script>
-
-{# ══════════ ROBLOX ══════════ #}
-{% elif page == 'roblox' %}
-<div class="sg">
-  <div class="sc c"><div class="s-icon">🎮</div><div class="s-lbl">Linked Accounts</div><div class="s-val">{{ roblox_accounts|length }}</div></div>
-  <div class="sc b"><div class="s-icon">✅</div><div class="s-lbl">Verified Accounts</div><div class="s-val">{{ roblox_accounts|selectattr('verified','equalto',True)|list|length if roblox_accounts else 0 }}</div></div>
-</div>
-{% if roblox_accounts %}
-<div class="roblox-grid">
-{% for acc in roblox_accounts %}
-<div class="roblox-card">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-    {% if acc.thumb %}<img src="{{ acc.thumb }}" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--cy);object-fit:cover" onerror="this.style.display='none'">
-    {% else %}<div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:22px">🎮</div>{% endif %}
-    <div style="flex:1;min-width:0">
-      <div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Syne',sans-serif">{{ acc.display }}</div>
-      <div style="font-size:12px;color:var(--mt)">@{{ acc.username }}</div>
-      <div style="font-size:11px;color:var(--cy)">ID: {{ acc.roblox_id }}</div>
-    </div>
-  </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd);padding-top:10px;margin-top:4px">
-    <div style="font-size:11px;color:var(--mt)">{{ acc.discord_name.split('#')[0] }}</div>
-    <div style="font-size:11px;color:var(--mt)">{{ acc.linked_at }}</div>
-  </div>
-  <a href="https://www.roblox.com/users/{{ acc.roblox_id }}/profile" target="_blank" style="display:block;margin-top:10px;background:rgba(0,207,255,.1);border:1px solid rgba(0,207,255,.25);color:var(--cy);border-radius:8px;padding:7px;font-size:12px;font-weight:600;text-align:center;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(0,207,255,.2)'" onmouseout="this.style.background='rgba(0,207,255,.1)'">View Profile →</a>
-</div>
-{% endfor %}
-</div>
-{% else %}<div class="pn"><div class="empty"><div class="emi">🎮</div><p>No Roblox accounts linked yet.<br>Use <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/roblox-verify</code> in Discord.</p></div></div>{% endif %}
-
-{# ══════════ PREMIUM ══════════ #}
-{% elif page == 'premium' %}
-<div class="sg">
-  <div class="sc y"><div class="s-icon">👑</div><div class="s-lbl">Premium Members</div><div class="s-val">{{ premium_count }}</div></div>
-</div>
-<div class="pn">
-  <div class="ph"><div class="pt">👑 Premium Members</div></div>
-  {% if premium_members %}
-  <table class="tbl"><thead><tr><th>User ID</th><th>Tier</th><th>Granted By</th><th>Expires</th></tr></thead><tbody>
-  {% for uid, data in premium_members.items() %}
-  <tr>
-    <td style="font-family:monospace;font-size:12px;color:var(--mt)">{{ uid }}</td>
-    <td><span class="bg by">👑 {{ data.tier.title() }}</span></td>
-    <td style="color:var(--mt)">{{ data.get('granted_by','—') }}</td>
-    <td style="color:var(--mt)">{{ data.expires[:10] if data.expires else '—' }}</td>
-  </tr>
-  {% endfor %}
-  </tbody></table>
-  {% else %}<div class="empty"><div class="emi">👑</div><p>No premium members yet.<br>Use <code style="background:var(--s2);padding:2px 6px;border-radius:5px">/premium @member</code> in Discord.</p></div>{% endif %}
-</div>
-
-{% endif %}
-
-</div><!-- /content -->
-<div class="foot">Auto-refreshes every 30s &nbsp;·&nbsp; Young Boy Studios Dashboard &nbsp;·&nbsp; <span style="color:var(--ac)">{{ activity|length }} events logged</span></div>
+  <div class="foot">Auto-refreshes every 30s &nbsp;·&nbsp; Young Boy Studios Dashboard &nbsp;·&nbsp; <span id="footCount">47</span> events logged</div>
 </div><!-- /main -->
 
+</div><!-- /wrap -->
+
 <script>
-// ── Auto refresh ──
-setTimeout(()=>location.reload(), 30000);
+/* ═══════════════════════════════════════
+   DATA
+═══════════════════════════════════════ */
+const STATS = [
+  { icon:'ti-file-description', label:'Applications',   val:24,  trend:'+3',   up:true,  color:'#7c6fff', spark:[3,5,4,8,6,9,7,10,12,11] },
+  { icon:'ti-alert-triangle',   label:'Warnings',       val:7,   trend:'-2',   up:false, color:'#f05d7a', spark:[2,3,4,3,5,6,5,7,6,7] },
+  { icon:'ti-ticket',           label:'Open Tickets',   val:2,   trend:'0',    up:true,  color:'#22d3a0', spark:[4,3,5,2,4,3,2,3,2,2] },
+  { icon:'ti-trophy',           label:'XP Members',     val:138, trend:'+11',  up:true,  color:'#f5c842', spark:[80,90,95,100,105,110,118,125,130,138] },
+  { icon:'ti-coin',             label:'Eco Users',      val:89,  trend:'+5',   up:true,  color:'#34c8ff', spark:[60,65,68,72,75,78,81,84,87,89] },
+  { icon:'ti-scroll',           label:'Mod Actions',    val:23,  trend:'+1',   up:false, color:'#ff9040', spark:[15,16,17,18,19,20,20,21,22,23] },
+  { icon:'ti-bug',              label:'Bug Reports',    val:5,   trend:'+2',   up:false, color:'#f05d7a', spark:[1,2,2,3,3,3,4,4,4,5] },
+  { icon:'ti-brand-google-play',label:'Roblox Linked',  val:8,   trend:'+1',   up:true,  color:'#34c8ff', spark:[4,5,5,6,6,7,7,7,8,8] },
+  { icon:'ti-crown',            label:'Premium',        val:3,   trend:'0',    up:true,  color:'#f5c842', spark:[2,2,2,2,3,3,3,3,3,3] },
+  { icon:'ti-confetti',         label:'Giveaways',      val:1,   trend:'',     up:true,  color:'#e879b4', spark:[0,1,0,0,1,0,1,0,0,1] },
+];
 
-// ── Notifications (from activity log) ──
-let notifications = JSON.parse(localStorage.getItem('ybs_notifs') || '[]');
-let readIds = JSON.parse(localStorage.getItem('ybs_read') || '[]');
-const activityData = {{ activity[:20]|tojson }};
+const ACTIVITY = [
+  { icon:'ti-file-description', color:'#7c6fff', action:'New application received',     detail:'xXProBuilder99 applied for Builder role',  time:'2m ago',  live:true },
+  { icon:'ti-alert-triangle',   color:'#f05d7a', action:'Warning issued',              detail:'SkyBreakerZ · Spam in #general',            time:'5m ago',  live:false },
+  { icon:'ti-ticket',           color:'#22d3a0', action:'Support ticket opened',       detail:'#042 by LunarGamer · Bug report',           time:'11m ago', live:false },
+  { icon:'ti-crown',            color:'#f5c842', action:'Premium membership granted',  detail:'DevKing upgraded to Gold tier',             time:'22m ago', live:false },
+  { icon:'ti-bolt',             color:'#34c8ff', action:'Voice channel joined',        detail:'StormCraft joined #dev-voice',              time:'31m ago', live:false },
+  { icon:'ti-coin',             color:'#22d3a0', action:'Economy reward claimed',      detail:'NightWolf earned 500 coins via daily',      time:'45m ago', live:false },
+  { icon:'ti-scroll',           color:'#ff9040', action:'Member kicked',              detail:'ToxicUser99 kicked by Moderator',           time:'1h ago',  live:false },
+  { icon:'ti-bug',              color:'#f05d7a', action:'Bug report submitted',        detail:'Critical crash in Level 3 · xXProBuilder99', time:'1h ago',  live:false },
+  { icon:'ti-notes',            color:'#e879b4', action:'Staff note added',           detail:'Note on MidnightDev by Admin',              time:'2h ago',  live:false },
+  { icon:'ti-confetti',         color:'#e879b4', action:'Giveaway started',           detail:'500 Robux by DevKing · ends in 24h',        time:'3h ago',  live:false },
+  { icon:'ti-brand-google-play',color:'#34c8ff', action:'Roblox account linked',      detail:'StormCraft linked @strmcft',               time:'4h ago',  live:false },
+  { icon:'ti-users',            color:'#7c6fff', action:'New member joined',          detail:'PlanetBuild joined the server',             time:'5h ago',  live:false },
+];
 
-function loadNotifs(){
-  // Add new activity events as notifications
-  activityData.forEach((e, i) => {
-    const id = `${e.time}-${i}`;
-    if(!notifications.find(n => n.id === id)){
-      notifications.unshift({id, icon: e.icon, msg: e.action, detail: e.detail, time: e.time, read: false});
-    }
-  });
-  notifications = notifications.slice(0,30);
-  localStorage.setItem('ybs_notifs', JSON.stringify(notifications));
-  renderNotifs();
+const TOP_XP = [
+  { name:'NightWolf',       xp:12480, level:18, pct:82, color:'#7c6fff' },
+  { name:'StormCraft',      xp:10320, level:15, pct:71, color:'#22d3a0' },
+  { name:'xXProBuilder99',  xp:9870,  level:14, pct:68, color:'#f05d7a' },
+  { name:'DevKing',         xp:8940,  level:13, pct:62, color:'#f5c842' },
+  { name:'LunarGamer',      xp:7210,  level:11, pct:50, color:'#34c8ff' },
+  { name:'MidnightDev',     xp:6880,  level:10, pct:47, color:'#e879b4' },
+  { name:'PlanetBuild',     xp:5400,  level:8,  pct:37, color:'#ff9040' },
+];
+
+const MOD_LOGS = [
+  { action:'Warn',    target:'SkyBreakerZ',  by:'Moderator', reason:'Spam in #general',          color:'#f5c842', time:'5m ago' },
+  { action:'Kick',    target:'ToxicUser99',  by:'Admin',     reason:'NSFW content shared',        color:'#f05d7a', time:'1h ago' },
+  { action:'Ban',     target:'BotSpammer',   by:'Admin',     reason:'Bot abuse / self-promotion', color:'#f05d7a', time:'3h ago' },
+  { action:'Timeout', target:'RageQuit22',   by:'Moderator', reason:'Ongoing harassment',         color:'#ff9040', time:'5h ago' },
+  { action:'Warn',    target:'NoobPlayer',   by:'Moderator', reason:'Mic spam in voice',          color:'#f5c842', time:'7h ago' },
+  { action:'Warn',    target:'GhostFarm',    by:'Moderator', reason:'AFK farming XP',             color:'#f5c842', time:'9h ago' },
+];
+
+const WARNINGS = {
+  'SkyBreakerZ': [{reason:'Spam in #general', by:'Moderator', time:'2025-04-28'}, {reason:'Micspam', by:'Moderator', time:'2025-05-01'}],
+  'RageQuit22':  [{reason:'Harassment',       by:'Admin',     time:'2025-04-15'}, {reason:'Threats', by:'Admin', time:'2025-04-20'}, {reason:'Ban evade', by:'Admin', time:'2025-05-02'}],
+  'NoobPlayer':  [{reason:'Mic spam',         by:'Moderator', time:'2025-05-08'}],
+  'GhostFarm':   [{reason:'AFK XP farming',   by:'Moderator', time:'2025-05-01'}],
+};
+
+const APPS = [
+  { name:'xXProBuilder99', roblox:'ProBuild99',  role:'Builder',  age:17, exp:'3 years building in Roblox Studio. Made 5 obby games.', why:'Want to join a pro team.', status:'pending',  portfolio:'N/A' },
+  { name:'ScriptMaster22', roblox:'ScriptM22',   role:'Scripter', age:19, exp:'Lua scripting for 2 years. Made combat systems.',       why:'Love GD-style games.', status:'interview', portfolio:'github.com/scriptm22' },
+  { name:'UIDesignQueen',  roblox:'UIDesignQ',   role:'UI Design',age:16, exp:'ScreenGui designer. Made menus for 3 games.',           why:'Want to improve my skills.', status:'accepted', portfolio:'N/A' },
+];
+
+const TICKETS = [
+  { id:'#042', user:'LunarGamer',  status:'open',   reason:'Game crashes at level 3 boss fight', created:'2025-05-09 10:22' },
+  { id:'#041', user:'StormCraft',  status:'open',   reason:'Cannot access premium perks after purchase', created:'2025-05-08 18:44' },
+];
+
+const BUG_REPORTS = [
+  { id:'BUG-005', title:'Game crashes at level 3', status:'open', severity:'critical', area:'Gameplay', reporter:'LunarGamer', description:'The game consistently crashes when reaching the boss fight at the end of Level 3.', steps:'1. Play level 3. 2. Reach boss. 3. Game freezes after 30s.' },
+  { id:'BUG-004', title:'XP not awarding after match', status:'in_progress', severity:'high', area:'Economy', reporter:'DevKing', description:'After completing a match, XP is not being added to the leaderboard for some players.', steps:'1. Complete a match. 2. Check leaderboard. 3. XP unchanged.' },
+  { id:'BUG-003', title:'Mobile controls overlap HUD', status:'open', severity:'medium', area:'UI/UX', reporter:'MidnightDev', description:'On mobile devices the joystick overlaps the lives counter in the top-left corner.', steps:'1. Open on mobile. 2. Start game. 3. Observe overlap.' },
+  { id:'BUG-002', title:'Checkpoint not saving progress', status:'fixed', severity:'medium', area:'Gameplay', reporter:'NightWolf', description:'Practice mode checkpoints reset to beginning on rejoin.', steps:'1. Enter practice mode. 2. Pass checkpoint. 3. Leave and rejoin.', fixed_by:'Admin' },
+  { id:'BUG-001', title:'Shop button unresponsive on first load', status:'fixed', severity:'low', area:'UI/UX', reporter:'PlanetBuild', description:'The shop button does nothing on first game load. Second click works.', steps:'1. Join game. 2. Click shop immediately.', fixed_by:'StormCraft' },
+];
+
+const GIVEAWAYS = [
+  { prize:'500 Robux Gift Card', host:'DevKing', ends:'2025-05-10T18:00:00', entries:47 },
+];
+
+const VOICE_EVENTS = [
+  { action:'joined', member:'StormCraft',     channel:'dev-voice',   time:'31m ago' },
+  { action:'left',   member:'NightWolf',      channel:'dev-voice',   time:'1h ago' },
+  { action:'joined', member:'LunarGamer',     channel:'general-vc',  time:'2h ago' },
+  { action:'moved',  member:'DevKing',        channel:'dev-voice',   time:'3h ago' },
+  { action:'left',   member:'xXProBuilder99', channel:'general-vc',  time:'4h ago' },
+];
+
+const NOTES = {
+  'MidnightDev':    [{ by:'Admin',     note:'Great contributor. Working on joining the dev team.', time:'2025-05-07 14:22' }],
+  'SkyBreakerZ':    [{ by:'Moderator', note:'Second warning issued. Monitor closely for next 7 days.', time:'2025-05-08 10:11' }],
+  'xXProBuilder99': [{ by:'Admin',     note:'Applied for builder role. Portfolio looks promising.', time:'2025-05-09 09:00' }],
+  'GhostFarm':      [{ by:'Moderator', note:'Suspected AFK farming. Keep an eye on XP gains.', time:'2025-05-01 17:55' }],
+];
+
+const ROBLOX_ACCOUNTS = [
+  { display:'NightWolf',      username:'nighwolf_rbx',  roblox_id:'4827361', discord:'NightWolf#1234',   linked:'2025-04-20' },
+  { display:'StormCraft',     username:'strmcft',       roblox_id:'3920184', discord:'StormCraft#5678',  linked:'2025-04-22' },
+  { display:'DevKing',        username:'devkingofficial',roblox_id:'2918374', discord:'DevKing#0001',   linked:'2025-04-25' },
+  { display:'LunarGamer',     username:'lunargamer99',  roblox_id:'5182047', discord:'LunarGamer#4321',  linked:'2025-05-01' },
+  { display:'MidnightDev',    username:'midnightdev_x', roblox_id:'6023918', discord:'MidnightDev#8888', linked:'2025-05-03' },
+  { display:'xXProBuilder99', username:'proBuild99',    roblox_id:'7193028', discord:'xXProBuilder99#222',linked:'2025-05-07' },
+  { display:'PlanetBuild',    username:'planetbuild_rblx',roblox_id:'8827463',discord:'PlanetBuild#3333',linked:'2025-05-09' },
+  { display:'ScriptMaster22', username:'scriptm22',     roblox_id:'9012847', discord:'ScriptMaster22#777',linked:'2025-05-09' },
+];
+
+const PREMIUM_MEMBERS = [
+  { id:'NightWolf#1234',    tier:'Gold',   granted_by:'Admin', expires:'2025-08-01' },
+  { id:'DevKing#0001',      tier:'Gold',   granted_by:'Admin', expires:'2025-07-15' },
+  { id:'StormCraft#5678',   tier:'Silver', granted_by:'Admin', expires:'2025-06-30' },
+];
+
+const ROLE_DATA     = { Builder:9, Scripter:7, Modeller:5, 'UI Design':3 };
+const MOD_ACT_DATA  = { Warn:12, Kick:5, Ban:3, Timeout:3 };
+const WORD_LIST     = ['toxic','kys','idiot','trash','loser','noob','lag','cheat','hack','bot','scam','grief','kill urself'];
+
+const CHART_COLORS  = ['#7c6fff','#22d3a0','#f5c842','#e879b4','#34c8ff','#ff9040'];
+const MEDALS        = ['🥇','🥈','🥉'];
+
+/* ═══════════════════════════════════════
+   LIVE CLOCK
+═══════════════════════════════════════ */
+function tick() {
+  const t = new Date();
+  document.getElementById('liveClock').textContent =
+    t.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
+tick(); setInterval(tick, 1000);
 
-function renderNotifs(){
+/* ═══════════════════════════════════════
+   TICKER
+═══════════════════════════════════════ */
+function buildTicker() {
+  const items = ACTIVITY.slice(0, 6).map(e =>
+    `<div class="ticker-item"><i class="ti ${e.icon}" style="color:${e.color}"></i> ${e.action} · ${e.time}</div>`
+  ).join('');
+  // Double for seamless loop
+  document.getElementById('tickerInner').innerHTML = items + items;
+}
+buildTicker();
+
+/* ═══════════════════════════════════════
+   NOTIFICATIONS
+═══════════════════════════════════════ */
+let readIds = JSON.parse(localStorage.getItem('ybs_read') || '[]');
+let notifData = ACTIVITY.slice(0, 8).map((e, i) => ({ id:`notif_${i}`, icon:e.icon, color:e.color, msg:e.action, detail:e.detail, time:e.time }));
+
+function renderNotifs() {
   const list = document.getElementById('notifList');
-  const badge = document.getElementById('notifBadge');
-  const unread = notifications.filter(n => !n.read && !readIds.includes(n.id)).length;
-  badge.textContent = unread;
-  badge.classList.toggle('show', unread > 0);
-  if(!notifications.length){
-    list.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-    return;
-  }
-  list.innerHTML = notifications.map(n => {
-    const isRead = n.read || readIds.includes(n.id);
-    return `<div class="notif-item ${isRead?'read':''}" onclick="markRead('${n.id}')">
-      <div class="notif-ic">${n.icon}</div>
-      <div class="notif-txt">
-        <div class="notif-msg">${n.msg}${n.detail ? ' — ' + n.detail : ''}</div>
-        <div class="notif-tm">${n.time}</div>
+  const pip  = document.getElementById('notifPip');
+  const btn  = document.getElementById('notifToggle');
+  const unread = notifData.filter(n => !readIds.includes(n.id)).length;
+
+  pip.textContent = unread;
+  pip.classList.toggle('show', unread > 0);
+  btn.classList.toggle('has-unread', unread > 0);
+
+  if (!notifData.length) { list.innerHTML = '<div class="notif-empty">All clear</div>'; return; }
+
+  list.innerHTML = notifData.map(n => {
+    const read = readIds.includes(n.id);
+    return `<div class="notif-item${read?' read':''}" onclick="markRead('${n.id}')">
+      <div class="ni-icon" style="background:${n.color}15"><i class="ti ${n.icon}" style="color:${n.color};font-size:13px"></i></div>
+      <div class="ni-body">
+        <div class="ni-msg">${n.msg}</div>
+        <div class="ni-time">${n.detail} · ${n.time}</div>
       </div>
-      <div class="notif-dot ${isRead?'read':''}"></div>
+      <div class="ni-dot${read?' read':''}"></div>
     </div>`;
   }).join('');
 }
 
-function markRead(id){
-  if(!readIds.includes(id)) readIds.push(id);
+function markRead(id) {
+  if (!readIds.includes(id)) { readIds.push(id); localStorage.setItem('ybs_read', JSON.stringify(readIds)); }
+  renderNotifs();
+}
+
+function clearNotifs() {
+  readIds = notifData.map(n => n.id);
   localStorage.setItem('ybs_read', JSON.stringify(readIds));
   renderNotifs();
 }
 
-function clearAllNotifs(){
-  readIds = notifications.map(n => n.id);
-  localStorage.setItem('ybs_read', JSON.stringify(readIds));
-  renderNotifs();
+function toggleNotif() {
+  const p = document.getElementById('notifPanel');
+  p.classList.toggle('open');
 }
 
-function toggleNotif(){
-  const panel = document.getElementById('notifPanel');
-  panel.classList.toggle('show');
-}
-
-// Close notif panel when clicking outside
 document.addEventListener('click', e => {
-  const panel = document.getElementById('notifPanel');
-  const btn = document.querySelector('.notif-btn');
-  if(panel.classList.contains('show') && !panel.contains(e.target) && !btn.contains(e.target)){
-    panel.classList.remove('show');
+  const p = document.getElementById('notifPanel');
+  const b = document.getElementById('notifToggle');
+  if (p.classList.contains('open') && !p.contains(e.target) && !b.contains(e.target)) {
+    p.classList.remove('open');
   }
 });
 
-loadNotifs();
+renderNotifs();
 
-// ── Tab switching ──
-function showTab(tab, btn){
-  document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display='none');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
-  const el = document.getElementById('tab-'+tab);
-  if(el) el.style.display='block';
-  btn.classList.add('on');
+/* ═══════════════════════════════════════
+   ANIMATED COUNTER
+═══════════════════════════════════════ */
+function animateCount(el, target, duration = 700) {
+  const start = performance.now();
+  const from  = 0;
+  function step(now) {
+    const prog = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - prog, 3); // cubic ease out
+    el.textContent = Math.round(from + (target - from) * ease).toLocaleString();
+    if (prog < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
-// ── Member search ──
-function filterMembers(query){
-  document.querySelectorAll('.member-row').forEach(row => {
-    const name = row.dataset.name || '';
-    row.style.display = name.includes(query.toLowerCase()) ? '' : 'none';
+/* ═══════════════════════════════════════
+   CHART REGISTRY (for destroy on nav)
+═══════════════════════════════════════ */
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function mkChart(id, config) {
+  destroyChart(id);
+  const el = document.getElementById(id);
+  if (!el) return;
+  charts[id] = new Chart(el, config);
+}
+
+const CHART_DEFAULTS = {
+  color: { grid:'rgba(255,255,255,0.04)', tick:'#464e6e' }
+};
+
+/* ═══════════════════════════════════════
+   BUILD: STAT CARD
+═══════════════════════════════════════ */
+function statCard(s, i) {
+  const max  = Math.max(...s.spark);
+  const bars = s.spark.map((v, j) => {
+    const pct = max > 0 ? Math.round((v / max) * 100) : 0;
+    const hi  = j === s.spark.length - 1 ? 'hi' : '';
+    return `<div class="spark-bar ${hi}" style="height:${pct}%;${hi ? `color:${s.color}` : ''}"></div>`;
+  }).join('');
+
+  let trendHtml = '';
+  if (s.trend) {
+    const cls = s.trend === '0' ? 'tne' : (s.up ? 'tup' : 'tdn');
+    const ico = s.trend === '0' ? 'ti-minus' : (s.up ? 'ti-trending-up' : 'ti-trending-down');
+    trendHtml = `<div class="sc-trend ${cls}"><i class="ti ${ico}" style="font-size:9px"></i>${s.trend}</div>`;
+  }
+
+  return `<div class="sc" style="animation-delay:${i * 35}ms">
+    <div class="sc-top-bar" style="background:${s.color}"></div>
+    ${trendHtml}
+    <div class="sc-icon" style="background:${s.color}15">
+      <i class="ti ${s.icon}" style="color:${s.color}"></i>
+    </div>
+    <div class="sc-val" data-target="${s.val}" data-animated="false">0</div>
+    <div class="sc-lbl">${s.label}</div>
+    <div class="spark" style="color:${s.color}">${bars}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════
+   BUILD: ACTIVITY ROW
+═══════════════════════════════════════ */
+function actRow(e, showLive) {
+  return `<div class="ai${showLive ? ' live-row' : ''}">
+    ${showLive ? '<div class="live-dot"></div>' : ''}
+    <div class="ai-ico" style="background:${e.color}15">
+      <i class="ti ${e.icon}" style="color:${e.color}"></i>
+    </div>
+    <div class="ai-main">
+      <div class="ai-act">${e.action}</div>
+      <div class="ai-det">${e.detail}</div>
+    </div>
+    <div class="ai-time">${e.time}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════
+   BUILD: XP MEMBER ROW
+═══════════════════════════════════════ */
+function xpRow(m, i) {
+  const medal = i < 3 ? MEDALS[i] : `<span style="font-size:11px">${i + 1}</span>`;
+  return `<div class="mr" style="animation-delay:${i*40}ms">
+    <div class="rk">${medal}</div>
+    <div class="av" style="background:${m.color}">${m.name[0]}</div>
+    <div class="m-info">
+      <div class="m-name">${m.name}</div>
+      <div class="m-sub">${m.xp.toLocaleString()} XP</div>
+      <div class="xpb"><div class="xpf" style="width:0%" data-fill="${m.pct}"></div></div>
+    </div>
+    <span class="bg bb">Lv ${m.level}</span>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════
+   XP BAR ANIMATION (runs after paint)
+═══════════════════════════════════════ */
+function animateBars() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.xpf[data-fill]').forEach(el => {
+      const target = el.dataset.fill;
+      setTimeout(() => { el.style.width = target + '%'; }, 100);
+    });
   });
 }
+
+/* ═══════════════════════════════════════
+   COUNTER ANIMATION trigger
+═══════════════════════════════════════ */
+function animateCounters() {
+  document.querySelectorAll('.sc-val[data-animated="false"]').forEach((el, i) => {
+    const target = parseInt(el.dataset.target, 10);
+    el.dataset.animated = 'true';
+    setTimeout(() => animateCount(el, target, 600), i * 40);
+  });
+}
+
+/* ═══════════════════════════════════════
+   PAGE RENDERERS
+═══════════════════════════════════════ */
+
+// ── OVERVIEW ──
+function pageHome() {
+  return `
+  <div class="sg">
+    ${STATS.map((s,i) => statCard(s,i)).join('')}
+  </div>
+
+  <div class="g2">
+    <!-- Activity feed -->
+    <div class="pn mb0">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-bolt"></i>Live Activity</div>
+        <button class="plink" onclick="nav('activity',null)">View all <i class="ti ti-arrow-right"></i></button>
+      </div>
+      <div class="al">
+        ${ACTIVITY.map((e,i) => actRow(e, i===0)).join('')}
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="flex-col">
+      <div class="pn mb0">
+        <div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Apps by Role</div></div>
+        <div class="cw cw-sm"><canvas id="roleChart"></canvas></div>
+      </div>
+      <div class="pn mb0">
+        <div class="ph">
+          <div class="pt"><i class="ti ti-trophy"></i>XP Leaders</div>
+          <button class="plink" onclick="nav('leaderboard',null)">Full list <i class="ti ti-arrow-right"></i></button>
+        </div>
+        ${TOP_XP.slice(0,3).map((m,i) => xpRow(m,i)).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="g22">
+    <div class="pn mb0">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-alert-triangle"></i>Recent Warnings</div>
+        <button class="plink" onclick="nav('warnings',null)">All <i class="ti ti-arrow-right"></i></button>
+      </div>
+      <table class="tbl"><thead><tr><th>User</th><th>Total</th><th>Last Reason</th></tr></thead><tbody>
+        ${Object.entries(WARNINGS).slice(0,5).map(([user, list]) =>
+          `<tr>
+            <td class="mono">${user}</td>
+            <td><span class="bg ${list.length >= 3 ? 'br' : 'by'}">${list.length}×</span></td>
+            <td>${list[list.length-1].reason}</td>
+          </tr>`
+        ).join('')}
+      </tbody></table>
+    </div>
+    <div class="pn mb0">
+      <div class="ph">
+        <div class="pt"><i class="ti ti-scroll"></i>Recent Mod Actions</div>
+        <button class="plink" onclick="nav('modlogs',null)">All <i class="ti ti-arrow-right"></i></button>
+      </div>
+      ${MOD_LOGS.slice(0,5).map(m =>
+        `<div class="ml">
+          <div class="ml-dot" style="background:${m.color}"></div>
+          <div>
+            <div class="ml-action">${m.action}: <strong>${m.target}</strong></div>
+            <div class="ml-meta">by ${m.by} · ${m.reason} · ${m.time}</div>
+          </div>
+        </div>`
+      ).join('')}
+    </div>
+  </div>`;
+}
+
+// ── ACTIVITY ──
+function pageActivity() {
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div>
+      <span style="font-size:11px;color:var(--mt)">${ACTIVITY.length} events</span>
+    </div>
+    <div class="al" style="max-height:none">
+      ${ACTIVITY.map((e,i) => actRow(e,i===0)).join('')}
+    </div>
+  </div>`;
+}
+
+// ── APPLICATIONS ──
+function pageApplications() {
+  if (!APPS.length) return emptyState('ti-file-description','No applications yet.');
+  return APPS.map(a => {
+    const statusCls = {accepted:'bgg',declined:'br',interview:'by',pending:'bb'}[a.status]||'bb';
+    const roleBadge = a.role.includes('Builder') ? 'by' : a.role.includes('Script') ? 'bb' : a.role.includes('Model') ? 'bgg' : 'bp';
+    return `<div class="pn">
+      <div class="ph">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">${a.name[0]}</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">${a.name} <span style="color:var(--mt);font-weight:400;font-size:12px">· ${a.roblox}</span></div>
+            <div style="font-size:11px;color:var(--mt);margin-top:1px">Status: <span class="bg ${statusCls}">${a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span></div>
+          </div>
+        </div>
+        <span class="bg ${roleBadge}">${a.role}</span>
+      </div>
+      <div style="padding:16px 18px">
+        <div class="bug-fields">
+          <div class="bug-field"><label>Age</label><p>${a.age}</p></div>
+          <div class="bug-field"><label>Role</label><p>${a.role}</p></div>
+          <div class="bug-field"><label>Portfolio</label><p>${a.portfolio !== 'N/A' ? `<a href="${a.portfolio}" style="color:var(--cy)">${a.portfolio}</a>` : '—'}</p></div>
+          <div class="bug-field full"><label>Experience</label><p>${a.exp}</p></div>
+          <div class="bug-field full"><label>Why Join</label><p>${a.why}</p></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── WARNINGS ──
+function pageWarnings() {
+  const entries = Object.entries(WARNINGS);
+  if (!entries.length) return emptyState('ti-circle-check','No warnings issued yet!');
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div>
+      <span style="font-size:11px;color:var(--mt)">${entries.length} users</span>
+    </div>
+    <table class="tbl"><thead><tr><th>User</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
+      ${entries.flatMap(([user, list]) =>
+        list.map((w, i) => `<tr>
+          <td class="mono">${user}</td>
+          <td>${i===0?`<span class="bg ${list.length>=3?'br':'by'}">${list.length} total</span>`:''}</td>
+          <td style="color:var(--mt)">#${i+1}</td>
+          <td>${w.reason}</td>
+          <td style="color:var(--mt)">${w.by}</td>
+          <td class="mono">${w.time}</td>
+        </tr>`)
+      ).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+// ── STAFF NOTES ──
+function pageNotes() {
+  const entries = Object.entries(NOTES);
+  if (!entries.length) return emptyState('ti-notes','No staff notes yet. Use /note @member text in Discord.');
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-notes"></i>Staff Notes</div>
+      <span style="font-size:11px;color:var(--mt)">${entries.reduce((a,[,v])=>a+v.length,0)} notes</span>
+    </div>
+    ${entries.map(([user, notes]) => `
+      <div style="border-bottom:1px solid var(--bd)">
+        <div style="padding:9px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User: ${user}</div>
+        ${notes.map(n => `<div class="note-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span class="note-by">${n.by}</span>
+            <span class="note-time">${n.time}</span>
+          </div>
+          <div class="note-text">${n.note}</div>
+        </div>`).join('')}
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// ── MEMBERS ──
+function pageMembers() {
+  const combined = TOP_XP.map(m => ({ ...m, msgs: Math.floor(Math.random()*500+100), warns: WARNINGS[m.name]?.length || 0 }));
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-users"></i>All Members</div>
+      <span style="font-size:11px;color:var(--mt)">${combined.length} tracked</span>
+    </div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--bd)">
+      <input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)">
+    </div>
+    <table class="tbl" id="membersTable">
+      <thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead>
+      <tbody>
+        ${combined.map(m => `<tr class="member-row" data-name="${m.name.toLowerCase()}">
+          <td><div style="display:flex;align-items:center;gap:9px">
+            <div class="av" style="background:${m.color};width:28px;height:28px;font-size:11px">${m.name[0]}</div>
+            <span style="font-weight:500;color:#fff">${m.name}</span>
+          </div></td>
+          <td><span class="bg bb">Lv ${m.level}</span></td>
+          <td><div>${m.xp.toLocaleString()} XP<div class="xpb" style="margin-top:4px"><div class="xpf" data-fill="${m.pct}" style="width:0%"></div></div></div></td>
+          <td style="color:var(--yw)">💰 ${(m.xp * 0.8).toFixed(0)}</td>
+          <td class="mono" style="color:var(--mt)">${m.msgs}</td>
+          <td>${m.warns ? `<span class="bg ${m.warns>=3?'br':'by'}">${m.warns}</span>` : '<span style="color:var(--mt)">0</span>'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function filterMembers(q) {
+  document.querySelectorAll('.member-row').forEach(r => {
+    r.style.display = r.dataset.name.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// ── LEADERBOARD ──
+function pageLeaderboard() {
+  return `
+  <div class="tabs">
+    <button class="tab on" onclick="lbSwitch('xp',this)">XP Rankings</button>
+    <button class="tab" onclick="lbSwitch('eco',this)">Rich List</button>
+  </div>
+  <div id="lb-xp">
+    <div class="pn">
+      <div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div><span style="font-size:11px;color:var(--mt)">${TOP_XP.length} members</span></div>
+      ${TOP_XP.map((m,i) => xpRow(m,i)).join('')}
+    </div>
+  </div>
+  <div id="lb-eco" style="display:none">
+    <div class="pn">
+      <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>
+      ${TOP_XP.map((m,i) => `<div class="mr" style="animation-delay:${i*40}ms">
+        <div class="rk">${i<3?MEDALS[i]:i+1}</div>
+        <div class="av" style="background:#f5c842;color:#000">${m.name[0]}</div>
+        <div class="m-info">
+          <div class="m-name">${m.name}</div>
+          <div class="m-sub">Total earned: ${(m.xp*2.1).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')} coins</div>
+        </div>
+        <span class="bg by">💰 ${(m.xp*0.8).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+window.lbSwitch = (tab, btn) => {
+  document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  ['xp','eco'].forEach(t => {
+    const el = document.getElementById(`lb-${t}`);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+  animateBars();
+};
+
+// ── MOD LOGS ──
+function pageModlogs() {
+  if (!MOD_LOGS.length) return emptyState('ti-scroll','No moderation actions logged yet.');
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-scroll"></i>Mod Log</div>
+      <span style="font-size:11px;color:var(--mt)">${MOD_LOGS.length} actions</span>
+    </div>
+    ${MOD_LOGS.map(m => `<div class="ml">
+      <div class="ml-dot" style="background:${m.color}"></div>
+      <div>
+        <div class="ml-action">${m.action}: <strong>${m.target}</strong></div>
+        <div class="ml-meta">by ${m.by} · "${m.reason}" · ${m.time}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── AUTO-MOD ──
+function pageAutomod() {
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div>
+      <span style="font-size:11px;color:var(--mt)">${WORD_LIST.length} words</span>
+    </div>
+    <div class="word-list">${WORD_LIST.map(w => `<span class="word-tag">${w}</span>`).join('')}</div>
+    <div style="padding:13px 18px;background:var(--s2);border-top:1px solid var(--bd)">
+      <div style="font-size:10px;color:var(--mt);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.7px">Commands</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        ${['/addword','/removeword','/wordlist'].map(c =>
+          `<code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ac)">${c}</code>`
+        ).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── TICKETS ──
+function pageTickets() {
+  if (!TICKETS.length) return emptyState('ti-ticket','No open tickets.');
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div>
+      <span style="font-size:11px;color:var(--mt)">${TICKETS.length} open</span>
+    </div>
+    ${TICKETS.map(t => `<div class="ticket-card">
+      <div class="tc-head">
+        <span class="tc-id">${t.id}</span>
+        <div class="tc-title">${t.user}</div>
+        <span class="bg bgg">${t.status}</span>
+      </div>
+      <div class="tc-body">${t.reason} · Opened: ${t.created}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── BUGS ──
+function pageBugs() {
+  if (!BUG_REPORTS.length) return emptyState('ti-bug','No bug reports yet.');
+  return BUG_REPORTS.map(r => {
+    const stCls = {fixed:'bgg',open:'br',in_progress:'bc'}[r.status]||'by';
+    const svCls = r.severity==='critical'?'br':r.severity==='high'?'bo':r.severity==='medium'?'by':'bgg';
+    return `<div class="bug-card">
+      <div class="bug-hd">
+        <span class="bug-id">${r.id}</span>
+        <span class="bug-title">${r.title}</span>
+        <span class="bg ${stCls}">${r.status.replace('_',' ')}</span>
+        <span class="bg ${svCls}">${r.severity}</span>
+      </div>
+      <div class="bug-body">
+        <div class="bug-fields">
+          <div class="bug-field"><label>Area</label><p>${r.area}</p></div>
+          <div class="bug-field"><label>Reporter</label><p>${r.reporter}</p></div>
+          <div class="bug-field"><label>${r.fixed_by?'Fixed By':'Status'}</label><p style="${r.fixed_by?'color:var(--gn)':''}">${r.fixed_by||r.status}</p></div>
+          <div class="bug-field full"><label>Description</label><p>${r.description}</p></div>
+          <div class="bug-field full"><label>Steps to Reproduce</label><p>${r.steps}</p></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── GIVEAWAYS ──
+function pageGiveaways() {
+  if (!GIVEAWAYS.length) return emptyState('ti-confetti','No active giveaways.');
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div>
+      <span style="font-size:11px;color:var(--mt)">${GIVEAWAYS.length} running</span>
+    </div>
+    ${GIVEAWAYS.map(g => `<div class="giveaway-card">
+      <div class="gw-prize">🎁 ${g.prize}</div>
+      <div class="gw-meta">Hosted by ${g.host} · ${g.entries} entries · Ends ${g.ends.replace('T',' ').slice(0,16)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── VOICE ──
+function pageVoice() {
+  return `<div class="pn">
+    <div class="ph">
+      <div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div>
+      <span style="font-size:11px;color:var(--mt)">${VOICE_EVENTS.length} events</span>
+    </div>
+    <table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>
+      ${VOICE_EVENTS.map(v => `<tr>
+        <td><span class="bg ${v.action==='joined'?'bgg':v.action==='left'?'br':'by'}">${v.action==='joined'?'↘ Joined':v.action==='left'?'↗ Left':'↔ Moved'}</span></td>
+        <td>${v.member}</td>
+        <td style="color:var(--mt)">#${v.channel}</td>
+        <td class="mono" style="color:var(--mt)">${v.time}</td>
+      </tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+// ── ECONOMY ──
+function pageEconomy() {
+  const total = TOP_XP.reduce((a,m) => a + Math.round(m.xp*0.8), 0);
+  const earned = TOP_XP.reduce((a,m) => a + Math.round(m.xp*2.1), 0);
+  const richest = Math.max(...TOP_XP.map(m => Math.round(m.xp*0.8)));
+  return `
+  <div class="sg sg-4">
+    ${[
+      {icon:'ti-coin',label:'Total Circulating',val:total.toLocaleString(),color:'#f5c842'},
+      {icon:'ti-users',label:'Economy Users',val:'89',color:'#22d3a0'},
+      {icon:'ti-trending-up',label:'Total Ever Earned',val:earned.toLocaleString(),color:'#7c6fff'},
+      {icon:'ti-trophy',label:'Richest Balance',val:richest.toLocaleString(),color:'#ff9040'},
+    ].map(s => `<div class="sc">
+      <div class="sc-top-bar" style="background:${s.color}"></div>
+      <div class="sc-icon" style="background:${s.color}15"><i class="ti ${s.icon}" style="color:${s.color}"></i></div>
+      <div class="sc-val">${s.val}</div>
+      <div class="sc-lbl">${s.label}</div>
+    </div>`).join('')}
+  </div>
+  <div class="pn">
+    <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>
+    ${TOP_XP.map((m,i) => `<div class="mr">
+      <div class="rk">${i<3?MEDALS[i]:i+1}</div>
+      <div class="av" style="background:#f5c842;color:#1a1200">${m.name[0]}</div>
+      <div class="m-info">
+        <div class="m-name">${m.name}</div>
+        <div class="m-sub">Total earned: ${(m.xp*2.1).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')} coins</div>
+      </div>
+      <span class="bg by">💰 ${(m.xp*0.8).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── ANALYTICS ──
+function pageAnalytics() {
+  return `
+  <div class="sg sg-4">
+    ${[
+      {icon:'ti-bolt',label:'Total Events',val:ACTIVITY.length,color:'#7c6fff'},
+      {icon:'ti-brand-google-play',label:'Roblox Linked',val:ROBLOX_ACCOUNTS.length,color:'#34c8ff'},
+      {icon:'ti-file-description',label:'Applications',val:APPS.length,color:'#22d3a0'},
+      {icon:'ti-alert-triangle',label:'Total Warns',val:Object.values(WARNINGS).reduce((a,v)=>a+v.length,0),color:'#f05d7a'},
+    ].map(s => `<div class="sc">
+      <div class="sc-top-bar" style="background:${s.color}"></div>
+      <div class="sc-icon" style="background:${s.color}15"><i class="ti ${s.icon}" style="color:${s.color}"></i></div>
+      <div class="sc-val" data-target="${s.val}" data-animated="false">0</div>
+      <div class="sc-lbl">${s.label}</div>
+    </div>`).join('')}
+  </div>
+  <div class="g22">
+    <div class="pn mb0">
+      <div class="ph"><div class="pt"><i class="ti ti-chart-bar"></i>Applications by Role</div></div>
+      <div class="cw"><canvas id="analyticsRole"></canvas></div>
+    </div>
+    <div class="pn mb0">
+      <div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Mod Action Types</div></div>
+      <div class="cw"><canvas id="analyticsMod"></canvas></div>
+    </div>
+  </div>
+  <div class="pn">
+    <div class="ph"><div class="pt"><i class="ti ti-chart-line"></i>Activity Trend (last 10 days)</div></div>
+    <div class="cw"><canvas id="analyticsGrowth" style="max-height:160px"></canvas></div>
+  </div>`;
+}
+
+// ── ROBLOX ──
+function pageRoblox() {
+  return `
+  <div class="sg" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">
+    <div class="sc">
+      <div class="sc-top-bar" style="background:#34c8ff"></div>
+      <div class="sc-icon" style="background:#34c8ff15"><i class="ti ti-brand-google-play" style="color:#34c8ff"></i></div>
+      <div class="sc-val" data-target="${ROBLOX_ACCOUNTS.length}" data-animated="false">0</div>
+      <div class="sc-lbl">Linked Accounts</div>
+    </div>
+    <div class="sc">
+      <div class="sc-top-bar" style="background:#22d3a0"></div>
+      <div class="sc-icon" style="background:#22d3a015"><i class="ti ti-shield-check" style="color:#22d3a0"></i></div>
+      <div class="sc-val" data-target="${ROBLOX_ACCOUNTS.length}" data-animated="false">0</div>
+      <div class="sc-lbl">Verified Accounts</div>
+    </div>
+  </div>
+  <div class="roblox-grid">
+    ${ROBLOX_ACCOUNTS.map(a => `<div class="roblox-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div class="rb-avatar">🎮</div>
+        <div>
+          <div class="rb-name">${a.display}</div>
+          <div class="rb-user">@${a.username}</div>
+          <div class="rb-id">ID: ${a.roblox_id}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;font-size:10px;color:var(--mt)">
+        <span>${a.discord}</span>
+        <span>${a.linked}</span>
+      </div>
+      <a href="https://www.roblox.com/users/${a.roblox_id}/profile" target="_blank" class="rb-link">View Profile →</a>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── PREMIUM ──
+function pagePremium() {
+  return `
+  <div class="sc" style="margin-bottom:12px;max-width:200px">
+    <div class="sc-top-bar" style="background:#f5c842"></div>
+    <div class="sc-icon" style="background:#f5c84215"><i class="ti ti-crown" style="color:#f5c842"></i></div>
+    <div class="sc-val" data-target="${PREMIUM_MEMBERS.length}" data-animated="false">0</div>
+    <div class="sc-lbl">Premium Members</div>
+  </div>
+  <div class="pn">
+    <div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div></div>
+    <table class="tbl"><thead><tr><th>User</th><th>Tier</th><th>Granted By</th><th>Expires</th></tr></thead><tbody>
+      ${PREMIUM_MEMBERS.map(p => `<tr>
+        <td class="mono">${p.id}</td>
+        <td><span class="bg by">👑 ${p.tier}</span></td>
+        <td style="color:var(--mt)">${p.granted_by}</td>
+        <td class="mono">${p.expires}</td>
+      </tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+// ── Empty state ──
+function emptyState(icon, msg) {
+  return `<div class="pn"><div class="empty">
+    <i class="ti ${icon}"></i>
+    <p>${msg}</p>
+  </div></div>`;
+}
+
+/* ═══════════════════════════════════════
+   CHART BUILDERS (post-render)
+═══════════════════════════════════════ */
+function buildCharts(page) {
+  const gridColor = 'rgba(255,255,255,0.04)';
+  const tickColor = '#464e6e';
+
+  if (page === 'home') {
+    requestAnimationFrame(() => {
+      mkChart('roleChart', {
+        type:'doughnut',
+        data:{
+          labels:Object.keys(ROLE_DATA),
+          datasets:[{data:Object.values(ROLE_DATA),backgroundColor:CHART_COLORS,borderWidth:0,hoverOffset:5}]
+        },
+        options:{
+          plugins:{legend:{position:'bottom',labels:{color:tickColor,font:{size:10},padding:10}}},
+          cutout:'66%',animation:{duration:700}
+        }
+      });
+    });
+  }
+
+  if (page === 'analytics') {
+    requestAnimationFrame(() => {
+      mkChart('analyticsRole', {
+        type:'bar',
+        data:{labels:Object.keys(ROLE_DATA),datasets:[{data:Object.values(ROLE_DATA),backgroundColor:CHART_COLORS,borderRadius:6,borderWidth:0}]},
+        options:{
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{ticks:{color:tickColor},grid:{display:false}},
+            y:{ticks:{color:tickColor},grid:{color:gridColor}}
+          }
+        }
+      });
+      mkChart('analyticsMod', {
+        type:'doughnut',
+        data:{labels:Object.keys(MOD_ACT_DATA),datasets:[{data:Object.values(MOD_ACT_DATA),backgroundColor:['#f5c842','#f05d7a','#7c6fff','#ff9040'],borderWidth:0}]},
+        options:{plugins:{legend:{position:'bottom',labels:{color:tickColor,font:{size:10}}}},cutout:'60%'}
+      });
+      mkChart('analyticsGrowth', {
+        type:'line',
+        data:{
+          labels:['Apr 30','May 1','May 2','May 3','May 4','May 5','May 6','May 7','May 8','May 9'],
+          datasets:[{
+            label:'Events',data:[18,24,20,31,28,35,30,38,42,47],
+            borderColor:'#7c6fff',backgroundColor:'rgba(124,111,255,0.07)',
+            fill:true,tension:0.4,pointBackgroundColor:'#7c6fff',pointRadius:3,pointBorderWidth:0
+          }]
+        },
+        options:{
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{ticks:{color:tickColor},grid:{display:false}},
+            y:{ticks:{color:tickColor},grid:{color:gridColor},beginAtZero:true}
+          }
+        }
+      });
+    });
+  }
+}
+
+/* ═══════════════════════════════════════
+   PAGE TITLES
+═══════════════════════════════════════ */
+const PAGE_TITLES = {
+  home:'Overview', activity:'Live Activity', applications:'Applications',
+  warnings:'Warnings', notes:'Staff Notes', members:'Members',
+  leaderboard:'Leaderboard', modlogs:'Mod Logs', automod:'Auto-Mod',
+  tickets:'Tickets', bugs:'Bug Reports', giveaways:'Giveaways',
+  voice:'Voice Log', economy:'Economy', analytics:'Analytics',
+  roblox:'Roblox Profiles', premium:'Premium Members',
+};
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+let currentPage = 'home';
+
+const PAGE_FNS = {
+  home:pageHome, activity:pageActivity, applications:pageApplications,
+  warnings:pageWarnings, notes:pageNotes, members:pageMembers,
+  leaderboard:pageLeaderboard, modlogs:pageModlogs, automod:pageAutomod,
+  tickets:pageTickets, bugs:pageBugs, giveaways:pageGiveaways,
+  voice:pageVoice, economy:pageEconomy, analytics:pageAnalytics,
+  roblox:pageRoblox, premium:pagePremium,
+};
+
+function nav(page, btn) {
+  currentPage = page;
+
+  // Update nav highlight
+  document.querySelectorAll('.na').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+
+  // Update topbar
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
+
+  // Render
+  const fn = PAGE_FNS[page];
+  document.getElementById('content').innerHTML = fn ? fn() : emptyState('ti-tool','Page not found.');
+
+  // Post-render hooks
+  buildCharts(page);
+  animateCounters();
+  animateBars();
+}
+
+/* ═══════════════════════════════════════
+   SIMULATED LIVE EVENTS
+   Injects a new activity row every ~12s
+═══════════════════════════════════════ */
+const FAKE_EVENTS = [
+  { icon:'ti-bolt',           color:'#7c6fff', action:'XP milestone reached', detail:'NightWolf hit Level 19' },
+  { icon:'ti-coin',           color:'#f5c842', action:'Daily reward claimed',  detail:'StormCraft claimed 250 coins' },
+  { icon:'ti-brand-google-play',color:'#34c8ff',action:'New Roblox link',    detail:'PlanetBuild linked @planetbuild_rblx' },
+  { icon:'ti-ticket',         color:'#22d3a0', action:'Ticket closed',        detail:'#041 resolved by Admin' },
+  { icon:'ti-users',          color:'#7c6fff', action:'Member joined',         detail:'ByteBuilder just joined the server' },
+];
+
+let fakeIdx = 0;
+setInterval(() => {
+  const e = FAKE_EVENTS[fakeIdx % FAKE_EVENTS.length];
+  fakeIdx++;
+  e.time = 'just now';
+
+  // Prepend to data
+  ACTIVITY.unshift(e);
+  if (ACTIVITY.length > 50) ACTIVITY.pop();
+
+  // Refresh if on activity/home page
+  if (currentPage === 'activity' || currentPage === 'home') {
+    const feed = document.querySelector('.al');
+    if (feed) {
+      const row = document.createElement('div');
+      row.innerHTML = actRow(e, true);
+      const inner = row.firstElementChild;
+      inner.classList.add('new-event');
+      feed.prepend(inner);
+      // Remove old rows past 15 on home
+      if (currentPage === 'home') {
+        const rows = feed.querySelectorAll('.ai');
+        if (rows.length > 15) rows[rows.length-1].remove();
+      }
+    }
+  }
+
+  // Update footer count
+  const fc = document.getElementById('footCount');
+  if (fc) fc.textContent = ACTIVITY.length;
+}, 12000);
+
+/* ═══════════════════════════════════════
+   AUTO REFRESH
+═══════════════════════════════════════ */
+setTimeout(() => location.reload(), 30000);
+
+/* ═══════════════════════════════════════
+   INITIAL LOAD
+═══════════════════════════════════════ */
+nav('home', document.querySelector('.na.on'));
 </script>
 </body>
 </html>
-
-
-
-
-
-

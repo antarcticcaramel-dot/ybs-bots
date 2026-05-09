@@ -73,6 +73,295 @@ bug_reports_data = []
 premium_data = {}
 bot_shutdown_flag = False
 
+# ============================================================
+# ADVANCED AUTO-MOD DATA STORES
+# ============================================================
+import re
+from collections import defaultdict, deque
+
+automod_infractions    = {}                  # user_id -> {warns, muted, kicks, mute_warns}
+automod_message_times  = defaultdict(deque)  # user_id -> deque of timestamps
+automod_duplicate_times = {}                 # user_id -> {content, count}
+
+automod_link_pattern   = re.compile(r'(https?://|discord\.gg/|discordapp\.com/invite/|bit\.ly/|tinyurl\.com/|t\.me/)', re.IGNORECASE)
+automod_invite_pattern = re.compile(r'(discord\.gg/|discord\.com/invite/|discordapp\.com/invite/)', re.IGNORECASE)
+
+automod_spam_threshold  = 5     # messages
+automod_spam_window     = 5     # seconds
+automod_duplicate_count = 3     # same msg X times
+automod_mention_limit   = 5     # @mentions per message
+automod_emoji_limit     = 10    # emojis per message
+automod_newline_limit   = 15    # newlines per message
+automod_caps_threshold  = 0.75  # 75%+ caps
+
+ALLOWED_DOMAINS = [
+    "roblox.com", "create.roblox.com", "devforum.roblox.com",
+    "youtube.com", "youtu.be", "gyazo.com", "imgur.com",
+    "github.com", "twitch.tv",
+]
+
+SEVERITY_COLORS = {"warn": 0xFFD166, "mute": 0xFF9F43, "kick": 0xED4245, "ban": 0x8B0000}
+
+# ============================================================
+# ADVANCED AUTO-MOD HELPERS
+# ============================================================
+def is_allowed_link(url: str) -> bool:
+    return any(domain in url.lower() for domain in ALLOWED_DOMAINS)
+
+def contains_blocked_link(text: str) -> bool:
+    urls = re.findall(r'https?://\S+|discord\.gg/\S+', text, re.IGNORECASE)
+    return any(not is_allowed_link(u) for u in urls)
+
+def contains_invite(text: str) -> bool:
+    return bool(automod_invite_pattern.search(text))
+
+def is_caps_spam(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    if len(letters) < 8:
+        return False
+    return (sum(1 for c in letters if c.isupper()) / len(letters)) >= automod_caps_threshold
+
+def is_message_spam(user_id: int) -> bool:
+    now = datetime.now().timestamp()
+    times = automod_message_times[user_id]
+    times.append(now)
+    while times and now - times[0] > automod_spam_window:
+        times.popleft()
+    return len(times) >= automod_spam_threshold
+
+def is_duplicate_spam(user_id: int, content: str) -> bool:
+    if not content.strip():
+        return False
+    entry = automod_duplicate_times.get(user_id, {"content": "", "count": 0})
+    if entry["content"] == content.strip().lower():
+        entry["count"] += 1
+    else:
+        entry = {"content": content.strip().lower(), "count": 1}
+    automod_duplicate_times[user_id] = entry
+    return entry["count"] >= automod_duplicate_count
+
+def count_mentions(message: discord.Message) -> int:
+    return len(message.mentions) + len(message.role_mentions)
+
+def count_emojis(text: str) -> int:
+    uni = re.findall(r'[\U0001F300-\U0001F9FF]|[\u2600-\u27BF]|\u00a9|\u00ae', text)
+    custom = re.findall(r'<a?:\w+:\d+>', text)
+    return len(uni) + len(custom)
+
+def get_automod_infractions(user_id: int) -> dict:
+    if user_id not in automod_infractions:
+        automod_infractions[user_id] = {"warns": 0, "muted": False, "kicks": 0, "mute_warns": 0}
+    return automod_infractions[user_id]
+
+async def _dm_member(member: discord.Member, content: str):
+    try:
+        embed = discord.Embed(title="🤖 AutoMod — Young Boy Studios", description=content, color=0xFF9F43)
+        embed.set_footer(text="If you think this is a mistake, open a /ticket in the server.")
+        await member.send(embed=embed)
+    except Exception:
+        pass
+
+async def send_automod_log(guild: discord.Guild, member: discord.Member, reason: str, action: str, detail: str = ""):
+    log_ch_id = get(guild.id, "mod_channel") or get(guild.id, "logs_channel")
+    log_ch = guild.get_channel(log_ch_id) if log_ch_id else None
+    if not log_ch:
+        return
+    inf = get_automod_infractions(member.id)
+    color = SEVERITY_COLORS.get(action.lower(), 0xFF9F43)
+    embed = discord.Embed(title=f"🤖 AutoMod — {action.upper()}", description=f"**{member.mention}** was automatically moderated.", color=color, timestamp=datetime.now())
+    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.add_field(name="👤 Member",              value=f"{member} (`{member.id}`)",           inline=True)
+    embed.add_field(name="⚠️ Trigger",             value=reason,                                inline=True)
+    embed.add_field(name="🔨 Action",              value=action.title(),                        inline=True)
+    embed.add_field(name="📊 AutoMod Warns",       value=str(inf["warns"]),                     inline=True)
+    embed.add_field(name="🦶 Kicks",               value=str(inf["kicks"]),                     inline=True)
+    embed.add_field(name="🔇 Muted",               value="✅" if inf["muted"] else "❌",        inline=True)
+    if detail:
+        embed.add_field(name="💬 Content", value=f"```{detail[:400]}```", inline=False)
+    embed.set_footer(text="Use the buttons below to take further action")
+    await log_ch.send(embed=embed, view=AutoModActionView(member))
+
+async def automod_warn_and_escalate(message: discord.Message, reason: str, detail: str = ""):
+    member = message.author
+    guild  = message.guild
+    inf    = get_automod_infractions(member.id)
+
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    inf["warns"] += 1
+    total = inf["warns"]
+
+    if member.id not in warnings_data:
+        warnings_data[member.id] = []
+    warnings_data[member.id].append({"reason": f"[AutoMod] {reason}", "by": "AutoMod", "time": datetime.now().isoformat()})
+    add_activity("🤖", f"AutoMod | {member.display_name}", reason)
+    add_mod_log("AutoMod", str(member), "AutoMod", reason, "#ff9f43")
+
+    if total == 1:
+        try:
+            await message.channel.send(embed=discord.Embed(description=f"⚠️ {member.mention} — **{reason}**\n*Warning 1/3 before mute.*", color=0xFFD166), delete_after=8)
+        except Exception:
+            pass
+        await _dm_member(member, f"⚠️ **Warning 1/3** in **{guild.name}**\n**Reason:** {reason}\n\nPlease follow the rules — 3 warnings = mute.")
+
+    elif total == 2:
+        try:
+            await message.channel.send(embed=discord.Embed(description=f"⚠️ {member.mention} — **{reason}**\n*Warning 2/3. Next = **mute**.*", color=0xFF9F43), delete_after=10)
+        except Exception:
+            pass
+        await _dm_member(member, f"⚠️ **Warning 2/3** in **{guild.name}**\n**Reason:** {reason}\n\n⚡ **One more violation and you will be muted!**")
+
+    elif total >= 3 and not inf["muted"]:
+        inf["muted"]     = True
+        inf["mute_warns"] = 0
+        try:
+            await member.timeout(datetime.utcnow() + timedelta(minutes=10), reason=f"[AutoMod] {reason}")
+        except Exception:
+            pass
+        try:
+            await message.channel.send(embed=discord.Embed(description=f"🔇 {member.mention} muted **10 minutes** by AutoMod.\n**Reason:** {reason}", color=0xED4245), delete_after=15)
+        except Exception:
+            pass
+        await _dm_member(member, f"🔇 **Muted 10 minutes** in **{guild.name}**.\n**Reason:** {reason}\n\n⚡ Continue after unmute and you will be **kicked**.")
+        await send_automod_log(guild, member, reason, "Mute (10 min)", detail)
+
+    elif inf["muted"]:
+        inf["mute_warns"] = inf.get("mute_warns", 0) + 1
+        if inf["mute_warns"] >= 3 and inf["kicks"] == 0:
+            inf["kicks"] += 1
+            inf["muted"]  = False
+            inf["warns"]  = 0
+            try:
+                await member.timeout(None)
+            except Exception:
+                pass
+            try:
+                await member.kick(reason=f"[AutoMod] Repeated violations after mute — {reason}")
+            except Exception:
+                pass
+            await _dm_member(member, f"👢 **Kicked** from **{guild.name}**.\n**Reason:** Continued violations after mute.\n\n🚨 Rejoin and reoffend = **permanent ban**.")
+            await send_automod_log(guild, member, reason, "Kick", detail)
+            add_mod_log("AutoMod Kick", str(member), "AutoMod", reason, "#ed4245")
+        else:
+            try:
+                await message.channel.send(embed=discord.Embed(description=f"⚠️ {member.mention} — **{reason}**\n*Post-mute warning {inf['mute_warns']}/3 before kick.*", color=0xED4245), delete_after=10)
+            except Exception:
+                pass
+            await _dm_member(member, f"⚠️ **Post-mute warning {inf['mute_warns']}/3** in **{guild.name}**\n**Reason:** {reason}\n\n🚨 3 post-mute warns = **kick**.")
+            await send_automod_log(guild, member, reason, f"Warn (post-mute {inf['mute_warns']}/3)", detail)
+
+async def automod_check_ban(member: discord.Member, guild: discord.Guild):
+    inf = get_automod_infractions(member.id)
+    if inf["kicks"] >= 1 and inf["warns"] >= 3:
+        try:
+            await member.ban(reason="[AutoMod] Repeated violations after kick")
+        except Exception:
+            pass
+        await _dm_member(member, f"🔨 **Permanently banned** from **{guild.name}**.\nYou were kicked for violations, then reoffended after rejoining.\n\nThis was done automatically by AutoMod.")
+        add_mod_log("AutoMod Ban", str(member), "AutoMod", "Reoffended after kick", "#8b0000")
+        add_activity("🔨", f"AutoMod banned {member.display_name}", "Rejoined & reoffended")
+        log_ch_id = get(guild.id, "mod_channel") or get(guild.id, "logs_channel")
+        log_ch = guild.get_channel(log_ch_id) if log_ch_id else None
+        if log_ch:
+            embed = discord.Embed(title="🔨 AutoMod — PERMANENT BAN", description=f"**{member}** banned after rejoining and reoffending.", color=0x8B0000, timestamp=datetime.now())
+            embed.set_thumbnail(url=member.display_avatar.url)
+            await log_ch.send(embed=embed)
+
+# ============================================================
+# AUTO-MOD ACTION VIEW (sent to logs channel)
+# ============================================================
+class AutoModActionView(View):
+    def __init__(self, member: discord.Member):
+        super().__init__(timeout=None)
+        self.member = member
+
+    @discord.ui.button(label="⚠️ Warn", style=discord.ButtonStyle.secondary, row=0)
+    async def warn_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
+        if self.member.id not in warnings_data: warnings_data[self.member.id] = []
+        warnings_data[self.member.id].append({"reason": "Staff review after AutoMod", "by": str(interaction.user), "time": datetime.now().isoformat()})
+        add_mod_log("Warn", str(self.member), str(interaction.user), "Staff review after AutoMod", "#faa61a")
+        await interaction.response.send_message(f"⚠️ Warning issued to **{self.member}**.", ephemeral=True)
+
+    @discord.ui.button(label="🔇 Mute 1h", style=discord.ButtonStyle.danger, row=0)
+    async def mute1h_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.moderate_members:
+            return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+        try:
+            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=1), reason=f"Staff after AutoMod — {interaction.user}")
+            add_mod_log("Mute", str(self.member), str(interaction.user), "1h after AutoMod", "#faa61a")
+            await interaction.response.send_message(f"🔇 **{self.member}** muted 1h.", ephemeral=True)
+        except Exception: await interaction.response.send_message("❌ Couldn't mute.", ephemeral=True)
+
+    @discord.ui.button(label="🔇 Mute 24h", style=discord.ButtonStyle.danger, row=0)
+    async def mute24h_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.moderate_members:
+            return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+        try:
+            await self.member.timeout(discord.utils.utcnow() + timedelta(hours=24), reason=f"Staff after AutoMod — {interaction.user}")
+            add_mod_log("Mute", str(self.member), str(interaction.user), "24h after AutoMod", "#faa61a")
+            await interaction.response.send_message(f"🔇 **{self.member}** muted 24h.", ephemeral=True)
+        except Exception: await interaction.response.send_message("❌ Couldn't mute.", ephemeral=True)
+
+    @discord.ui.button(label="👢 Kick", style=discord.ButtonStyle.danger, row=0)
+    async def kick_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+        try:
+            await self.member.kick(reason=f"Staff after AutoMod — {interaction.user}")
+            add_mod_log("Kick", str(self.member), str(interaction.user), "Kick after AutoMod", "#ed4245")
+            await interaction.response.send_message(f"👢 **{self.member}** kicked.", ephemeral=True)
+        except Exception: await interaction.response.send_message("❌ Couldn't kick.", ephemeral=True)
+
+    @discord.ui.button(label="🔨 Ban", style=discord.ButtonStyle.danger, row=0)
+    async def ban_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.ban_members:
+            return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+        try:
+            await self.member.ban(reason=f"Staff after AutoMod — {interaction.user}")
+            add_mod_log("Ban", str(self.member), str(interaction.user), "Ban after AutoMod", "#8b0000")
+            await interaction.response.send_message(f"🔨 **{self.member}** banned.", ephemeral=True)
+        except Exception: await interaction.response.send_message("❌ Couldn't ban.", ephemeral=True)
+
+    @discord.ui.button(label="✅ Dismiss / False Positive", style=discord.ButtonStyle.success, row=1)
+    async def dismiss_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
+        inf = get_automod_infractions(self.member.id)
+        if inf["warns"] > 0: inf["warns"] -= 1
+        if self.member.id in warnings_data and warnings_data[self.member.id]:
+            warnings_data[self.member.id].pop()
+        try: await self.member.timeout(None)
+        except Exception: pass
+        await interaction.response.send_message(f"✅ Dismissed for **{self.member}**. Mute removed if active.", ephemeral=True)
+
+    @discord.ui.button(label="🔄 Reset All Strikes", style=discord.ButtonStyle.secondary, row=1)
+    async def reset_btn(self, interaction, button):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ Admin only.", ephemeral=True)
+        automod_infractions.pop(self.member.id, None)
+        automod_duplicate_times.pop(self.member.id, None)
+        if self.member.id in automod_message_times: automod_message_times[self.member.id].clear()
+        await interaction.response.send_message(f"🔄 AutoMod strikes reset for **{self.member}**.", ephemeral=True)
+
+    @discord.ui.button(label="📋 Full History", style=discord.ButtonStyle.primary, row=1)
+    async def history_btn(self, interaction, button):
+        inf   = get_automod_infractions(self.member.id)
+        warns = warnings_data.get(self.member.id, [])
+        embed = discord.Embed(title=f"📋 AutoMod History — {self.member}", color=0x5865F2)
+        embed.add_field(name="⚠️ Warns",  value=f"`{inf['warns']}`",                    inline=True)
+        embed.add_field(name="🦶 Kicks",  value=f"`{inf['kicks']}`",                    inline=True)
+        embed.add_field(name="🔇 Muted",  value="✅" if inf["muted"] else "❌",         inline=True)
+        if warns:
+            embed.add_field(name="Recent", value="\n".join(f"• {w['reason'][:60]} *({w['time'][:10]})*" for w in warns[-10:]), inline=False)
+        else:
+            embed.description = "No warning history."
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
 # ---- Helpers ----
 def next_bug_id():
     return f"BUG-{len(bug_reports_data)+1:04d}"
@@ -632,59 +921,115 @@ async def on_message(message):
     if message.author.bot or not message.guild:
         await bot.process_commands(message)
         return
-    guild_words = automod_data.get(str(message.guild.id), [])
-    if guild_words and any(w.lower() in message.content.lower() for w in guild_words):
-        try:
-            await message.delete()
-            await message.channel.send(f"⚠️ {message.author.mention}, that message contained a banned word.", delete_after=5)
-            if message.author.id not in warnings_data:
-                warnings_data[message.author.id] = []
-            warnings_data[message.author.id].append({"reason": "AutoMod: banned word", "by": "AutoMod", "time": datetime.now().isoformat()})
-            add_activity("🤖", f"AutoMod removed message from {message.author.display_name}")
-        except Exception:
-            pass
-        await bot.process_commands(message)
-        return
-    if message.author.id in afk_data:
-        afk_data.pop(message.author.id)
-        await message.channel.send(f"✅ Welcome back, {message.author.mention}! AFK removed.", delete_after=5)
+
+    member  = message.author
+    content = message.content
+    guild   = message.guild
+
+    # ---- Staff are exempt from AutoMod ----
+    is_exempt = member.guild_permissions.administrator or member.guild_permissions.manage_messages
+
+    if not is_exempt:
+        flagged = False
+
+        # 1. Discord invite links
+        if not flagged and contains_invite(content):
+            await automod_warn_and_escalate(message, "Discord invite link", content[:200])
+            flagged = True
+
+        # 2. Blocked external links
+        if not flagged and contains_blocked_link(content):
+            await automod_warn_and_escalate(message, "Blocked link / URL", content[:200])
+            flagged = True
+
+        # 3. Message spam (too fast)
+        if not flagged and is_message_spam(member.id):
+            await automod_warn_and_escalate(message, f"Message spam ({automod_spam_threshold}+ msgs/{automod_spam_window}s)", "")
+            flagged = True
+
+        # 4. Duplicate message spam
+        if not flagged and is_duplicate_spam(member.id, content):
+            await automod_warn_and_escalate(message, "Duplicate message spam", content[:200])
+            flagged = True
+
+        # 5. Mass mentions
+        if not flagged and count_mentions(message) >= automod_mention_limit:
+            await automod_warn_and_escalate(message, f"Mass mentions ({count_mentions(message)} pings)", content[:200])
+            flagged = True
+
+        # 6. Emoji spam
+        if not flagged and count_emojis(content) >= automod_emoji_limit:
+            await automod_warn_and_escalate(message, f"Emoji spam ({count_emojis(content)} emojis)", content[:100])
+            flagged = True
+
+        # 7. Caps spam
+        if not flagged and is_caps_spam(content):
+            await automod_warn_and_escalate(message, "Excessive caps spam", content[:200])
+            flagged = True
+
+        # 8. Wall of text
+        if not flagged and content.count('\n') >= automod_newline_limit:
+            await automod_warn_and_escalate(message, f"Wall of text ({content.count(chr(10))} newlines)", content[:100])
+            flagged = True
+
+        # 9. Custom word filter
+        if not flagged:
+            guild_words = automod_data.get(str(guild.id), [])
+            if guild_words and any(w.lower() in content.lower() for w in guild_words):
+                await automod_warn_and_escalate(message, "Banned word/phrase", content[:200])
+                flagged = True
+
+        # 10. Ban check (previously kicked member reoffending)
+        if not flagged:
+            await automod_check_ban(member, guild)
+
+        if flagged:
+            return  # message was deleted — skip AFK/XP/commands
+
+    # ---- AFK check ----
+    if member.id in afk_data:
+        afk_data.pop(member.id)
+        await message.channel.send(f"✅ Welcome back, {member.mention}! AFK removed.", delete_after=5)
     for mentioned in message.mentions:
         if mentioned.id in afk_data:
             info = afk_data[mentioned.id]
             await message.channel.send(f"💤 **{mentioned.display_name}** is AFK: {info['reason']} *(since {info['time']})*", delete_after=10)
-    now = datetime.now()
-    last = xp_cooldowns.get(message.author.id)
+
+    # ---- XP system ----
+    now  = datetime.now()
+    last = xp_cooldowns.get(member.id)
     if not last or (now - last).total_seconds() >= 60:
-        xp_cooldowns[message.author.id] = now
-        if message.author.id not in xp_data:
-            xp_data[message.author.id] = {"xp": 0, "level": 0, "messages": 0, "name": str(message.author)}
+        xp_cooldowns[member.id] = now
+        if member.id not in xp_data:
+            xp_data[member.id] = {"xp": 0, "level": 0, "messages": 0, "name": str(member)}
         earned = random.randint(5, 15)
-        xp_data[message.author.id]["xp"] += earned
-        xp_data[message.author.id]["messages"] = xp_data[message.author.id].get("messages", 0) + 1
-        xp_data[message.author.id]["name"] = str(message.author)
-        cur_xp = xp_data[message.author.id]["xp"]
-        old_lv = xp_data[message.author.id]["level"]
+        xp_data[member.id]["xp"]      += earned
+        xp_data[member.id]["messages"] = xp_data[member.id].get("messages", 0) + 1
+        xp_data[member.id]["name"]     = str(member)
+        cur_xp = xp_data[member.id]["xp"]
+        old_lv = xp_data[member.id]["level"]
         new_lv = get_level(cur_xp)
         if new_lv > old_lv:
-            xp_data[message.author.id]["level"] = new_lv
-            add_activity("⬆️", f"{message.author.display_name} reached level {new_lv}!", message.guild.name)
-            lv_ch_id = get(message.guild.id, "levelup_channel")
-            lv_ch = bot.get_channel(lv_ch_id) if lv_ch_id else message.channel
-            embed = discord.Embed(title="🎉 Level Up!", description=f"{message.author.mention} reached **Level {new_lv}**! 🚀", color=0xFAA61A)
+            xp_data[member.id]["level"] = new_lv
+            add_activity("⬆️", f"{member.display_name} reached level {new_lv}!", guild.name)
+            lv_ch_id = get(guild.id, "levelup_channel")
+            lv_ch    = bot.get_channel(lv_ch_id) if lv_ch_id else message.channel
+            embed = discord.Embed(title="🎉 Level Up!", description=f"{member.mention} reached **Level {new_lv}**! 🚀", color=0xFAA61A)
             try:
                 await lv_ch.send(embed=embed, delete_after=30)
-            except:
+            except Exception:
                 pass
             for lv_key, role_key in [("5", "level5_role"), ("10", "level10_role"), ("25", "level25_role")]:
                 if new_lv >= int(lv_key):
-                    lv_role_id = get(message.guild.id, role_key)
+                    lv_role_id = get(guild.id, role_key)
                     if lv_role_id:
-                        lv_role = message.guild.get_role(lv_role_id)
-                        if lv_role and lv_role not in message.author.roles:
+                        lv_role = guild.get_role(lv_role_id)
+                        if lv_role and lv_role not in member.roles:
                             try:
-                                await message.author.add_roles(lv_role)
-                            except:
+                                await member.add_roles(lv_role)
+                            except Exception:
                                 pass
+
     await bot.process_commands(message)
 
 @bot.event
@@ -3181,6 +3526,96 @@ async def slash_member_info(interaction: discord.Interaction, member: discord.Me
     embed.add_field(name="📅 Joined", value=m.joined_at.strftime("%d %b %Y") if m.joined_at else "?", inline=True)
     embed.set_footer(text="Use the buttons below to explore more")
     await interaction.response.send_message(embed=embed, view=MemberInfoView(m), ephemeral=True)
+
+# ============================================================
+# SLASH — AUTOMOD PANEL
+# ============================================================
+class AutoModConfigView(View):
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=180)
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="📊 View Settings", style=discord.ButtonStyle.primary, row=0)
+    async def view_settings(self, interaction, button):
+        words = automod_data.get(str(self.guild_id), [])
+        embed = discord.Embed(title="🤖 AutoMod Settings", color=0x6C63FF)
+        embed.add_field(name="🔗 Link Blocking",   value="✅ Active",                                     inline=True)
+        embed.add_field(name="💌 Invite Blocking", value="✅ Active",                                     inline=True)
+        embed.add_field(name="⚡ Spam",            value=f"✅ {automod_spam_threshold}msg/{automod_spam_window}s", inline=True)
+        embed.add_field(name="🔁 Duplicate",       value=f"✅ ×{automod_duplicate_count} same msg",       inline=True)
+        embed.add_field(name="📢 Mass Mention",    value=f"✅ >{automod_mention_limit} pings",            inline=True)
+        embed.add_field(name="😂 Emoji Spam",      value=f"✅ >{automod_emoji_limit} emojis",             inline=True)
+        embed.add_field(name="🔠 Caps Spam",       value=f"✅ >{int(automod_caps_threshold*100)}% caps",  inline=True)
+        embed.add_field(name="📜 Wall of Text",    value=f"✅ >{automod_newline_limit} newlines",         inline=True)
+        embed.add_field(name="🚫 Banned Words",    value=f"**{len(words)}** words" if words else "None",  inline=True)
+        embed.add_field(name="📈 Escalation",
+            value="**×1** Alert + DM\n**×2** Final warning + DM\n**×3** Mute 10min + Log\n**Post-mute ×3** Kick\n**Rejoin + ×3** Permanent Ban",
+            inline=False)
+        embed.set_footer(text="Admins and Manage Messages are exempt")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="📋 Strike Leaderboard", style=discord.ButtonStyle.secondary, row=0)
+    async def strike_lb(self, interaction, button):
+        if not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
+        if not automod_infractions:
+            return await interaction.response.send_message("✅ No strikes recorded yet.", ephemeral=True)
+        top = sorted(automod_infractions.items(), key=lambda x: x[1]["warns"], reverse=True)[:15]
+        embed = discord.Embed(title="📋 AutoMod Strike Leaderboard", color=0xFF9F43)
+        lines = []
+        for uid, inf in top:
+            m = interaction.guild.get_member(uid)
+            name = m.display_name if m else f"User {uid}"
+            lines.append(f"**{name}** — ⚠️ {inf['warns']} · 🦶 {inf['kicks']} kicks {'🔇' if inf['muted'] else ''}")
+        embed.description = "\n".join(lines)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="🧹 Clear Member Strikes", style=discord.ButtonStyle.secondary, row=1)
+    async def clear_member(self, interaction, button):
+        if not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ Staff only.", ephemeral=True)
+        class ClearModal(Modal, title="🧹 Clear AutoMod Strikes"):
+            uid_input = TextInput(label="Member ID or Username", placeholder="e.g. 123456789 or PlayerName", max_length=50)
+            async def on_submit(self2, i2):
+                val = self2.uid_input.value.strip()
+                if val.isdigit():
+                    tid = int(val)
+                    target = i2.guild.get_member(tid)
+                    if not target:
+                        automod_infractions.pop(tid, None)
+                        return await i2.response.send_message(f"✅ Cleared strikes for ID `{tid}`.", ephemeral=True)
+                else:
+                    target = discord.utils.find(lambda m: val.lower() in m.name.lower() or val.lower() in m.display_name.lower(), i2.guild.members)
+                if not target:
+                    return await i2.response.send_message("❌ Member not found.", ephemeral=True)
+                automod_infractions.pop(target.id, None)
+                automod_duplicate_times.pop(target.id, None)
+                if target.id in automod_message_times: automod_message_times[target.id].clear()
+                await i2.response.send_message(f"✅ Strikes cleared for **{target.display_name}**.", ephemeral=True)
+        await interaction.response.send_modal(ClearModal())
+
+    @discord.ui.button(label="🔄 Reset ALL Strikes", style=discord.ButtonStyle.danger, row=1)
+    async def reset_all(self, interaction, button):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ Admin only.", ephemeral=True)
+        automod_infractions.clear()
+        automod_duplicate_times.clear()
+        automod_message_times.clear()
+        await interaction.response.send_message("🔄 All AutoMod strikes cleared.", ephemeral=True)
+
+@tree.command(name="automod", description="AutoMod live settings, strike board & management [Staff]")
+async def slash_automod_panel(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.manage_messages:
+        return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
+    words = automod_data.get(str(interaction.guild.id), [])
+    muted_count  = sum(1 for inf in automod_infractions.values() if inf["muted"])
+    kicked_count = sum(inf["kicks"] for inf in automod_infractions.values())
+    embed = discord.Embed(title="🤖 Advanced AutoMod", description="YBS auto-moderation is **fully active** watching all messages in real time.", color=0x6C63FF)
+    embed.add_field(name="⚡ Detects",      value="Invite links · External URLs\nMessage spam · Duplicate spam\nMass mentions · Emoji spam\nCaps spam · Wall of text\nCustom word filter", inline=True)
+    embed.add_field(name="📈 Escalation",   value="**×1** Alert + DM\n**×2** Final warning\n**×3** Mute 10min\n**Post-mute ×3** Kick\n**Rejoin + ×3** Ban",                              inline=True)
+    embed.add_field(name="📊 Live Stats",   value=f"⚠️ **{len(automod_infractions)}** tracked\n🔇 **{muted_count}** muted\n👢 **{kicked_count}** auto-kicks\n🚫 **{len(words)}** banned words", inline=True)
+    embed.set_footer(text="Staff with Manage Messages are exempt from all AutoMod checks")
+    await interaction.response.send_message(embed=embed, view=AutoModConfigView(interaction.guild.id), ephemeral=True)
 
 # ============================================================
 # DASHBOARD (Flask)

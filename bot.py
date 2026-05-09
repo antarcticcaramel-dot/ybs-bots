@@ -3971,14 +3971,34 @@ async def slash_automod_panel(interaction: discord.Interaction):
 flask_app = Flask(__name__)
 flask_app.jinja_env.globals.update(enumerate=enumerate)
 
+# ── Config key allowlists ──
+CHANNEL_CONFIG_KEYS_DASH = [
+    "welcome_channel", "apply_channel", "applications_channel",
+    "logs_channel", "general_channel", "announcements_channel",
+    "giveaway_channel", "levelup_channel", "rank_channel",
+    "verify_channel", "mod_channel",
+]
+ROLE_CONFIG_KEYS_DASH = [
+    "admin_role", "member_role", "muted_role", "builder_role",
+    "scripter_role", "modeller_role", "ui_role", "verified_role",
+    "level5_role", "level10_role", "level25_role", "pending_role",
+]
+BOT_CONFIG_KEYS_DASH = [
+    "welcome_message", "automod_enabled", "automod_spam",
+    "automod_caps", "automod_links", "automod_invites",
+    "automod_duplicate", "automod_mentions", "automod_emoji",
+    "levelup_enabled", "economy_enabled",
+]
+ALL_ALLOWED_KEYS = set(CHANNEL_CONFIG_KEYS_DASH + ROLE_CONFIG_KEYS_DASH + BOT_CONFIG_KEYS_DASH)
+
 
 def build_xp_leaderboard():
     result = []
     for uid, d in sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True):
-        lv          = get_level(d["xp"])
-        next_lv_xp  = xp_for_level(lv + 1)
-        prev_lv_xp  = xp_for_level(lv)
-        pct         = int((d["xp"] - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
+        lv         = get_level(d["xp"])
+        next_lv_xp = xp_for_level(lv + 1)
+        prev_lv_xp = xp_for_level(lv)
+        pct        = int((d["xp"] - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
         result.append({
             "uid": uid, "name": d.get("name", "Unknown"),
             "xp": d["xp"], "level": lv,
@@ -4019,13 +4039,13 @@ def common():
     all_member_ids = set(list(xp_data.keys()) + list(economy_data.keys()))
     members_list   = []
     for uid in all_member_ids:
-        xd      = xp_data.get(uid, {})
-        ed      = economy_data.get(uid, {})
-        xp_val  = xd.get("xp", 0)
-        lv      = get_level(xp_val)
+        xd         = xp_data.get(uid, {})
+        ed         = economy_data.get(uid, {})
+        xp_val     = xd.get("xp", 0)
+        lv         = get_level(xp_val)
         next_lv_xp = xp_for_level(lv + 1)
         prev_lv_xp = xp_for_level(lv)
-        pct = int((xp_val - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
+        pct        = int((xp_val - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
         members_list.append({
             "uid":      uid,
             "name":     xd.get("name", ed.get("name", str(uid))),
@@ -4037,8 +4057,8 @@ def common():
     members_list.sort(key=lambda x: x["xp"], reverse=True)
 
     eco_lb            = build_eco_leaderboard()
-    total_coins       = sum(d["balance"]       for d in economy_data.values())
-    total_earned_ever = sum(d["total_earned"]  for d in economy_data.values())
+    total_coins       = sum(d["balance"]      for d in economy_data.values())
+    total_earned_ever = sum(d["total_earned"] for d in economy_data.values())
     richest           = max((d["balance"] for d in economy_data.values()), default=0)
 
     roblox_accounts = [
@@ -4093,9 +4113,12 @@ def common():
         mod_action_counts=mod_action_counts,
         recent_warns=recent_warns[:5],
         recent_apps=list(applications_data.values())[-5:],
+        # ── new: pass secret so dashboard config JS can call the API ──
+        dashboard_secret=os.environ.get("DASHBOARD_SECRET", "changeme"),
     )
 
 
+# ── Page routes ──
 @flask_app.route("/")
 def dashboard_home():
     return render_template("dashboard.html", page="home", **common())
@@ -4164,6 +4187,13 @@ def dashboard_roblox():
 def dashboard_premium():
     return render_template("dashboard.html", page="premium", **common())
 
+# ── NEW: Config page route ──
+@flask_app.route("/config")
+def dashboard_config():
+    return render_template("dashboard.html", page="config", **common())
+
+
+# ── Existing API routes ──
 @flask_app.route("/api/stats")
 def api_stats():
     return jsonify({
@@ -4192,6 +4222,125 @@ def api_shutdown():
     return jsonify({"status": "shutdown initiated"})
 
 
+# ── NEW: Config API routes ──
+
+@flask_app.route("/api/config", methods=["GET"])
+def api_config_get():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    if request.args.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+    guild_id = request.args.get("guild_id")
+    cfg = load_config()
+    if guild_id:
+        return jsonify(cfg.get(str(guild_id), {}))
+    return jsonify(cfg)
+
+
+@flask_app.route("/api/config/save", methods=["POST"])
+def api_config_save():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    data   = request.json or {}
+    if data.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    guild_id = str(data.get("guild_id", ""))
+    if not guild_id:
+        return jsonify({"error": "guild_id required"}), 400
+
+    incoming = data.get("config", {})
+    if not isinstance(incoming, dict):
+        return jsonify({"error": "config must be an object"}), 400
+
+    cfg = load_config()
+    if guild_id not in cfg:
+        cfg[guild_id] = {}
+
+    updated = []
+    for key, value in incoming.items():
+        if key not in ALL_ALLOWED_KEYS:
+            continue
+        if value is None or value == "" or value == 0:
+            cfg[guild_id].pop(key, None)
+        else:
+            cfg[guild_id][key] = value
+        updated.append(key)
+
+    save_config(cfg)
+    add_activity("⚙️", "Dashboard config updated", f"{len(updated)} key(s) saved")
+    return jsonify({"status": "ok", "updated": updated})
+
+
+@flask_app.route("/api/config/reset", methods=["POST"])
+def api_config_reset():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    data   = request.json or {}
+    if data.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+    guild_id = str(data.get("guild_id", ""))
+    if not guild_id:
+        return jsonify({"error": "guild_id required"}), 400
+    cfg = load_config()
+    cfg.pop(guild_id, None)
+    save_config(cfg)
+    return jsonify({"status": "ok"})
+
+
+@flask_app.route("/api/guilds")
+def api_guilds():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    if request.args.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+    guilds = [
+        {
+            "id":           str(g.id),
+            "name":         g.name,
+            "member_count": g.member_count,
+            "icon":         str(g.icon.url) if g.icon else None,
+        }
+        for g in bot.guilds
+    ]
+    return jsonify(guilds)
+
+
+@flask_app.route("/api/guild/channels")
+def api_guild_channels():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    if request.args.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+    try:
+        guild_id = int(request.args.get("guild_id", 0))
+    except ValueError:
+        return jsonify({"error": "Invalid guild_id"}), 400
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        return jsonify({"error": "Guild not found"}), 404
+    channels = [
+        {"id": str(c.id), "name": c.name}
+        for c in sorted(guild.text_channels, key=lambda c: c.position)
+    ]
+    return jsonify(channels)
+
+
+@flask_app.route("/api/guild/roles")
+def api_guild_roles():
+    secret = os.environ.get("DASHBOARD_SECRET", "changeme")
+    if request.args.get("secret") != secret:
+        return jsonify({"error": "Unauthorized"}), 403
+    try:
+        guild_id = int(request.args.get("guild_id", 0))
+    except ValueError:
+        return jsonify({"error": "Invalid guild_id"}), 400
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        return jsonify({"error": "Guild not found"}), 404
+    roles = [
+        {"id": str(r.id), "name": r.name}
+        for r in reversed(guild.roles)
+        if r.name != "@everyone"
+    ]
+    return jsonify(roles)
+
+
 # ============================================================
 # RUN BOTH
 # ============================================================
@@ -4200,8 +4349,5 @@ from threading import Thread
 def run_flask():
     flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
 
-# Run Flask in background thread
 Thread(target=run_flask, daemon=True).start()
-
-# Run bot on the main thread
 bot.run(TOKEN)

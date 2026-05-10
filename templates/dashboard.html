@@ -267,7 +267,7 @@ a{text-decoration:none;color:inherit}
 .modal-btn-sec:hover{color:var(--tx)}
 
 /* ══════════════════════
-   CONFIG SYSTEM — Sapphire
+   CONFIG SYSTEM
 ══════════════════════ */
 .cfg-wrap{display:grid;grid-template-columns:210px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:12px;min-height:640px}
 .cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column}
@@ -698,9 +698,7 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         CONFIG — Channels & Roles
-    ═══════════════════════════════════ -->
+    <!-- ══ CONFIG — Channels & Roles ══ -->
     <div class="page-section {% if page=='config' %}active{% endif %}" id="sec-config">
       <div class="cfg-status-card">
         <div class="cfg-status-avatar"><i class="ti ti-device-gamepad-2"></i></div>
@@ -750,7 +748,7 @@ a{text-decoration:none;color:inherit}
             {% for dd_id, key, name, desc in channel_fields %}
             <div class="cfg-field">
               <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
-              <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div>
+              <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div>
             </div>
             {% endfor %}
           </div>
@@ -788,7 +786,7 @@ a{text-decoration:none;color:inherit}
             {% if group != last_group %}<div class="cfg-group-label">{{ group }}</div>{% set last_group = group %}{% endif %}
             <div class="cfg-field">
               <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
-              <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div>
+              <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd rl-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div>
             </div>
             {% endfor %}
           </div>
@@ -818,7 +816,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- Danger zone tab -->
+        <!-- Danger zone -->
         <div class="cfg-tab" id="cfg-danger">
           <div class="cfg-tab-head"><div class="cfg-tab-title" style="color:var(--rd)"><i class="ti ti-alert-triangle"></i> Danger Zone</div><div class="cfg-tab-desc">Irreversible actions. These affect the live bot immediately.</div></div>
           <div class="cfg-body">
@@ -841,7 +839,7 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-nav-item" onclick="cfgSwitch2('welcome-dm',this)"><i class="ti ti-mail"></i> Join DM</div>
         </div>
         <div class="cfg-content">
-          <div class="cfg-tab2 cfg-tab-on2" id="cfg2-welcome-main">
+          <div class="cfg-tab2 cfg-tab-on2" id="cfg2-welcome-main" style="display:flex;flex-direction:column;flex:1">
             <div class="cfg-tab-head"><div class="cfg-tab-title"><i class="ti ti-door-enter"></i> Welcome Message</div><div class="cfg-tab-desc">Sent in the welcome channel when a member joins.</div></div>
             <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildNameW">No server selected</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
             <div class="cfg-body">
@@ -854,18 +852,18 @@ a{text-decoration:none;color:inherit}
             </div>
             <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('welcome')"><i class="ti ti-device-floppy"></i> Save Welcome</button><div class="cfg-save-status" id="cfg-status-welcome"></div></div>
           </div>
-          <div class="cfg-tab2" id="cfg2-welcome-leave" style="display:none">
+          <div class="cfg-tab2" id="cfg2-welcome-leave" style="display:none;flex-direction:column;flex:1">
             <div class="cfg-tab-head"><div class="cfg-tab-title"><i class="ti ti-door-exit"></i> Leave Message</div><div class="cfg-tab-desc">Posted when a member leaves the server.</div></div>
             <div class="cfg-body">
               <div class="cfg-group"><div class="cfg-group-label">Settings</div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Enable Leave Messages</div></div><div class="cfg-field-control"><label class="cfg-toggle"><input type="checkbox" id="leave_message_enabled" data-key="leave_message_enabled" onchange="markDirty('welcome')"><div class="cfg-toggle-slider"></div></label></div></div>
-                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Leave Channel</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_leave_channel" data-key="leave_channel" onchange="markDirty('welcome')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Leave Channel</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="dd_leave_channel" data-key="leave_channel" onchange="markDirty('welcome')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div></div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Leave Message</div><div class="cfg-field-desc">Use {user} for username, {memberCount} for new count</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" id="leave_message" data-key="leave_message" placeholder="👋 {user} has left. We now have {memberCount} members." onchange="markDirty('welcome')"></div></div>
               </div>
             </div>
-            <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('welcome')"><i class="ti ti-device-floppy"></i> Save Leave</button><div class="cfg-save-status" id="cfg-status-welcome2"></div></div>
+            <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('welcome')"><i class="ti ti-device-floppy"></i> Save Leave</button><div class="cfg-save-status" id="cfg-status-welcome"></div></div>
           </div>
-          <div class="cfg-tab2" id="cfg2-welcome-dm" style="display:none">
+          <div class="cfg-tab2" id="cfg2-welcome-dm" style="display:none;flex-direction:column;flex:1">
             <div class="cfg-tab-head"><div class="cfg-tab-title"><i class="ti ti-mail"></i> Join DM</div><div class="cfg-tab-desc">DM sent to new members on join.</div></div>
             <div class="cfg-body">
               <div class="cfg-group"><div class="cfg-group-label">Settings</div>
@@ -873,7 +871,7 @@ a{text-decoration:none;color:inherit}
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">DM Message</div><div class="cfg-field-desc">Supports {user} and {server}</div></div><div class="cfg-field-control"><textarea class="cfg-textarea" id="join_dm_message" data-key="join_dm_message" placeholder="👋 Welcome to {server}! Check out #apply-here to join the team." rows="4" onchange="markDirty('welcome')"></textarea></div></div>
               </div>
             </div>
-            <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('welcome')"><i class="ti ti-device-floppy"></i> Save DM</button><div class="cfg-save-status" id="cfg-status-welcome3"></div></div>
+            <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('welcome')"><i class="ti ti-device-floppy"></i> Save DM</button><div class="cfg-save-status" id="cfg-status-welcome"></div></div>
           </div>
         </div>
       </div>
@@ -908,7 +906,7 @@ a{text-decoration:none;color:inherit}
             <div class="cfg-body">
               <div class="cfg-group"><div class="cfg-group-label">Auto Role</div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Enable Autorole</div><div class="cfg-field-desc">Automatically give a role to everyone who joins</div></div><div class="cfg-field-control"><label class="cfg-toggle"><input type="checkbox" id="autorole_enabled" data-key="autorole_enabled" onchange="markDirty('autorole')"><div class="cfg-toggle-slider"></div></label></div></div>
-                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Auto Role</div><div class="cfg-field-desc">This role is given to every new member automatically</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_autorole" data-key="autorole_id" onchange="markDirty('autorole')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Auto Role</div><div class="cfg-field-desc">This role is given to every new member automatically</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd rl-select" id="dd_autorole" data-key="autorole_id" onchange="markDirty('autorole')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div></div>
               </div>
             </div>
             <div class="cfg-actions"><button class="cfg-btn cfg-btn-save" onclick="cfgSave('autorole')"><i class="ti ti-device-floppy"></i> Save Autorole</button><div class="cfg-save-status" id="cfg-status-autorole"></div></div>
@@ -928,7 +926,7 @@ a{text-decoration:none;color:inherit}
             <div class="cfg-body">
               <div class="cfg-group"><div class="cfg-group-label">Starboard Settings</div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Enable Starboard</div></div><div class="cfg-field-control"><label class="cfg-toggle"><input type="checkbox" id="starboard_enabled" data-key="starboard_enabled" onchange="markDirty('starboard')"><div class="cfg-toggle-slider"></div></label></div></div>
-                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Starboard Channel</div><div class="cfg-field-desc">Starred messages are reposted here</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_starboard_channel" data-key="starboard_channel" onchange="markDirty('starboard')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Starboard Channel</div><div class="cfg-field-desc">Starred messages are reposted here</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="dd_starboard_channel" data-key="starboard_channel" onchange="markDirty('starboard')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div></div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Stars Required</div><div class="cfg-field-desc">How many ⭐ reactions before reposting</div></div><div class="cfg-field-control"><input class="cfg-input" type="number" id="starboard_threshold" data-key="starboard_threshold" min="1" max="25" placeholder="3" onchange="markDirty('starboard')"></div></div>
               </div>
             </div>
@@ -978,8 +976,8 @@ a{text-decoration:none;color:inherit}
             <div class="cfg-body">
               <div class="cfg-group"><div class="cfg-group-label">Ticket Settings</div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Ticket Category</div><div class="cfg-field-desc">Category where ticket channels are created (optional)</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" id="ticket_category" data-key="ticket_category" placeholder="Category ID (optional)" onchange="markDirty('ticket-setup')"></div></div>
-                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Ticket Log Channel</div><div class="cfg-field-desc">Where closed ticket transcripts are sent</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_ticket_log" data-key="ticket_log_channel" onchange="markDirty('ticket-setup')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
-                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Support Role</div><div class="cfg-field-desc">Role that can see and manage tickets</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_ticket_support" data-key="ticket_support_role" onchange="markDirty('ticket-setup')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Ticket Log Channel</div><div class="cfg-field-desc">Where closed ticket transcripts are sent</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="dd_ticket_log" data-key="ticket_log_channel" onchange="markDirty('ticket-setup')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div></div>
+                <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Support Role</div><div class="cfg-field-desc">Role that can see and manage tickets</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd rl-select" id="dd_ticket_support" data-key="ticket_support_role" onchange="markDirty('ticket-setup')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div></div>
                 <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Ticket Welcome Message</div><div class="cfg-field-desc">First message sent in a new ticket channel. Use {user} and {reason}</div></div><div class="cfg-field-control"><textarea class="cfg-textarea" id="ticket_welcome_message" data-key="ticket_welcome_message" placeholder="Hey {user}! Staff will be with you shortly. Reason: {reason}" rows="3" onchange="markDirty('ticket-setup')"></textarea></div></div>
               </div>
             </div>
@@ -1014,7 +1012,7 @@ a{text-decoration:none;color:inherit}
               <div style="margin-top:4px">
                 <div style="font-size:11px;color:var(--mt);font-weight:600;margin-bottom:6px">Send to Channel</div>
                 <div style="display:grid;grid-template-columns:1fr auto;gap:7px">
-                  <div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="eb_send_channel"><option value="">Select channel...</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div>
+                  <div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="eb_send_channel"><option value="">Select channel...</option></select><i class="ti ti-chevron-down dd-chevron"></i></div>
                   <button onclick="sendEmbed()" style="background:var(--ac);color:#fff;border:none;border-radius:var(--rb);padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">Send</button>
                 </div>
               </div>
@@ -1050,6 +1048,7 @@ a{text-decoration:none;color:inherit}
 
 <script>
 const CFG_SECRET = '{{ dashboard_secret }}';
+const STORAGE_KEY = 'ybs_active_guild';
 const PAGE_TITLES = {home:'Overview',activity:'Live Activity',applications:'Applications',warnings:'Warnings',notes:'Staff Notes',members:'Members',leaderboard:'Leaderboard',modlogs:'Mod Logs',automod:'Auto-Mod',tickets:'Tickets',bugs:'Bug Reports',giveaways:'Giveaways',voice:'Voice Log',economy:'Economy',analytics:'Analytics',roblox:'Roblox Profiles',premium:'Premium Members',config:'Channels & Roles',welcome:'Welcome',['reaction-roles']:'Reaction Roles',autorole:'Autorole',starboard:'Starboard',logging:'Logging',['ticket-setup']:'Ticket Setup',['embed-builder']:'Embed Builder'};
 
 /* ── CLOCK ── */
@@ -1062,13 +1061,13 @@ let arTimer=null;
 function startAR(){stopAR();arTimer=setTimeout(()=>{if(currentPage!=='config')location.reload();},30000)}
 function stopAR(){if(arTimer){clearTimeout(arTimer);arTimer=null}}
 function manualRefresh(){if(hasDirtyTabs()){return showToast('info','Save your changes before refreshing.','ti-info-circle')}location.reload()}
+const CONFIG_PAGES=['config','welcome','reaction-roles','autorole','starboard','logging','ticket-setup','embed-builder'];
 function updateRefreshState(p){
   const btn=document.getElementById('refreshBtn');
   const foot=document.getElementById('footStatus');
-  const configPages=['config','welcome','reaction-roles','autorole','starboard','logging','ticket-setup','embed-builder'];
-  if(configPages.includes(p)){
+  if(CONFIG_PAGES.includes(p)){
     stopAR();
-    if(foot)foot.textContent='Auto-refresh paused — unsaved changes may be lost';
+    if(foot)foot.textContent='Auto-refresh paused on config pages';
     if(btn){btn.style.opacity='.5';btn.title='Save before refreshing'}
   }else{
     startAR();
@@ -1080,7 +1079,7 @@ updateRefreshState(currentPage);
 
 /* ── PAGE NAV ── */
 function showPage(page,btn){
-  if(hasDirtyTabs()&&!['config','welcome','reaction-roles','autorole','starboard','logging','ticket-setup','embed-builder'].includes(page)){
+  if(hasDirtyTabs()&&!CONFIG_PAGES.includes(page)){
     if(!confirm('Unsaved config changes will be lost. Continue?'))return;
   }
   document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
@@ -1093,11 +1092,12 @@ function showPage(page,btn){
   currentPage=page;
   updateRefreshState(page);
   buildCharts(page);
-  if((page==='config'||['welcome','autorole','starboard','logging','ticket-setup'].includes(page))&&activeGuildId)cfgLoadCurrent();
-  if(page==='reaction-roles'&&activeGuildId)rrLoad();
-  if(page==='embed-builder'&&activeGuildId)loadEbChannels();
+  if(CONFIG_PAGES.includes(page)&&activeGuildId){
+    cfgLoadCurrent();
+    if(page==='reaction-roles')rrLoad();
+    if(page==='embed-builder')populateChSelects();
+  }
 }
-updateRefreshState(currentPage);
 
 /* ── MISC ── */
 function filterMembers(q){document.querySelectorAll('.member-row').forEach(r=>r.style.display=r.dataset.name.includes(q.toLowerCase())?'':'none')}
@@ -1122,6 +1122,14 @@ function showToast(type,msg,icon='ti-info-circle',duration=3500){
 let allGuilds=[],activeGuildId=null,activeGuildName='No server',pendingGuildId=null;
 let cachedChannels=[],cachedRoles=[];
 
+// ── Restore guild from localStorage on load
+(function restoreGuild(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(saved&&saved.id){activeGuildId=saved.id;activeGuildName=saved.name||saved.id;pendingGuildId=activeGuildId;updateGuildUI();}
+  }catch{}
+})();
+
 async function fetchGuilds(){
   try{const r=await fetch('/api/guilds?secret='+encodeURIComponent(CFG_SECRET));allGuilds=r.ok?await r.json():[];}catch{allGuilds=[]}
   renderGuildList(allGuilds);
@@ -1138,17 +1146,21 @@ function renderGuildList(guilds){
 }
 function filterGuilds(q){renderGuildList(q?allGuilds.filter(g=>(g.name||'').toLowerCase().includes(q.toLowerCase())||g.id.includes(q)):allGuilds)}
 function selectGuild(id,name,el){document.querySelectorAll('.guild-item').forEach(i=>i.classList.remove('selected'));el.classList.add('selected');pendingGuildId=id}
-function confirmGuild(){
+async function confirmGuild(){
   if(!pendingGuildId){showToast('err','Select a server first.','ti-alert-circle');return}
   activeGuildId=pendingGuildId;
   activeGuildName=(allGuilds.find(g=>g.id===activeGuildId)||{}).name||activeGuildId;
-  updateGuildUI();closeGuildModal();
-  loadGuildDropdowns().then(()=>{cfgLoadCurrent();applyPendingVals();});
+  // ── Persist guild choice
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({id:activeGuildId,name:activeGuildName}));}catch{}
+  updateGuildUI();
+  closeGuildModal();
+  await loadGuildDropdowns();
+  cfgLoadCurrent();
   showToast('ok',`Switched to: ${activeGuildName}`,'ti-server');
 }
 function updateGuildUI(){
   document.getElementById('guildPillName').textContent=activeGuildName;
-  document.querySelectorAll('#cfgGuildName,#cfgGuildName2,#cfgGuildNameW,#cfgGuildNameAR,#cfgGuildNameSB,#cfgGuildNameL,#cfgGuildNameT').forEach(el=>el&&(el.textContent=activeGuildName));
+  document.querySelectorAll('#cfgGuildName,#cfgGuildName2,#cfgGuildNameW,#cfgGuildNameAR,#cfgGuildNameSB,#cfgGuildNameL,#cfgGuildNameT').forEach(el=>{if(el)el.textContent=activeGuildName});
 }
 function openGuildModal(){document.getElementById('guildModal').classList.add('open');document.getElementById('guildSearch').value='';fetchGuilds()}
 function closeGuildModal(){document.getElementById('guildModal').classList.remove('open')}
@@ -1156,10 +1168,12 @@ document.getElementById('guildModal').addEventListener('click',function(e){if(e.
 
 /* ══════════════════════
    LOAD CHANNELS + ROLES
+   Populate dropdowns by CSS class: .ch-select for channels, .rl-select for roles
 ══════════════════════ */
 async function loadGuildDropdowns(){
   if(!activeGuildId)return;
-  document.querySelectorAll('.cfg-dd').forEach(dd=>{dd.disabled=true;dd.style.opacity='.5'});
+  // Disable all selects while loading
+  document.querySelectorAll('.ch-select,.rl-select').forEach(dd=>{dd.disabled=true;dd.style.opacity='.5'});
   try{
     const[chRes,roRes]=await Promise.all([
       fetch(`/api/guild/channels?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
@@ -1167,31 +1181,36 @@ async function loadGuildDropdowns(){
     ]);
     if(chRes.ok)cachedChannels=await chRes.json();
     if(roRes.ok)cachedRoles=await roRes.json();
-  }catch{showToast('err','Could not fetch channels/roles.','ti-wifi-off');cachedChannels=[];cachedRoles=[]}
+  }catch(e){
+    showToast('err','Could not fetch channels/roles.','ti-wifi-off');
+    cachedChannels=[];cachedRoles=[];
+  }
+  populateChSelects();
+  populateRlSelects();
+}
 
-  // Populate all channel selects
-  document.querySelectorAll('select[data-key*="_channel"], select[id*="channel"], #eb_send_channel').forEach(dd=>{
-    const cur=dd.dataset.pendingVal||dd.value;
-    dd.innerHTML='<option value="">— not set —</option>';
-    cachedChannels.forEach(ch=>{const o=document.createElement('option');o.value=ch.id;o.textContent='#'+ch.name;if(ch.id===cur)o.selected=true;dd.appendChild(o)});
-    dd.disabled=false;dd.style.opacity='1';
-  });
-
-  // Populate all role selects
-  document.querySelectorAll('select[data-key*="_role"], select[id*="role"]').forEach(dd=>{
-    const cur=dd.dataset.pendingVal||dd.value;
-    dd.innerHTML='<option value="">— not set —</option>';
-    cachedRoles.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent='@'+r.name;if(r.id===cur)o.selected=true;dd.appendChild(o)});
+function populateChSelects(){
+  document.querySelectorAll('.ch-select').forEach(dd=>{
+    const saved=dd.dataset.savedVal||'';
+    dd.innerHTML='<option value="">— not set —</option>'+
+      cachedChannels.map(ch=>`<option value="${ch.id}"${ch.id===saved?'selected':''}>#${ch.name}</option>`).join('');
     dd.disabled=false;dd.style.opacity='1';
   });
 }
 
-function applyPendingVals(){
-  document.querySelectorAll('select[data-pending-val]').forEach(el=>{el.value=el.dataset.pendingVal;if(el.value===el.dataset.pendingVal)delete el.dataset.pendingVal});
+function populateRlSelects(){
+  document.querySelectorAll('.rl-select').forEach(dd=>{
+    const saved=dd.dataset.savedVal||'';
+    dd.innerHTML='<option value="">— not set —</option>'+
+      cachedRoles.map(r=>`<option value="${r.id}"${r.id===saved?'selected':''}>${r.name}</option>`).join('');
+    dd.disabled=false;dd.style.opacity='1';
+  });
 }
 
 /* ══════════════════════
-   CONFIG SYSTEM
+   CONFIG SAVE / LOAD
+   FIX: collectAllControls() scans the ENTIRE document for data-key elements,
+   not just a tab. cfgSave() only includes keys relevant to that tab's fields.
 ══════════════════════ */
 const dirtyTabs={};
 function markDirty(t){dirtyTabs[t]=true;const b=document.getElementById('dirty-'+t);if(b)b.classList.add('show')}
@@ -1199,8 +1218,8 @@ function clearDirty(t){dirtyTabs[t]=false;const b=document.getElementById('dirty
 function hasDirtyTabs(){return Object.values(dirtyTabs).some(Boolean)}
 
 function cfgSwitch(tab,el){
-  document.querySelectorAll('.cfg-sidebar .cfg-nav-item').forEach(i=>i.classList.remove('cfg-on'));
-  document.querySelectorAll('.cfg-tab').forEach(t=>t.classList.remove('cfg-tab-on'));
+  document.querySelectorAll('#sec-config .cfg-wrap .cfg-sidebar .cfg-nav-item').forEach(i=>i.classList.remove('cfg-on'));
+  document.querySelectorAll('#sec-config .cfg-wrap .cfg-tab').forEach(t=>t.classList.remove('cfg-tab-on'));
   el.classList.add('cfg-on');
   const t=document.getElementById('cfg-'+tab);
   if(t)t.classList.add('cfg-tab-on');
@@ -1213,73 +1232,122 @@ function cfgSwitch2(tab,el){
   if(t)t.style.display='flex';
 }
 
+// ── KEY MAPS: which data-key values belong to each save tab
+const TAB_KEYS={
+  channels:['welcome_channel','apply_channel','applications_channel','verify_channel','logs_channel','mod_channel','announcements_channel','giveaway_channel','levelup_channel','general_channel','rank_channel'],
+  roles:['admin_role','muted_role','member_role','verified_role','pending_role','builder_role','scripter_role','modeller_role','ui_role','level5_role','level10_role','level25_role'],
+  welcome:['welcome_enabled','welcome_embed_title','welcome_embed_desc','welcome_embed_color','leave_message_enabled','leave_channel','leave_message','join_dm_enabled','join_dm_message'],
+  autorole:['autorole_enabled','autorole_id'],
+  starboard:['starboard_enabled','starboard_channel','starboard_threshold'],
+  logging:['notif_join','notif_leave','notif_levelup','notif_delete','notif_edit','notif_bans','notif_automod','notif_voice'],
+  'ticket-setup':['ticket_category','ticket_log_channel','ticket_support_role','ticket_welcome_message'],
+};
+
+// ── Collect config values for a specific tab using its key list
 function collectTab(tabId){
-  const tab=document.getElementById('cfg-'+tabId)||document.getElementById('sec-'+tabId);
-  if(!tab)return{};
+  const keys=TAB_KEYS[tabId];
+  if(!keys){showToast('err',`Unknown tab: ${tabId}`,'ti-alert-circle');return{}}
   const data={};
-  tab.querySelectorAll('select[data-key]').forEach(el=>{if(el.value)data[el.dataset.key]=el.value});
-  tab.querySelectorAll('input[type="checkbox"][data-key]').forEach(el=>{data[el.dataset.key]=el.checked});
-  tab.querySelectorAll('input[type="text"][data-key],input[type="number"][data-key]').forEach(el=>{const v=el.value.trim();if(v)data[el.dataset.key]=isNaN(v)?v:Number(v)});
-  tab.querySelectorAll('textarea[data-key]').forEach(el=>{const v=el.value.trim();if(v)data[el.dataset.key]=v});
+  keys.forEach(key=>{
+    const el=document.querySelector(`[data-key="${key}"]`);
+    if(!el)return;
+    if(el.type==='checkbox'){
+      data[key]=el.checked;
+    }else if(el.tagName==='SELECT'){
+      if(el.value)data[key]=el.value;
+    }else{
+      const v=(el.value||'').trim();
+      if(v!==''){
+        const n=Number(v);
+        data[key]=(!isNaN(n)&&v!==''&&el.type==='number')?n:v;
+      }
+    }
+  });
   return data;
 }
 
 function cfgSetStatus(tabId,ok,msg){
-  for(const suffix of['','-channels','-roles','-welcome','2','3']){
-    const el=document.getElementById('cfg-status-'+tabId+suffix)||document.getElementById('cfg-status-'+tabId);
-    if(el){el.className='cfg-save-status visible '+(ok?'ok':'err');el.innerHTML=(ok?'<i class="ti ti-circle-check"></i>':'<i class="ti ti-circle-x"></i>')+' '+msg;setTimeout(()=>el.className='cfg-save-status',4000);break;}
-  }
+  const el=document.getElementById('cfg-status-'+tabId);
+  if(!el)return;
+  el.className='cfg-save-status visible '+(ok?'ok':'err');
+  el.innerHTML=(ok?'<i class="ti ti-circle-check"></i>':'<i class="ti ti-circle-x"></i>')+' '+msg;
+  setTimeout(()=>el.className='cfg-save-status',5000);
 }
 
 async function cfgSave(tabId){
   if(!activeGuildId){showToast('err','Select a server first.','ti-server');openGuildModal();return}
   const data=collectTab(tabId);
-  const btn=document.querySelector(`#cfg-${tabId} .cfg-btn-save`)||(document.querySelector(`#sec-${tabId} .cfg-btn-save`));
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Saving...'}
+  const keys=Object.keys(data);
+  if(keys.length===0){
+    // Still allow save for boolean-only tabs (all false checkboxes also valid)
+    const tabKeys=TAB_KEYS[tabId]||[];
+    if(tabKeys.length===0){showToast('info','Nothing to save.','ti-info-circle');return}
+  }
+
+  // Find a save button in the current visible section
+  const allSaveBtns=document.querySelectorAll(`[onclick="cfgSave('${tabId}')"]`);
+  allSaveBtns.forEach(b=>{b.disabled=true;b.innerHTML='<i class="ti ti-loader-2"></i> Saving...'});
+
   try{
-    const r=await fetch('/api/config/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:CFG_SECRET,guild_id:activeGuildId,config:data})});
+    const r=await fetch('/api/config/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({secret:CFG_SECRET,guild_id:activeGuildId,config:data})
+    });
     if(r.ok){
       const j=await r.json().catch(()=>({}));
-      cfgSetStatus(tabId,true,`Saved ${(j.updated||[]).length} setting(s)`);
+      const savedCount=Object.keys(data).length;
+      cfgSetStatus(tabId,true,`Saved ${savedCount} setting(s)`);
       clearDirty(tabId);
       showToast('ok',`Config saved for ${activeGuildName}`,'ti-device-floppy');
     }else{
-      const err=await r.text().catch(()=>'Unknown error');
+      const errText=await r.text().catch(()=>'Unknown error');
       cfgSetStatus(tabId,false,`Error ${r.status}`);
-      showToast('err',`Save failed: ${err.slice(0,80)}`,'ti-alert-circle');
+      showToast('err',`Save failed: ${errText.slice(0,80)}`,'ti-alert-circle');
     }
-  }catch{cfgSetStatus(tabId,false,'Network error');showToast('err','Network error — is the bot running?','ti-wifi-off')}
-  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Save'}}
+  }catch{
+    cfgSetStatus(tabId,false,'Network error');
+    showToast('err','Network error — is the bot running?','ti-wifi-off');
+  }finally{
+    allSaveBtns.forEach(b=>{b.disabled=false;b.innerHTML='<i class="ti ti-device-floppy"></i> Save'});
+  }
 }
 
+// ── Load current config from API and populate ALL form controls
 async function cfgLoadCurrent(){
   if(!activeGuildId)return;
   try{
     const r=await fetch(`/api/config?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`);
-    if(!r.ok)return;
+    if(!r.ok){showToast('err',`Config load failed (${r.status})`,'ti-alert-circle');return}
     const cfg=await r.json();
-    // Apply values to all form controls
-    document.querySelectorAll('select[data-key]').forEach(el=>{
-      const v=cfg[el.dataset.key];
-      if(v!==undefined&&v!==null){
+
+    // Apply values — dropdowns use data-savedVal so they get applied after populate
+    document.querySelectorAll('[data-key]').forEach(el=>{
+      const key=el.dataset.key;
+      const v=cfg[key];
+      if(v===undefined||v===null)return;
+
+      if(el.type==='checkbox'){
+        el.checked=Boolean(v);
+      }else if(el.tagName==='SELECT'){
+        // Store the ID as data-savedVal; populateXSelects() will apply it
+        el.dataset.savedVal=String(v);
+        // Also try setting immediately in case options are already loaded
         el.value=String(v);
-        if(el.value!==String(v))el.dataset.pendingVal=String(v);
+      }else{
+        el.value=String(v);
       }
     });
-    document.querySelectorAll('input[type="checkbox"][data-key]').forEach(el=>{
-      const v=cfg[el.dataset.key];
-      if(v!==undefined)el.checked=Boolean(v);
-    });
-    document.querySelectorAll('input[type="text"][data-key],input[type="number"][data-key]').forEach(el=>{
-      const v=cfg[el.dataset.key];
-      if(v!==undefined&&v!==null)el.value=String(v);
-    });
-    document.querySelectorAll('textarea[data-key]').forEach(el=>{
-      const v=cfg[el.dataset.key];
-      if(v!==undefined&&v!==null)el.value=String(v);
-    });
+
+    // Re-populate dropdowns with saved values applied
+    populateChSelects();
+    populateRlSelects();
+
     showToast('info',`Config loaded for ${activeGuildName}`,'ti-refresh');
-  }catch{showToast('err','Failed to load config.','ti-wifi-off')}
+  }catch(e){
+    showToast('err','Failed to load config.','ti-wifi-off');
+    console.error(e);
+  }
 }
 
 async function cfgDangerAction(action){
@@ -1343,7 +1411,6 @@ async function rrSave(){
    EMBED BUILDER
 ══════════════════════ */
 let ebFields=[];
-function loadEbChannels(){if(!cachedChannels.length)return;const dd=document.getElementById('eb_send_channel');if(!dd)return;dd.innerHTML='<option value="">Select channel...</option>';cachedChannels.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent='#'+c.name;dd.appendChild(o)})}
 function addEbField(){ebFields.push({name:'',value:'',inline:false});renderEbFields();updatePreview()}
 function renderEbFields(){
   const list=document.getElementById('eb_fields_list');if(!list)return;
@@ -1417,23 +1484,31 @@ function buildCharts(page){
 buildCharts(currentPage);
 
 /* ══════════════════════
-   INIT
+   INIT — Auto-select guild
 ══════════════════════ */
-// Auto-pick first guild from bot
 (async()=>{
+  // If we restored a guild from localStorage, load its dropdowns immediately
+  if(activeGuildId){
+    await loadGuildDropdowns();
+    if(CONFIG_PAGES.includes(currentPage)){
+      await cfgLoadCurrent();
+      if(currentPage==='reaction-roles')rrLoad();
+    }
+  }
+  // Always fetch guild list in background so modal is ready
   await fetchGuilds();
-  if(allGuilds.length&&!activeGuildId){
+  // If no guild was restored, auto-pick the first one
+  if(!activeGuildId&&allGuilds.length){
     activeGuildId=allGuilds[0].id;
     activeGuildName=allGuilds[0].name||activeGuildId;
     pendingGuildId=activeGuildId;
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify({id:activeGuildId,name:activeGuildName}));}catch{}
     updateGuildUI();
     await loadGuildDropdowns();
-    if(['config','welcome','autorole','starboard','logging','ticket-setup'].includes(currentPage)){
+    if(CONFIG_PAGES.includes(currentPage)){
       await cfgLoadCurrent();
-      applyPendingVals();
+      if(currentPage==='reaction-roles')rrLoad();
     }
-    if(currentPage==='reaction-roles')rrLoad();
-    if(currentPage==='embed-builder')loadEbChannels();
   }
 })();
 </script>

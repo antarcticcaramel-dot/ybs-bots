@@ -25,7 +25,6 @@ a{text-decoration:none;color:inherit}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
 ::selection{background:rgba(124,111,255,.3);color:#fff}
 
-/* LAYOUT */
 .wrap{display:flex;min-height:100vh}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 
@@ -53,7 +52,6 @@ a{text-decoration:none;color:inherit}
 .nby{background:rgba(245,200,66,.15);color:var(--yw)}
 .nbc{background:rgba(52,200,255,.15);color:var(--cy)}
 .nbp{background:rgba(232,121,180,.15);color:var(--pk)}
-
 .sb-foot{padding:12px;border-top:1px solid var(--bd);flex-shrink:0}
 .bot-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(34,211,160,.5);animation:pulse 2.5s infinite}
@@ -82,6 +80,10 @@ a{text-decoration:none;color:inherit}
 .tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:6px 12px;border-radius:var(--rb);font-size:12px;display:flex;align-items:center;gap:5px;transition:all .15s;cursor:pointer}
 .tb-btn:hover{border-color:var(--bd2);color:var(--tx)}
 .tb-btn i{font-size:14px}
+.guild-pill{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:5px 10px;font-size:11px;color:var(--tx2);cursor:pointer;transition:all .15s}
+.guild-pill:hover{border-color:var(--bd2);color:var(--tx)}
+.guild-pill i{font-size:14px}
+.guild-pill .gp-name{font-weight:600;color:var(--tx);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* CONTENT */
 .content{padding:20px 24px;flex:1}
@@ -236,7 +238,7 @@ a{text-decoration:none;color:inherit}
 .foot{text-align:center;padding:12px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s1);letter-spacing:.3px;flex-shrink:0}
 .foot span{color:var(--ac);font-weight:600}
 
-/* SECTION VISIBILITY */
+/* PAGE VISIBILITY */
 .page-section{display:none}
 .page-section.active{display:block}
 
@@ -246,9 +248,9 @@ a{text-decoration:none;color:inherit}
 .flex-col{display:flex;flex-direction:column;gap:10px}
 .mb0{margin-bottom:0}
 
-/* ═══════════════════════════════════════════
-   GUILD SELECTOR MODAL
-═══════════════════════════════════════════ */
+/* ═══════════════════════════════
+   GUILD MODAL
+═══════════════════════════════ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
 .modal-box{background:var(--s1);border:1px solid var(--bd2);border-radius:16px;padding:24px;width:420px;max-width:calc(100vw - 32px);max-height:80vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
@@ -258,7 +260,8 @@ a{text-decoration:none;color:inherit}
 .guild-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:7px}
 .guild-item:hover{border-color:rgba(124,111,255,.4);background:rgba(124,111,255,.06)}
 .guild-item.selected{border-color:var(--ac);background:rgba(124,111,255,.12)}
-.guild-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:#fff;font-family:'Syne',sans-serif;font-weight:800}
+.guild-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;overflow:hidden}
+.guild-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 .guild-name{font-size:13px;font-weight:600;color:#fff}
 .guild-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mt);margin-top:2px}
 .guild-check{margin-left:auto;color:var(--ac);font-size:18px;opacity:0}
@@ -275,17 +278,10 @@ a{text-decoration:none;color:inherit}
 .modal-btn-sec{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
 .modal-btn-sec:hover{color:var(--tx)}
 
-/* Guild indicator in topbar */
-.guild-pill{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:5px 10px;font-size:11px;color:var(--tx2);cursor:pointer;transition:all .15s}
-.guild-pill:hover{border-color:var(--bd2);color:var(--tx)}
-.guild-pill i{font-size:14px}
-.guild-pill .gp-name{font-weight:600;color:var(--tx);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* ═══════════════════════════════════════════
-   CONFIG PAGE — SAPPHIRE STYLE
-═══════════════════════════════════════════ */
+/* ═══════════════════════════════
+   CONFIG PAGE
+═══════════════════════════════ */
 .cfg-wrap{display:grid;grid-template-columns:200px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:12px;min-height:600px}
-
 .cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column}
 .cfg-sidebar-head{padding:16px 14px 10px;font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;border-bottom:1px solid var(--bd)}
 .cfg-nav-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .14s;position:relative;border-left:2px solid transparent}
@@ -293,39 +289,43 @@ a{text-decoration:none;color:inherit}
 .cfg-nav-item.cfg-on{background:rgba(124,111,255,.10);color:var(--ac);border-left-color:var(--ac)}
 .cfg-nav-item i{font-size:15px;opacity:.7;flex-shrink:0}
 .cfg-nav-item.cfg-on i{opacity:1}
-.cfg-nav-item .cfg-dot{width:5px;height:5px;border-radius:50%;background:var(--gn);margin-left:auto;flex-shrink:0;display:none}
-.cfg-nav-item.cfg-on .cfg-dot{display:block}
 .cfg-nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;padding:12px 14px 4px;margin-top:2px}
-
 .cfg-content{display:flex;flex-direction:column}
 .cfg-tab{display:none;flex:1;flex-direction:column}
 .cfg-tab.cfg-tab-on{display:flex}
-
 .cfg-tab-head{padding:18px 22px 14px;border-bottom:1px solid var(--bd);flex-shrink:0}
 .cfg-tab-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:3px}
 .cfg-tab-title i{font-size:16px;color:var(--ac)}
 .cfg-tab-desc{font-size:11px;color:var(--mt);line-height:1.5}
-
-/* Guild selector banner in config */
 .cfg-guild-banner{margin:14px 22px 0;background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.2);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px}
 .cfg-guild-banner i{font-size:16px;color:var(--ac);flex-shrink:0}
 .cfg-guild-banner-text{flex:1;font-size:11px;color:var(--tx2)}
 .cfg-guild-banner-text strong{color:var(--ac);font-size:12px}
 .cfg-guild-change{font-size:11px;color:var(--ac);font-weight:600;cursor:pointer;white-space:nowrap;background:rgba(124,111,255,.15);padding:4px 10px;border-radius:6px;border:1px solid rgba(124,111,255,.25);transition:background .15s}
 .cfg-guild-change:hover{background:rgba(124,111,255,.25)}
-
 .cfg-body{padding:18px 22px;flex:1;overflow-y:auto}
-
 .cfg-group{margin-bottom:22px}
 .cfg-group-label{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .cfg-group-label::after{content:'';flex:1;height:1px;background:var(--bd)}
-
 .cfg-field{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03)}
 .cfg-field:last-child{border-bottom:none}
 .cfg-field-info{flex:1;min-width:0}
 .cfg-field-name{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px}
 .cfg-field-desc{font-size:10px;color:var(--mt);line-height:1.4}
-.cfg-field-control{flex-shrink:0;min-width:180px}
+.cfg-field-control{flex-shrink:0;min-width:200px}
+
+/* ─── REAL DROPDOWN ─── */
+.cfg-select-wrap{position:relative}
+.cfg-select-wrap i.dd-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;z-index:1}
+.cfg-select-wrap i.dd-icon.hash{color:var(--cy)}
+.cfg-select-wrap i.dd-icon.shield{color:var(--gn)}
+.cfg-select-wrap i.dd-chevron{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--mt);pointer-events:none}
+.cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:7px 28px 7px 30px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif;appearance:none;cursor:pointer}
+.cfg-dd:focus{border-color:rgba(124,111,255,.45)}
+.cfg-dd option{background:#10131e;color:var(--tx)}
+.cfg-dd.loading{opacity:.5}
+.cfg-dd-hint{font-size:10px;color:var(--mt);margin-top:3px;display:flex;align-items:center;gap:4px}
+.cfg-dd-hint i{font-size:11px}
 
 .cfg-input,.cfg-select{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:7px 11px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
 .cfg-input:focus,.cfg-select:focus{border-color:rgba(124,111,255,.45)}
@@ -339,13 +339,13 @@ a{text-decoration:none;color:inherit}
 .cfg-toggle-slider::before{content:'';position:absolute;width:15px;height:15px;left:2px;bottom:2px;background:var(--tx2);border-radius:50%;transition:all .2s}
 .cfg-toggle input:checked + .cfg-toggle-slider{background:rgba(124,111,255,.3);border-color:var(--ac)}
 .cfg-toggle input:checked + .cfg-toggle-slider::before{transform:translateX(17px);background:var(--ac)}
-.cfg-toggle-label{font-size:11px;color:var(--mt)}
 
 .cfg-actions{padding:14px 22px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(255,255,255,.015)}
 .cfg-btn{padding:8px 18px;border-radius:var(--rb);font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
 .cfg-btn i{font-size:14px}
 .cfg-btn-save{background:var(--ac);color:#fff}
 .cfg-btn-save:hover{background:#9585ff}
+.cfg-btn-save:disabled{opacity:.5;cursor:not-allowed}
 .cfg-btn-reset{background:rgba(240,93,122,.12);color:var(--rd);border:1px solid rgba(240,93,122,.2)}
 .cfg-btn-reset:hover{background:rgba(240,93,122,.2)}
 .cfg-btn-secondary{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
@@ -355,16 +355,12 @@ a{text-decoration:none;color:inherit}
 .cfg-save-status i{font-size:13px}
 .cfg-save-status.ok{color:var(--gn)}
 .cfg-save-status.err{color:var(--rd)}
-
-/* Unsaved changes indicator */
 .cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(245,200,66,.15);color:var(--yw);margin-left:6px}
 .cfg-dirty-badge.show{display:inline-flex;align-items:center;gap:3px}
-
 .cfg-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-flex;align-items:center;gap:3px}
 .cfg-badge-ac{background:rgba(124,111,255,.15);color:var(--ac2)}
 .cfg-badge-gn{background:rgba(34,211,160,.12);color:var(--gn)}
 .cfg-badge-rd{background:rgba(240,93,122,.12);color:var(--rd)}
-
 .cfg-status-card{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .cfg-status-avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cfg-status-avatar i{font-size:22px;color:#fff}
@@ -375,23 +371,19 @@ a{text-decoration:none;color:inherit}
 .cfg-stat-mini{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;text-align:center}
 .cfg-stat-mini-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1}
 .cfg-stat-mini-lbl{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
-
 .cfg-danger-zone{background:rgba(240,93,122,.04);border:1px solid rgba(240,93,122,.15);border-radius:10px;padding:16px 18px}
 .cfg-danger-title{font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .cfg-danger-desc{font-size:11px;color:var(--mt);margin-bottom:12px;line-height:1.5}
 .cfg-danger-btn{background:rgba(240,93,122,.12);color:var(--rd);border:1px solid rgba(240,93,122,.25);padding:7px 14px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;font-family:'DM Sans',sans-serif}
 .cfg-danger-btn:hover{background:rgba(240,93,122,.22)}
-
 .cfg-cmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .cfg-cmd-item{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:8px}
 .cfg-cmd-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ac2)}
 .cfg-cmd-desc{font-size:10px;color:var(--mt);margin-top:1px}
-
 .cfg-notif-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
 .cfg-notif-row:last-child{border-bottom:none}
 .cfg-notif-name{font-size:12px;font-weight:500;color:var(--tx)}
 .cfg-notif-desc{font-size:10px;color:var(--mt)}
-
 .cfg-perm-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03)}
 .cfg-perm-row:last-child{border-bottom:none}
 .cfg-perm-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -401,9 +393,12 @@ a{text-decoration:none;color:inherit}
 .cfg-perm-status{font-size:10px;margin-top:1px}
 .cfg-perm-ok{color:var(--gn)}
 .cfg-perm-warn{color:var(--yw)}
-.cfg-perm-miss{color:var(--rd)}
 
-/* Toast notifications */
+/* Skeleton loader for dropdowns */
+.dd-skeleton{height:32px;background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:var(--rb);border:1px solid var(--bd)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* TOAST */
 .toast-container{position:fixed;bottom:20px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{background:var(--s1);border:1px solid var(--bd2);border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:12px;min-width:240px;max-width:320px;transform:translateX(120%);transition:transform .25s cubic-bezier(.34,1.56,.64,1);pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .toast.show{transform:translateX(0)}
@@ -421,21 +416,19 @@ a{text-decoration:none;color:inherit}
 </head>
 <body>
 
-<!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- GUILD SELECTOR MODAL -->
+<!-- GUILD MODAL -->
 <div class="modal-overlay" id="guildModal">
   <div class="modal-box">
     <div class="modal-title">Select a Server</div>
-    <div class="modal-sub">Choose which Discord server you want to configure. The dashboard will show data for the selected guild.</div>
+    <div class="modal-sub">Choose which Discord server to configure. Data shown in the dashboard will update.</div>
     <div class="modal-input-wrap">
       <i class="ti ti-search"></i>
       <input class="modal-input" type="text" placeholder="Search servers..." oninput="filterGuilds(this.value)" id="guildSearch">
     </div>
     <div id="guildList">
-      <!-- Populated by JS from /api/guilds -->
-      <div class="guild-item" id="guildLoading" style="justify-content:center;color:var(--mt)">
+      <div class="guild-item" style="justify-content:center;color:var(--mt)">
         <i class="ti ti-loader" style="font-size:16px"></i>&nbsp;Loading servers...
       </div>
     </div>
@@ -476,32 +469,27 @@ a{text-decoration:none;color:inherit}
     <div class="nl">General</div>
     <button class="na {% if page=='home' %}on{% endif %}" onclick="showPage('home',this)"><i class="ti ti-layout-dashboard"></i><span class="na-lbl">Overview</span></button>
     <button class="na {% if page=='activity' %}on{% endif %}" onclick="showPage('activity',this)"><i class="ti ti-bolt"></i><span class="na-lbl">Live Activity</span><span class="na-badge nba">{{ activity|length }}</span></button>
-
     <div class="nl">Members</div>
     <button class="na {% if page=='applications' %}on{% endif %}" onclick="showPage('applications',this)"><i class="ti ti-file-description"></i><span class="na-lbl">Applications</span><span class="na-badge nba">{{ app_count }}</span></button>
     <button class="na {% if page=='warnings' %}on{% endif %}" onclick="showPage('warnings',this)"><i class="ti ti-alert-triangle"></i><span class="na-lbl">Warnings</span>{% if warn_count %}<span class="na-badge nbr">{{ warn_count }}</span>{% endif %}</button>
     <button class="na {% if page=='notes' %}on{% endif %}" onclick="showPage('notes',this)"><i class="ti ti-notes"></i><span class="na-lbl">Staff Notes</span>{% if notes_count %}<span class="na-badge nbp">{{ notes_count }}</span>{% endif %}</button>
     <button class="na {% if page=='members' %}on{% endif %}" onclick="showPage('members',this)"><i class="ti ti-users"></i><span class="na-lbl">Members</span></button>
     <button class="na {% if page=='leaderboard' %}on{% endif %}" onclick="showPage('leaderboard',this)"><i class="ti ti-trophy"></i><span class="na-lbl">Leaderboard</span></button>
-
     <div class="nl">Moderation</div>
     <button class="na {% if page=='modlogs' %}on{% endif %}" onclick="showPage('modlogs',this)"><i class="ti ti-scroll"></i><span class="na-lbl">Mod Logs</span>{% if mod_log_count %}<span class="na-badge nbr">{{ mod_log_count }}</span>{% endif %}</button>
     <button class="na {% if page=='automod' %}on{% endif %}" onclick="showPage('automod',this)"><i class="ti ti-robot"></i><span class="na-lbl">Auto-Mod</span></button>
     <button class="na {% if page=='tickets' %}on{% endif %}" onclick="showPage('tickets',this)"><i class="ti ti-ticket"></i><span class="na-lbl">Tickets</span>{% if ticket_count %}<span class="na-badge nbg">{{ ticket_count }}</span>{% endif %}</button>
     <button class="na {% if page=='bugs' %}on{% endif %}" onclick="showPage('bugs',this)"><i class="ti ti-bug"></i><span class="na-lbl">Bug Reports</span>{% if bug_count %}<span class="na-badge nbr">{{ bug_count }}</span>{% endif %}</button>
-
     <div class="nl">Events</div>
     <button class="na {% if page=='giveaways' %}on{% endif %}" onclick="showPage('giveaways',this)"><i class="ti ti-confetti"></i><span class="na-lbl">Giveaways</span>{% if giveaway_count %}<span class="na-badge nbp">{{ giveaway_count }}</span>{% endif %}</button>
     <button class="na {% if page=='voice' %}on{% endif %}" onclick="showPage('voice',this)"><i class="ti ti-microphone"></i><span class="na-lbl">Voice Log</span></button>
     <button class="na {% if page=='economy' %}on{% endif %}" onclick="showPage('economy',this)"><i class="ti ti-coin"></i><span class="na-lbl">Economy</span></button>
     <button class="na {% if page=='analytics' %}on{% endif %}" onclick="showPage('analytics',this)"><i class="ti ti-chart-bar"></i><span class="na-lbl">Analytics</span></button>
-
     <div class="nl">Roblox</div>
     <button class="na {% if page=='roblox' %}on{% endif %}" onclick="showPage('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">{{ roblox_count }}</span></button>
     <button class="na {% if page=='premium' %}on{% endif %}" onclick="showPage('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span>{% if premium_count %}<span class="na-badge nby">{{ premium_count }}</span>{% endif %}</button>
-
     <div class="nl">System</div>
-    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Configuration</span><span class="na-badge nbg">New</span></button>
+    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Configuration</span><span class="na-badge nbg">Live</span></button>
   </nav>
 
   <div class="sb-foot">
@@ -522,18 +510,16 @@ a{text-decoration:none;color:inherit}
       <span class="tbc-root">YBS</span>
       <i class="ti ti-chevron-right tbc-sep"></i>
       <span class="tbc-page" id="pageTitle">
-        {% if page=='home' %}Overview{% elif page=='activity' %}Live Activity{% elif page=='applications' %}Applications{% elif page=='warnings' %}Warnings{% elif page=='notes' %}Staff Notes{% elif page=='members' %}Members{% elif page=='leaderboard' %}Leaderboard{% elif page=='modlogs' %}Mod Logs{% elif page=='automod' %}Auto-Mod{% elif page=='tickets' %}Tickets{% elif page=='bugs' %}Bug Reports{% elif page=='giveaways' %}Giveaways{% elif page=='voice' %}Voice Log{% elif page=='economy' %}Economy{% elif page=='analytics' %}Analytics{% elif page=='roblox' %}Roblox Profiles{% elif page=='premium' %}Premium Members{% elif page=='config' %}Configuration{% else %}Overview{% endif %}
+        {% if page=='home' %}Overview{% elif page=='config' %}Configuration{% else %}{{ page|title }}{% endif %}
       </span>
     </div>
     <div class="tb-right">
-      <!-- Guild selector button -->
       <div class="guild-pill" onclick="openGuildModal()" id="guildPill" title="Switch server">
         <i class="ti ti-server"></i>
         <span class="gp-name" id="guildPillName">No server</span>
         <i class="ti ti-chevron-down" style="font-size:11px;opacity:.5"></i>
       </div>
       <div class="tb-clock" id="liveClock">00:00:00</div>
-      <!-- Only show refresh when NOT in config -->
       <button class="tb-btn" id="refreshBtn" onclick="manualRefresh()"><i class="ti ti-refresh"></i> Refresh</button>
     </div>
   </div>
@@ -564,22 +550,15 @@ a{text-decoration:none;color:inherit}
         </div>
         {% endfor %}
       </div>
-
       <div class="g2">
         <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-bolt"></i>Live Activity</div>
-            <a href="#" class="plink" onclick="showPage('activity',null);return false">View all <i class="ti ti-arrow-right"></i></a>
-          </div>
+          <div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Live Activity</div><a href="#" class="plink" onclick="showPage('activity',null);return false">View all <i class="ti ti-arrow-right"></i></a></div>
           <div class="al">
             {% for e in activity[:12] %}
             <div class="ai {% if loop.first %}live-row{% endif %}">
               {% if loop.first %}<div class="live-dot"></div>{% endif %}
               <div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div>
-              <div class="ai-main">
-                <div class="ai-act">{{ e.action }}</div>
-                <div class="ai-det">{{ e.detail }}</div>
-              </div>
+              <div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div>
               <div class="ai-time">{{ e.time }}</div>
             </div>
             {% else %}
@@ -587,254 +566,94 @@ a{text-decoration:none;color:inherit}
             {% endfor %}
           </div>
         </div>
-
         <div class="flex-col">
           <div class="pn mb0">
             <div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Apps by Role</div></div>
-            {% if role_counts %}
-            <div class="cw cw-sm"><canvas id="roleChartHome"></canvas></div>
-            {% else %}
-            <div class="empty" style="padding:20px"><i class="ti ti-file-description"></i><p>No applications yet.</p></div>
-            {% endif %}
+            {% if role_counts %}<div class="cw cw-sm"><canvas id="roleChartHome"></canvas></div>
+            {% else %}<div class="empty" style="padding:20px"><i class="ti ti-file-description"></i><p>No applications yet.</p></div>{% endif %}
           </div>
           <div class="pn mb0">
-            <div class="ph">
-              <div class="pt"><i class="ti ti-trophy"></i>XP Leaders</div>
-              <a href="#" class="plink" onclick="showPage('leaderboard',null);return false">Full list <i class="ti ti-arrow-right"></i></a>
-            </div>
-            {% for m in top_xp[:3] %}
-            {% set medals = ['🥇','🥈','🥉'] %}
-            <div class="mr">
-              <div class="rk">{{ medals[loop.index0] }}</div>
-              <div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div>
-              <div class="m-info">
-                <div class="m-name">{{ m.name.split('#')[0] }}</div>
-                <div class="m-sub">{{ m.xp|int }} XP</div>
-                <div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div>
-              </div>
-              <span class="bg bb">Lv {{ m.level }}</span>
-            </div>
-            {% else %}
-            <div class="empty" style="padding:20px"><p>No XP data yet.</p></div>
-            {% endfor %}
+            <div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaders</div><a href="#" class="plink" onclick="showPage('leaderboard',null);return false">Full list <i class="ti ti-arrow-right"></i></a></div>
+            {% for m in top_xp[:3] %}{% set medals = ['🥇','🥈','🥉'] %}
+            <div class="mr"><div class="rk">{{ medals[loop.index0] }}</div><div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>
+            {% else %}<div class="empty" style="padding:20px"><p>No XP data yet.</p></div>{% endfor %}
           </div>
         </div>
       </div>
-
       <div class="g22">
         <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-alert-triangle"></i>Recent Warnings</div>
-            <a href="#" class="plink" onclick="showPage('warnings',null);return false">All <i class="ti ti-arrow-right"></i></a>
-          </div>
+          <div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>Recent Warnings</div><a href="#" class="plink" onclick="showPage('warnings',null);return false">All <i class="ti ti-arrow-right"></i></a></div>
           <table class="tbl"><thead><tr><th>User</th><th>Total</th><th>Last Reason</th></tr></thead><tbody>
-            {% for w in recent_warns %}
-            <tr>
-              <td class="mono">{{ w.user_id }}</td>
-              <td><span class="bg {% if w.count >= 3 %}br{% else %}by{% endif %}">{{ w.count }}×</span></td>
-              <td>{{ w.last_reason }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" style="text-align:center;color:var(--mt);padding:20px">No warnings on record.</td></tr>
-            {% endfor %}
+            {% for w in recent_warns %}<tr><td class="mono">{{ w.user_id }}</td><td><span class="bg {% if w.count >= 3 %}br{% else %}by{% endif %}">{{ w.count }}×</span></td><td>{{ w.last_reason }}</td></tr>
+            {% else %}<tr><td colspan="3" style="text-align:center;color:var(--mt);padding:20px">No warnings.</td></tr>{% endfor %}
           </tbody></table>
         </div>
         <div class="pn mb0">
-          <div class="ph">
-            <div class="pt"><i class="ti ti-scroll"></i>Recent Mod Actions</div>
-            <a href="#" class="plink" onclick="showPage('modlogs',null);return false">All <i class="ti ti-arrow-right"></i></a>
-          </div>
-          {% for m in mod_logs[:5] %}
-          <div class="ml">
-            <div class="ml-dot" style="background:{{ m.color }}"></div>
-            <div>
-              <div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div>
-              <div class="ml-meta">by {{ m.by }} · {{ m.reason }} · {{ m.time }}</div>
-            </div>
-          </div>
-          {% else %}
-          <div class="empty" style="padding:20px"><p>No mod actions yet.</p></div>
-          {% endfor %}
+          <div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Recent Mod Actions</div><a href="#" class="plink" onclick="showPage('modlogs',null);return false">All <i class="ti ti-arrow-right"></i></a></div>
+          {% for m in mod_logs[:5] %}<div class="ml"><div class="ml-dot" style="background:{{ m.color }}"></div><div><div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ml-meta">by {{ m.by }} · {{ m.reason }} · {{ m.time }}</div></div></div>
+          {% else %}<div class="empty" style="padding:20px"><p>No mod actions yet.</p></div>{% endfor %}
         </div>
       </div>
     </div>
 
     <!-- ══ ACTIVITY ══ -->
     <div class="page-section {% if page=='activity' %}active{% endif %}" id="sec-activity">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div>
-          <span style="font-size:11px;color:var(--mt)">{{ activity|length }} events</span>
-        </div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div><span style="font-size:11px;color:var(--mt)">{{ activity|length }} events</span></div>
         <div class="al" style="max-height:none">
-          {% for e in activity %}
-          <div class="ai {% if loop.first %}live-row{% endif %}">
-            {% if loop.first %}<div class="live-dot"></div>{% endif %}
-            <div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div>
-            <div class="ai-main">
-              <div class="ai-act">{{ e.action }}</div>
-              <div class="ai-det">{{ e.detail }}</div>
-            </div>
-            <div class="ai-time">{{ e.time }}</div>
-          </div>
-          {% else %}
-          <div class="empty"><i class="ti ti-bolt"></i><p>No activity logged yet.</p></div>
-          {% endfor %}
+          {% for e in activity %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>
+          {% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No activity.</p></div>{% endfor %}
         </div>
       </div>
     </div>
 
     <!-- ══ APPLICATIONS ══ -->
     <div class="page-section {% if page=='applications' %}active{% endif %}" id="sec-applications">
-      {% if applications %}
-        {% for uid, a in applications.items() %}
-        {% set statusCls = {'accepted':'bgg','declined':'br','interview':'by','pending':'bb'}.get(a.status, 'bb') %}
-        <div class="pn">
-          <div class="ph">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div>
-              <div>
-                <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div>
-                <div style="font-size:11px;color:var(--mt);margin-top:1px">Status: <span class="bg {{ statusCls }}">{{ a.status|title }}</span></div>
-              </div>
-            </div>
-            <span class="bg bb">{{ a.role }}</span>
-          </div>
-          <div style="padding:16px 18px">
-            <div class="bug-fields">
-              <div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div>
-              <div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div>
-              <div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div>
-              <div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div>
-              <div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      {% else %}
-      <div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications yet.</p></div></div>
-      {% endif %}
+      {% if applications %}{% for uid, a in applications.items() %}{% set sc={'accepted':'bgg','declined':'br','interview':'by','pending':'bb'}.get(a.status,'bb') %}
+      <div class="pn"><div class="ph"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div><div><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div><div style="font-size:11px;color:var(--mt);margin-top:1px">Status: <span class="bg {{ sc }}">{{ a.status|title }}</span></div></div></div><span class="bg bb">{{ a.role }}</span></div>
+        <div style="padding:16px 18px"><div class="bug-fields"><div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div><div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div><div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div><div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div><div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div></div></div>
+      </div>{% endfor %}
+      {% else %}<div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications yet.</p></div></div>{% endif %}
     </div>
 
     <!-- ══ WARNINGS ══ -->
     <div class="page-section {% if page=='warnings' %}active{% endif %}" id="sec-warnings">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div>
-          <span style="font-size:11px;color:var(--mt)">{{ warnings|length }} users warned</span>
-        </div>
-        {% if warnings %}
-        <table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
-          {% for uid, wlist in warnings.items() %}
-            {% for w in wlist %}
-            <tr>
-              <td class="mono">{{ uid }}</td>
-              <td>{% if loop.first %}<span class="bg {% if wlist|length >= 3 %}br{% else %}by{% endif %}">{{ wlist|length }} total</span>{% endif %}</td>
-              <td style="color:var(--mt)">#{{ loop.index }}</td>
-              <td>{{ w.reason }}</td>
-              <td style="color:var(--mt)">{{ w.by }}</td>
-              <td class="mono">{{ w.time[:10] }}</td>
-            </tr>
-            {% endfor %}
-          {% endfor %}
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div><span style="font-size:11px;color:var(--mt)">{{ warnings|length }} users warned</span></div>
+        {% if warnings %}<table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
+          {% for uid, wlist in warnings.items() %}{% for w in wlist %}<tr><td class="mono">{{ uid }}</td><td>{% if loop.first %}<span class="bg {% if wlist|length >= 3 %}br{% else %}by{% endif %}">{{ wlist|length }} total</span>{% endif %}</td><td style="color:var(--mt)">#{{ loop.index }}</td><td>{{ w.reason }}</td><td style="color:var(--mt)">{{ w.by }}</td><td class="mono">{{ w.time[:10] }}</td></tr>{% endfor %}{% endfor %}
         </tbody></table>
-        {% else %}
-        <div class="empty"><i class="ti ti-circle-check"></i><p>No warnings issued yet!</p></div>
-        {% endif %}
+        {% else %}<div class="empty"><i class="ti ti-circle-check"></i><p>No warnings issued yet!</p></div>{% endif %}
       </div>
     </div>
 
     <!-- ══ NOTES ══ -->
     <div class="page-section {% if page=='notes' %}active{% endif %}" id="sec-notes">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-notes"></i>Staff Notes</div>
-          <span style="font-size:11px;color:var(--mt)">{{ notes_count }} notes</span>
-        </div>
-        {% if all_notes %}
-          {% for uid, nlist in all_notes.items() %}
-          <div style="border-bottom:1px solid var(--bd)">
-            <div style="padding:9px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>
-            {% for n in nlist %}
-            <div class="note-card">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-                <span class="note-by">{{ n.by }}</span>
-                <span class="note-time">{{ n.time }}</span>
-              </div>
-              <div class="note-text">{{ n.note }}</div>
-            </div>
-            {% endfor %}
-          </div>
-          {% endfor %}
-        {% else %}
-        <div class="empty"><i class="ti ti-notes"></i><p>No staff notes yet.</p></div>
-        {% endif %}
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-notes"></i>Staff Notes</div><span style="font-size:11px;color:var(--mt)">{{ notes_count }} notes</span></div>
+        {% if all_notes %}{% for uid, nlist in all_notes.items() %}<div style="border-bottom:1px solid var(--bd)"><div style="padding:9px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>{% for n in nlist %}<div class="note-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><span class="note-by">{{ n.by }}</span><span class="note-time">{{ n.time }}</span></div><div class="note-text">{{ n.note }}</div></div>{% endfor %}</div>{% endfor %}
+        {% else %}<div class="empty"><i class="ti ti-notes"></i><p>No staff notes yet.</p></div>{% endif %}
       </div>
     </div>
 
     <!-- ══ MEMBERS ══ -->
     <div class="page-section {% if page=='members' %}active{% endif %}" id="sec-members">
-      <div class="pn">
-        <div class="ph">
-          <div class="pt"><i class="ti ti-users"></i>All Members</div>
-          <span style="font-size:11px;color:var(--mt)">{{ members|length }} tracked</span>
-        </div>
-        <div style="padding:10px 16px;border-bottom:1px solid var(--bd)">
-          <input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)">
-        </div>
-        <table class="tbl" id="membersTable">
-          <thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead>
-          <tbody>
-            {% for m in members %}
-            <tr class="member-row" data-name="{{ m.name|lower }}">
-              <td>
-                <div style="display:flex;align-items:center;gap:9px">
-                  <div class="av" style="background:var(--ac);width:28px;height:28px;font-size:11px">{{ m.name[0]|upper }}</div>
-                  <span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span>
-                </div>
-              </td>
-              <td><span class="bg bb">Lv {{ m.level }}</span></td>
-              <td>{{ m.xp|int }} XP<div class="xpb" style="margin-top:4px"><div class="xpf" style="width:{{ m.pct }}%"></div></div></td>
-              <td style="color:var(--yw)">💰 {{ m.balance|int }}</td>
-              <td class="mono" style="color:var(--mt)">{{ m.messages }}</td>
-              <td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" style="text-align:center;color:var(--mt);padding:32px">No member data yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-users"></i>All Members</div><span style="font-size:11px;color:var(--mt)">{{ members|length }} tracked</span></div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--bd)"><input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)"></div>
+        <table class="tbl" id="membersTable"><thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead><tbody>
+          {% for m in members %}<tr class="member-row" data-name="{{ m.name|lower }}"><td><div style="display:flex;align-items:center;gap:9px"><div class="av" style="background:var(--ac);width:28px;height:28px;font-size:11px">{{ m.name[0]|upper }}</div><span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span></div></td><td><span class="bg bb">Lv {{ m.level }}</span></td><td>{{ m.xp|int }} XP<div class="xpb" style="margin-top:4px"><div class="xpf" style="width:{{ m.pct }}%"></div></div></td><td style="color:var(--yw)">💰 {{ m.balance|int }}</td><td class="mono" style="color:var(--mt)">{{ m.messages }}</td><td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td></tr>
+          {% else %}<tr><td colspan="6" style="text-align:center;color:var(--mt);padding:32px">No member data yet.</td></tr>{% endfor %}
+        </tbody></table>
       </div>
     </div>
 
     <!-- ══ LEADERBOARD ══ -->
     <div class="page-section {% if page=='leaderboard' %}active{% endif %}" id="sec-leaderboard">
-      <div class="tabs">
-        <button class="tab on" onclick="lbSwitch('xp',this)">XP Rankings</button>
-        <button class="tab" onclick="lbSwitch('eco',this)">Rich List</button>
-      </div>
-      <div id="lb-xp">
-        <div class="pn">
-          <div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div><span style="font-size:11px;color:var(--mt)">{{ xp_lb|length }} members</span></div>
-          {% for m in xp_lb %}{% set medals=['🥇','🥈','🥉'] %}
-          <div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>
-          {% else %}<div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>{% endfor %}
-        </div>
-      </div>
-      <div id="lb-eco" style="display:none">
-        <div class="pn">
-          <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>
-          {% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}
-          <div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>
-          {% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}
-        </div>
-      </div>
+      <div class="tabs"><button class="tab on" onclick="lbSwitch('xp',this)">XP Rankings</button><button class="tab" onclick="lbSwitch('eco',this)">Rich List</button></div>
+      <div id="lb-xp"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div></div>{% for m in xp_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>{% else %}<div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>{% endfor %}</div></div>
+      <div id="lb-eco" style="display:none"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div></div>
     </div>
 
     <!-- ══ MOD LOGS ══ -->
     <div class="page-section {% if page=='modlogs' %}active{% endif %}" id="sec-modlogs">
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Mod Log</div><span style="font-size:11px;color:var(--mt)">{{ mod_logs|length }} actions</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Mod Log</div><span style="font-size:11px;color:var(--mt)">{{ mod_logs|length }} actions</span></div>
         {% for m in mod_logs %}<div class="ml"><div class="ml-dot" style="background:{{ m.color }}"></div><div><div class="ml-action">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ml-meta">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div></div></div>
         {% else %}<div class="empty"><i class="ti ti-scroll"></i><p>No moderation actions logged yet.</p></div>{% endfor %}
       </div>
@@ -842,18 +661,15 @@ a{text-decoration:none;color:inherit}
 
     <!-- ══ AUTO-MOD ══ -->
     <div class="page-section {% if page=='automod' %}active{% endif %}" id="sec-automod">
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div><span style="font-size:11px;color:var(--mt)">{{ total_words }} words</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div><span style="font-size:11px;color:var(--mt)">{{ total_words }} words</span></div>
         {% if automod_guilds %}{% for gid, words in automod_guilds.items() %}{% if words %}<div style="padding:8px 14px 2px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:1px solid var(--bd)">Guild {{ gid }}</div><div class="word-list">{% for w in words %}<span class="word-tag">{{ w }}</span>{% endfor %}</div>{% endif %}{% endfor %}
         {% else %}<div class="empty"><i class="ti ti-robot"></i><p>No words in the filter yet.</p></div>{% endif %}
-        <div style="padding:13px 18px;background:var(--s2);border-top:1px solid var(--bd)"><div style="font-size:10px;color:var(--mt);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.7px">Commands</div><div style="display:flex;gap:7px;flex-wrap:wrap">{% for cmd in ['/addword','/removeword','/wordlist','/automod'] %}<code style="background:var(--s1);padding:4px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ac)">{{ cmd }}</code>{% endfor %}</div></div>
       </div>
     </div>
 
     <!-- ══ TICKETS ══ -->
     <div class="page-section {% if page=='tickets' %}active{% endif %}" id="sec-tickets">
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div><span style="font-size:11px;color:var(--mt)">{{ ticket_count }} open</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div><span style="font-size:11px;color:var(--mt)">{{ ticket_count }} open</span></div>
         {% for ch_id, t in tickets.items() %}<div class="ticket-card"><div class="tc-head"><span class="tc-id">#{{ loop.index }}</span><div class="tc-title">{{ t.user_name }}</div><span class="bg {% if t.status=='open' %}bgg{% else %}br{% endif %}">{{ t.status }}</span></div><div class="tc-body">{{ t.reason }} · Opened: {{ t.created }}</div></div>
         {% else %}<div class="empty"><i class="ti ti-ticket"></i><p>No open tickets.</p></div>{% endfor %}
       </div>
@@ -868,8 +684,7 @@ a{text-decoration:none;color:inherit}
 
     <!-- ══ GIVEAWAYS ══ -->
     <div class="page-section {% if page=='giveaways' %}active{% endif %}" id="sec-giveaways">
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div><span style="font-size:11px;color:var(--mt)">{{ giveaway_count }} running</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div></div>
         {% for msg_id, g in giveaways.items() %}<div class="giveaway-card"><div class="gw-prize">🎁 {{ g.prize }}</div><div class="gw-meta">Hosted by {{ g.host }} · Ends {{ g.ends[:16].replace('T',' ') }}</div></div>
         {% else %}<div class="empty"><i class="ti ti-confetti"></i><p>No active giveaways.</p></div>{% endfor %}
       </div>
@@ -877,8 +692,7 @@ a{text-decoration:none;color:inherit}
 
     <!-- ══ VOICE ══ -->
     <div class="page-section {% if page=='voice' %}active{% endif %}" id="sec-voice">
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div><span style="font-size:11px;color:var(--mt)">{{ voice_events|length }} events</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div></div>
         {% if voice_events %}<table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>{% for v in voice_events %}<tr><td><span class="bg {% if v.action=='joined' %}bgg{% elif v.action=='left' %}br{% else %}by{% endif %}">{{ '↘ Joined' if v.action=='joined' else ('↗ Left' if v.action=='left' else '↔ Moved') }}</span></td><td>{{ v.member }}</td><td style="color:var(--mt)">#{{ v.channel }}</td><td class="mono" style="color:var(--mt)">{{ v.time }}</td></tr>{% endfor %}</tbody></table>
         {% else %}<div class="empty"><i class="ti ti-microphone"></i><p>No voice events logged yet.</p></div>{% endif %}
       </div>
@@ -892,11 +706,7 @@ a{text-decoration:none;color:inherit}
         <div class="sc"><div class="sc-top-bar" style="background:#7c6fff"></div><div class="sc-icon" style="background:#7c6fff15"><i class="ti ti-trending-up" style="color:#7c6fff"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Ever Earned</div></div>
         <div class="sc"><div class="sc-top-bar" style="background:#ff9040"></div><div class="sc-icon" style="background:#ff904015"><i class="ti ti-trophy" style="color:#ff9040"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
       </div>
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>
-        {% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>
-        {% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}
-      </div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div>
     </div>
 
     <!-- ══ ANALYTICS ══ -->
@@ -911,18 +721,12 @@ a{text-decoration:none;color:inherit}
       </div>
       <div class="g22" style="margin-bottom:12px">
         <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-line"></i>Activity Trend — Last 14 Days</div></div><div class="cw"><canvas id="anActivityLine" style="max-height:200px"></canvas></div></div>
-        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Mod Action Breakdown</div></div>{% if mod_action_counts %}<div class="cw cw-sm"><canvas id="anModDoughnut"></canvas></div>{% else %}<div class="empty" style="padding:30px"><p>No mod actions logged yet.</p></div>{% endif %}</div>
+        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-donut"></i>Mod Action Breakdown</div></div>{% if mod_action_counts %}<div class="cw cw-sm"><canvas id="anModDoughnut"></canvas></div>{% else %}<div class="empty" style="padding:30px"><p>No mod actions yet.</p></div>{% endif %}</div>
       </div>
       <div class="g22" style="margin-bottom:12px">
-        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-bar"></i>Applications by Role</div></div>{% if role_counts %}<div class="cw"><canvas id="anRoleBar" style="max-height:200px"></canvas></div>{% else %}<div class="empty" style="padding:30px"><p>No application data yet.</p></div>{% endif %}</div>
+        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-bar"></i>Applications by Role</div></div>{% if role_counts %}<div class="cw"><canvas id="anRoleBar" style="max-height:200px"></canvas></div>{% else %}<div class="empty" style="padding:30px"><p>No application data.</p></div>{% endif %}</div>
         <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-layout-sidebar-right"></i>Server Health</div></div><div class="cw"><canvas id="anHealthBar" style="max-height:200px"></canvas></div></div>
       </div>
-      <div class="g22" style="margin-bottom:12px">
-        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-radar"></i>Community Radar</div></div><div class="cw cw-sm"><canvas id="anRadar"></canvas></div></div>
-        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-chart-pie"></i>Member Distribution</div></div><div class="cw cw-sm"><canvas id="anPolar"></canvas></div></div>
-      </div>
-      <div class="pn" style="margin-bottom:12px"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>Warning Distribution</div></div>{% if warnings %}<div class="cw"><canvas id="anWarnStacked" style="max-height:180px"></canvas></div>{% else %}<div class="empty" style="padding:24px"><p>No warning data yet.</p></div>{% endif %}</div>
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>Top 10 XP Leaders</div></div>{% if xp_lb %}<div class="cw"><canvas id="anXpHBar" style="max-height:220px"></canvas></div>{% else %}<div class="empty" style="padding:24px"><p>No XP data yet.</p></div>{% endif %}</div>
     </div>
 
     <!-- ══ ROBLOX ══ -->
@@ -938,15 +742,14 @@ a{text-decoration:none;color:inherit}
     <!-- ══ PREMIUM ══ -->
     <div class="page-section {% if page=='premium' %}active{% endif %}" id="sec-premium">
       <div class="sc" style="margin-bottom:12px;max-width:200px"><div class="sc-top-bar" style="background:#f5c842"></div><div class="sc-icon" style="background:#f5c84215"><i class="ti ti-crown" style="color:#f5c842"></i></div><div class="sc-val">{{ premium_count }}</div><div class="sc-lbl">Premium Members</div></div>
-      <div class="pn">
-        <div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div></div>
         {% if premium_members %}<table class="tbl"><thead><tr><th>User ID</th><th>Tier</th><th>Granted By</th><th>Granted At</th><th>Expires</th></tr></thead><tbody>{% for uid, p in premium_members.items() %}<tr><td class="mono">{{ uid }}</td><td><span class="bg by">👑 {{ p.tier|title }}</span></td><td style="color:var(--mt)">{{ p.granted_by }}</td><td class="mono">{{ p.granted_at[:10] if p.granted_at else '—' }}</td><td class="mono">{{ p.expires[:10] if p.expires != 'permanent' else 'Permanent' }}</td></tr>{% endfor %}</tbody></table>
         {% else %}<div class="empty"><i class="ti ti-crown"></i><p>No premium members yet.</p></div>{% endif %}
       </div>
     </div>
 
     <!-- ══════════════════════════════════════
-         CONFIG PAGE
+         CONFIG PAGE — WITH REAL DROPDOWNS
     ══════════════════════════════════════ -->
     <div class="page-section {% if page=='config' %}active{% endif %}" id="sec-config">
 
@@ -973,7 +776,7 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-sidebar">
           <div class="cfg-sidebar-head">Settings</div>
           <div class="cfg-nl">Channels</div>
-          <div class="cfg-nav-item cfg-on" onclick="cfgSwitch('channels',this)"><i class="ti ti-hash"></i> Channel Setup<div class="cfg-dot"></div></div>
+          <div class="cfg-nav-item cfg-on" onclick="cfgSwitch('channels',this)"><i class="ti ti-hash"></i> Channel Setup</div>
           <div class="cfg-nav-item" onclick="cfgSwitch('roles',this)"><i class="ti ti-shield"></i> Role Setup</div>
           <div class="cfg-nl">Features</div>
           <div class="cfg-nav-item" onclick="cfgSwitch('automod-cfg',this)"><i class="ti ti-robot"></i> Auto-Mod</div>
@@ -990,9 +793,8 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-tab cfg-tab-on" id="cfg-channels">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-hash"></i> Channel Configuration <span class="cfg-dirty-badge" id="dirty-channels"><i class="ti ti-circle-dot" style="font-size:10px"></i> Unsaved</span></div>
-            <div class="cfg-tab-desc">Set which channels the bot posts messages to. Leave blank to disable that feature.</div>
+            <div class="cfg-tab-desc">Select channels from the dropdowns — they're populated live from your Discord server.</div>
           </div>
-          <!-- Guild selector banner -->
           <div class="cfg-guild-banner">
             <i class="ti ti-server"></i>
             <div class="cfg-guild-banner-text">Editing config for: <strong id="cfgGuildName">No server selected</strong></div>
@@ -1001,28 +803,28 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Member Channels</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Welcome Channel</div><div class="cfg-field-desc">Where the bot sends welcome messages</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#welcome" id="ch_welcome_channel" data-key="welcome_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Apply Channel</div><div class="cfg-field-desc">Where the application panel is posted</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#apply-here" id="ch_apply_channel" data-key="apply_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Staff Applications Channel</div><div class="cfg-field-desc">Where completed applications get sent</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#staff-applications" id="ch_applications_channel" data-key="applications_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Verification Channel</div><div class="cfg-field-desc">Where the Roblox verification panel is posted</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#verify" id="ch_verify_channel" data-key="verify_channel" oninput="markDirty('channels')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Welcome Channel</div><div class="cfg-field-desc">Where the bot sends welcome messages</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_welcome_channel" data-key="welcome_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Apply Channel</div><div class="cfg-field-desc">Where the application panel is posted</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_apply_channel" data-key="apply_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Staff Applications Channel</div><div class="cfg-field-desc">Where completed applications get sent</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_applications_channel" data-key="applications_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Verification Channel</div><div class="cfg-field-desc">Where the Roblox verification panel is posted</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_verify_channel" data-key="verify_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
             <div class="cfg-group">
-              <div class="cfg-group-label">Logging & Notifications</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Logs Channel</div><div class="cfg-field-desc">Message deletes, edits, joins, leaves, bans</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#logs" id="ch_logs_channel" data-key="logs_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Mod Log Channel</div><div class="cfg-field-desc">Moderation actions: warns, bans, kicks, timeouts</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#mod-logs" id="ch_mod_channel" data-key="mod_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Announcements Channel</div><div class="cfg-field-desc">Where <code style="font-size:10px;color:var(--ac)">/announce</code> posts are sent</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#announcements" id="ch_announcements_channel" data-key="announcements_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Giveaway Channel</div><div class="cfg-field-desc">Default channel for giveaways</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#giveaways" id="ch_giveaway_channel" data-key="giveaway_channel" oninput="markDirty('channels')"></div></div>
+              <div class="cfg-group-label">Logging &amp; Notifications</div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Logs Channel</div><div class="cfg-field-desc">Message deletes, edits, joins, leaves</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_logs_channel" data-key="logs_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Mod Log Channel</div><div class="cfg-field-desc">Warns, bans, kicks, timeouts</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_mod_channel" data-key="mod_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Announcements Channel</div><div class="cfg-field-desc">Where /announce posts are sent</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_announcements_channel" data-key="announcements_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Giveaway Channel</div><div class="cfg-field-desc">Default channel for giveaways</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_giveaway_channel" data-key="giveaway_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
             <div class="cfg-group">
-              <div class="cfg-group-label">XP & General</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level-Up Channel</div><div class="cfg-field-desc">Where level-up messages are sent</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#level-up" id="ch_levelup_channel" data-key="levelup_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">General Channel</div><div class="cfg-field-desc">Used for suggestions and general bot messages</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#general" id="ch_general_channel" data-key="general_channel" oninput="markDirty('channels')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Rank / Leaderboard Channel</div><div class="cfg-field-desc">Where rank cards and leaderboards are posted</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="#rank" id="ch_rank_channel" data-key="rank_channel" oninput="markDirty('channels')"></div></div>
+              <div class="cfg-group-label">XP &amp; General</div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level-Up Channel</div><div class="cfg-field-desc">Where level-up messages are sent</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_levelup_channel" data-key="levelup_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">General Channel</div><div class="cfg-field-desc">Used for suggestions and general bot messages</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_general_channel" data-key="general_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Rank / Leaderboard Channel</div><div class="cfg-field-desc">Where rank cards and leaderboards are posted</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd" id="dd_rank_channel" data-key="rank_channel" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
           </div>
           <div class="cfg-actions">
             <button class="cfg-btn cfg-btn-save" onclick="cfgSave('channels')"><i class="ti ti-device-floppy"></i> Save Channels</button>
-            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload from Bot</button>
+            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
             <div class="cfg-save-status" id="cfg-status-channels"></div>
           </div>
         </div>
@@ -1031,37 +833,37 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-tab" id="cfg-roles">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-shield"></i> Role Configuration <span class="cfg-dirty-badge" id="dirty-roles"><i class="ti ti-circle-dot" style="font-size:10px"></i> Unsaved</span></div>
-            <div class="cfg-tab-desc">Enter role IDs (right-click role → Copy ID) or role names exactly as they appear in Discord.</div>
+            <div class="cfg-tab-desc">Select roles from the dropdowns — pulled live from your Discord server.</div>
           </div>
           <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Editing config for: <strong id="cfgGuildName2">No server selected</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change server</span></div>
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Staff Roles</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Admin / Staff Role</div><div class="cfg-field-desc">Members with this role can use all staff commands</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_admin_role" data-key="admin_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Muted Role</div><div class="cfg-field-desc">Fallback muted role (Discord timeout is preferred)</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_muted_role" data-key="muted_role" oninput="markDirty('roles')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Admin / Staff Role</div><div class="cfg-field-desc">Members with this role can use all staff commands</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_admin_role" data-key="admin_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Muted Role</div><div class="cfg-field-desc">Fallback muted role (Discord timeout preferred)</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_muted_role" data-key="muted_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Member Roles</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Member Role</div><div class="cfg-field-desc">Assigned when an application is accepted</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_member_role" data-key="member_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Verified Role</div><div class="cfg-field-desc">Given after a successful Roblox verification</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_verified_role" data-key="verified_role" oninput="markDirty('roles')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Member Role</div><div class="cfg-field-desc">Assigned when an application is accepted</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_member_role" data-key="member_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Verified Role</div><div class="cfg-field-desc">Given after a successful Roblox verification</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_verified_role" data-key="verified_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Developer Roles</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Builder Role</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_builder_role" data-key="builder_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Scripter Role</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_scripter_role" data-key="scripter_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Modeller Role</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_modeller_role" data-key="modeller_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">UI Designer Role</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_ui_role" data-key="ui_role" oninput="markDirty('roles')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Builder Role</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_builder_role" data-key="builder_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Scripter Role</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_scripter_role" data-key="scripter_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Modeller Role</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_modeller_role" data-key="modeller_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">UI Designer Role</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_ui_role" data-key="ui_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Level Reward Roles</div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 5 Role Reward</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_level5_role" data-key="level5_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 10 Role Reward</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_level10_role" data-key="level10_role" oninput="markDirty('roles')"></div></div>
-              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 25 Role Reward</div></div><div class="cfg-field-control"><input class="cfg-input" type="text" placeholder="Role ID or name" id="ro_level25_role" data-key="level25_role" oninput="markDirty('roles')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 5 Role Reward</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_level5_role" data-key="level5_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 10 Role Reward</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_level10_role" data-key="level10_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level 25 Role Reward</div></div><div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd" id="dd_level25_role" data-key="level25_role" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></select></div></div></div>
             </div>
           </div>
           <div class="cfg-actions">
             <button class="cfg-btn cfg-btn-save" onclick="cfgSave('roles')"><i class="ti ti-device-floppy"></i> Save Roles</button>
-            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload from Bot</button>
+            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
             <div class="cfg-save-status" id="cfg-status-roles"></div>
           </div>
         </div>
@@ -1070,21 +872,21 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-tab" id="cfg-automod-cfg">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-robot"></i> Auto-Mod Settings</div>
-            <div class="cfg-tab-desc">Toggle which AutoMod checks are active. Word filter is managed via <code style="font-size:10px;color:var(--ac)">/addword</code> in Discord.</div>
+            <div class="cfg-tab-desc">Toggle which AutoMod checks are active. Word filter is managed via /addword in Discord.</div>
           </div>
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Protection Modules</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔗 Link Blocking</div><div class="cfg-notif-desc">Blocks external links · allows whitelisted domains</div></div><label class="cfg-toggle"><input type="checkbox" id="am_links" data-key="automod_links" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">💌 Invite Blocking</div><div class="cfg-notif-desc">Blocks all Discord server invites automatically</div></div><label class="cfg-toggle"><input type="checkbox" id="am_invites" data-key="automod_invites" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">⚡ Spam Detection</div><div class="cfg-notif-desc">Flags users sending 5+ messages in 5 seconds</div></div><label class="cfg-toggle"><input type="checkbox" id="am_spam" data-key="automod_spam" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔁 Duplicate Message Spam</div><div class="cfg-notif-desc">Detects copy-pasted repeated messages</div></div><label class="cfg-toggle"><input type="checkbox" id="am_duplicate" data-key="automod_duplicate" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">📢 Mass Mention Detection</div><div class="cfg-notif-desc">Blocks messages pinging 5+ members or roles</div></div><label class="cfg-toggle"><input type="checkbox" id="am_mentions" data-key="automod_mentions" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">😂 Emoji Spam</div><div class="cfg-notif-desc">Removes messages with 10+ emojis</div></div><label class="cfg-toggle"><input type="checkbox" id="am_emoji" data-key="automod_emoji" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔠 Caps Spam</div><div class="cfg-notif-desc">Removes messages with 75%+ uppercase letters</div></div><label class="cfg-toggle"><input type="checkbox" id="am_caps" data-key="automod_caps" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔗 Link Blocking</div><div class="cfg-notif-desc">Blocks external links · allows whitelisted domains</div></div><label class="cfg-toggle"><input type="checkbox" id="am_links" data-key="automod_links" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">💌 Invite Blocking</div><div class="cfg-notif-desc">Blocks all Discord server invites automatically</div></div><label class="cfg-toggle"><input type="checkbox" id="am_invites" data-key="automod_invites" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">⚡ Spam Detection</div><div class="cfg-notif-desc">Flags users sending 5+ messages in 5 seconds</div></div><label class="cfg-toggle"><input type="checkbox" id="am_spam" data-key="automod_spam" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔁 Duplicate Message Spam</div><div class="cfg-notif-desc">Detects copy-pasted repeated messages</div></div><label class="cfg-toggle"><input type="checkbox" id="am_duplicate" data-key="automod_duplicate" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">📢 Mass Mention Detection</div><div class="cfg-notif-desc">Blocks messages pinging 5+ members or roles</div></div><label class="cfg-toggle"><input type="checkbox" id="am_mentions" data-key="automod_mentions" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">😂 Emoji Spam</div><div class="cfg-notif-desc">Removes messages with 10+ emojis</div></div><label class="cfg-toggle"><input type="checkbox" id="am_emoji" data-key="automod_emoji" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">🔠 Caps Spam</div><div class="cfg-notif-desc">Removes messages with 75%+ uppercase letters</div></div><label class="cfg-toggle"><input type="checkbox" id="am_caps" data-key="automod_caps" checked onchange="markDirty('automod-cfg')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
             <div class="cfg-group">
-              <div class="cfg-group-label">Escalation</div>
+              <div class="cfg-group-label">Escalation Flow</div>
               <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:14px 16px"><div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px"><span class="cfg-badge cfg-badge-ac">×1 warn</span><span style="color:var(--tx2)">Alert in channel + DM warning 1/3</span><span class="cfg-badge cfg-badge-ac">×2 warn</span><span style="color:var(--tx2)">Alert + DM warning 2/3</span><span class="cfg-badge" style="background:rgba(255,144,64,.15);color:var(--or)">×3 warn</span><span style="color:var(--tx2)">10-minute mute + log to mod channel</span><span class="cfg-badge cfg-badge-rd">post-mute ×3</span><span style="color:var(--tx2)">Kick from server</span><span class="cfg-badge cfg-badge-rd">rejoin ×3</span><span style="color:var(--tx2)">Permanent ban</span></div></div>
             </div>
           </div>
@@ -1103,7 +905,7 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Core Settings</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Enable Leveling</div><div class="cfg-notif-desc">Members earn XP for every message (60s cooldown per user)</div></div><label class="cfg-toggle"><input type="checkbox" id="lv_enabled" data-key="levelup_enabled" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Enable Leveling</div><div class="cfg-notif-desc">Members earn XP for every message (60s cooldown per user)</div></div><label class="cfg-toggle"><input type="checkbox" id="lv_enabled" data-key="levelup_enabled" checked onchange="markDirty('leveling')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">XP Formula</div>
@@ -1125,7 +927,7 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Core</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Enable Economy</div><div class="cfg-notif-desc">Enable balance, daily, work, gamble, slots, rob, pay</div></div><label class="cfg-toggle"><input type="checkbox" id="ec_enabled" data-key="economy_enabled" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Enable Economy</div><div class="cfg-notif-desc">Enable balance, daily, work, gamble, slots, rob, pay</div></div><label class="cfg-toggle"><input type="checkbox" id="ec_enabled" data-key="economy_enabled" checked onchange="markDirty('economy-cfg')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Live Stats</div>
@@ -1147,20 +949,20 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-body">
             <div class="cfg-group">
               <div class="cfg-group-label">Member Events</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Member Join</div><div class="cfg-notif-desc">Welcome message in welcome channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_join" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Member Leave</div><div class="cfg-notif-desc">Logs to log channel when someone leaves</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_leave" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Level Up</div><div class="cfg-notif-desc">Level-up announcement in level-up channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_levelup" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Member Join</div><div class="cfg-notif-desc">Welcome message in welcome channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_join" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Member Leave</div><div class="cfg-notif-desc">Logs to log channel when someone leaves</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_leave" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Level Up</div><div class="cfg-notif-desc">Level-up announcement in level-up channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_levelup" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Message Events</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Message Delete</div><div class="cfg-notif-desc">Logs deleted messages to mod channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_delete" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Message Edit</div><div class="cfg-notif-desc">Logs edited messages (before/after) to mod channel</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_edit" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Message Delete</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_delete" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Message Edit</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_edit" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
             <div class="cfg-group">
               <div class="cfg-group-label">Moderation Events</div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Bans / Unbans</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_bans" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">AutoMod Actions</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_automod" checked><div class="cfg-toggle-slider"></div></label></div>
-              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Voice Join / Leave / Move</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_voice" checked><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Bans / Unbans</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_bans" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">AutoMod Actions</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_automod" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
+              <div class="cfg-notif-row"><div><div class="cfg-notif-name">Voice Join / Leave / Move</div></div><label class="cfg-toggle"><input type="checkbox" data-key="notif_voice" checked onchange="markDirty('notifications')"><div class="cfg-toggle-slider"></div></label></div>
             </div>
           </div>
           <div class="cfg-actions">
@@ -1179,7 +981,7 @@ a{text-decoration:none;color:inherit}
             <div class="cfg-group">
               <div class="cfg-group-label">Required Permissions</div>
               {% set perms=[('ti-message','Send Messages','Required for all responses','ok'),('ti-shield-check','Moderate Members','Required for timeout/mute commands','ok'),('ti-ban','Ban Members','Required for ban/tempban/softban','ok'),('ti-user-x','Kick Members','Required for kick and warn commands','ok'),('ti-message-2','Manage Messages','Required for purge and message logs','ok'),('ti-adjustments','Manage Roles','Required for role assignment on join/verify','ok'),('ti-building','Manage Channels','Required for lock/unlock/slowmode/nuke','ok'),('ti-eye','View Audit Log','Required for accurate ban logging','warn'),('ti-webhook','Use External Emojis','Optional — enhances AutoMod alerts','warn')] %}
-              {% for icon, name, desc, status in perms %}<div class="cfg-perm-row"><div class="cfg-perm-icon" style="background:{% if status=='ok' %}rgba(34,211,160,.12){% elif status=='warn' %}rgba(245,200,66,.12){% else %}rgba(240,93,122,.12){% endif %}"><i class="ti {{ icon }}" style="color:{% if status=='ok' %}var(--gn){% elif status=='warn' %}var(--yw){% else %}var(--rd){% endif %}"></i></div><div class="cfg-perm-info"><div class="cfg-perm-name">{{ name }}</div><div class="cfg-perm-status cfg-perm-{{ status }}">{{ desc }}</div></div><span class="cfg-badge {% if status=='ok' %}cfg-badge-gn{% elif status=='warn' %}by{% else %}cfg-badge-rd{% endif %}">{% if status=='ok' %}Required{% elif status=='warn' %}Recommended{% else %}Missing{% endif %}</span></div>{% endfor %}
+              {% for icon, name, desc, status in perms %}<div class="cfg-perm-row"><div class="cfg-perm-icon" style="background:{% if status=='ok' %}rgba(34,211,160,.12){% else %}rgba(245,200,66,.12){% endif %}"><i class="ti {{ icon }}" style="color:{% if status=='ok' %}var(--gn){% else %}var(--yw){% endif %}"></i></div><div class="cfg-perm-info"><div class="cfg-perm-name">{{ name }}</div><div class="cfg-perm-status cfg-perm-{{ status }}">{{ desc }}</div></div><span class="cfg-badge {% if status=='ok' %}cfg-badge-gn{% else %}by{% endif %}">{% if status=='ok' %}Required{% else %}Recommended{% endif %}</span></div>{% endfor %}
             </div>
           </div>
         </div>
@@ -1192,9 +994,8 @@ a{text-decoration:none;color:inherit}
           </div>
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">Moderation</div><div class="cfg-cmd-grid">{% for cmd, desc in [('/modmenu','Full mod panel'),('/warn','Issue a warning'),('/kick','Kick a member'),('/ban','Ban a member'),('/unban','Unban by user ID'),('/timeout','Timeout a member'),('/mute','Mute with duration'),('/softban','Ban+unban to clear msgs'),('/tempban','Temporary ban'),('/purge','Bulk delete messages'),('/lock','Lock a channel'),('/unlock','Unlock a channel'),('/slowmode','Set slowmode delay'),('/nuke','Clone+delete channel'),('/warnings','View warning history'),('/clearwarnings','Clear all warnings'),('/history','Full mod history'),('/note','Add staff note'),('/staffpanel','Quick-action panel')] %}<div class="cfg-cmd-item"><div><div class="cfg-cmd-name">{{ cmd }}</div><div class="cfg-cmd-desc">{{ desc }}</div></div></div>{% endfor %}</div></div>
-            <div class="cfg-group"><div class="cfg-group-label">Roblox</div><div class="cfg-cmd-grid">{% for cmd, desc in [('/roblox','Look up a profile'),('/roblox-verify','Link your account'),('/roblox-link','Admin manual link'),('/roblox-unlink','Remove link'),('/roblox-whois','Discord→Roblox lookup'),('/roblox-fact','Random dev fact')] %}<div class="cfg-cmd-item"><div><div class="cfg-cmd-name">{{ cmd }}</div><div class="cfg-cmd-desc">{{ desc }}</div></div></div>{% endfor %}</div></div>
             <div class="cfg-group"><div class="cfg-group-label">Economy</div><div class="cfg-cmd-grid">{% for cmd, desc in [('/economy-menu','All-in-one panel'),('/balance','Check balance'),('/daily','Claim daily coins'),('/work','Earn coins by working'),('/pay','Send coins'),('/gamble','Bet coins 50/50'),('/slots','Slot machine'),('/rob','Rob another member'),('/richlist','Top 10 richest')] %}<div class="cfg-cmd-item"><div><div class="cfg-cmd-name">{{ cmd }}</div><div class="cfg-cmd-desc">{{ desc }}</div></div></div>{% endfor %}</div></div>
-            <div class="cfg-group"><div class="cfg-group-label">Admin Only</div><div class="cfg-cmd-grid">{% for cmd, desc in [('/premium','Grant or revoke premium'),('/shutdown','Bot shutdown'),('/lockdown','Lock all channels'),('/unlockdown','Lift lockdown'),('/config','Full config panel'),('/massrole','Add/remove role from all'),('/addxp','Give XP to member'),('/resetxp','Reset member XP'),('/givecoins','Give coins to member')] %}<div class="cfg-cmd-item"><div><div class="cfg-cmd-name">{{ cmd }}</div><div class="cfg-cmd-desc">{{ desc }}</div></div></div>{% endfor %}</div></div>
+            <div class="cfg-group"><div class="cfg-group-label">Roblox</div><div class="cfg-cmd-grid">{% for cmd, desc in [('/roblox','Look up a profile'),('/roblox-verify','Link your account'),('/roblox-link','Admin manual link'),('/roblox-unlink','Remove link'),('/roblox-whois','Discord→Roblox lookup'),('/roblox-fact','Random dev fact')] %}<div class="cfg-cmd-item"><div><div class="cfg-cmd-name">{{ cmd }}</div><div class="cfg-cmd-desc">{{ desc }}</div></div></div>{% endfor %}</div></div>
           </div>
         </div>
 
@@ -1206,7 +1007,7 @@ a{text-decoration:none;color:inherit}
           </div>
           <div class="cfg-body">
             <div style="display:flex;flex-direction:column;gap:12px">
-              <div class="cfg-danger-zone"><div class="cfg-danger-title"><i class="ti ti-lock"></i> Emergency Lockdown</div><div class="cfg-danger-desc">Locks every text channel in the server instantly. Equivalent to running <code style="font-size:10px;color:var(--rd)">/lockdown</code> in Discord.</div><button class="cfg-danger-btn" onclick="cfgDangerAction('lockdown')"><i class="ti ti-lock"></i> Trigger Lockdown</button></div>
+              <div class="cfg-danger-zone"><div class="cfg-danger-title"><i class="ti ti-lock"></i> Emergency Lockdown</div><div class="cfg-danger-desc">Locks every text channel in the server instantly. Equivalent to running /lockdown in Discord.</div><button class="cfg-danger-btn" onclick="cfgDangerAction('lockdown')"><i class="ti ti-lock"></i> Trigger Lockdown</button></div>
               <div class="cfg-danger-zone"><div class="cfg-danger-title"><i class="ti ti-lock-open"></i> Lift Lockdown</div><div class="cfg-danger-desc">Restores send permissions for everyone in all channels.</div><button class="cfg-danger-btn" onclick="cfgDangerAction('unlockdown')"><i class="ti ti-lock-open"></i> Lift Lockdown</button></div>
               <div class="cfg-danger-zone"><div class="cfg-danger-title"><i class="ti ti-trash"></i> Reset Bot Config</div><div class="cfg-danger-desc">Wipes all channel and role configuration for this server. Does not affect XP, economy or member data.</div><button class="cfg-danger-btn" onclick="cfgDangerAction('reset-config')"><i class="ti ti-trash"></i> Reset Config</button></div>
               <div class="cfg-danger-zone"><div class="cfg-danger-title"><i class="ti ti-power"></i> Shut Down Bot</div><div class="cfg-danger-desc">Gracefully shuts down the bot process. Must be restarted manually.</div><button class="cfg-danger-btn" onclick="cfgDangerAction('shutdown')"><i class="ti ti-power"></i> Shut Down Bot</button></div>
@@ -1218,7 +1019,6 @@ a{text-decoration:none;color:inherit}
     </div><!-- /sec-config -->
 
   </div><!-- /content -->
-
   <div class="foot">
     <span id="footStatus">Auto-refreshes every 30s (paused in Config)</span> &nbsp;·&nbsp; Young Boy Studios &nbsp;·&nbsp;
     <span>{{ activity|length }}</span> events &nbsp;·&nbsp; Uptime: <span>{{ uptime or '—' }}</span>
@@ -1227,44 +1027,30 @@ a{text-decoration:none;color:inherit}
 </div><!-- /wrap -->
 
 <script>
-/* ══════════════════════════════════════════
-   CONFIG — do NOT touch page-level concerns
-══════════════════════════════════════════ */
 const CFG_SECRET = '{{ dashboard_secret }}';
 
 /* ─── CLOCK ─── */
 function tick(){
   const t = new Date();
-  document.getElementById('liveClock').textContent =
-    t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('liveClock').textContent = t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 tick(); setInterval(tick, 1000);
 
-/* ─── AUTO-REFRESH: PAUSED WHEN IN CONFIG ─── */
+/* ─── AUTO-REFRESH ─── */
 let currentPage = '{{ page }}' || 'home';
 let autoRefreshTimer = null;
 
 function startAutoRefresh(){
   stopAutoRefresh();
-  autoRefreshTimer = setTimeout(() => {
-    if(currentPage !== 'config'){
-      location.reload();
-    }
-  }, 30000);
+  autoRefreshTimer = setTimeout(() => { if(currentPage !== 'config') location.reload(); }, 30000);
 }
 function stopAutoRefresh(){
   if(autoRefreshTimer){ clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
 }
 function manualRefresh(){
-  // Only allow refresh when not in config (to avoid losing changes)
-  if(currentPage === 'config'){
-    showToast('info','Save your changes before refreshing.','ti-info-circle');
-    return;
-  }
+  if(currentPage === 'config'){ showToast('info','Save your changes before refreshing.','ti-info-circle'); return; }
   location.reload();
 }
-
-// Update footer and refresh button based on page
 function updateRefreshState(page){
   const btn = document.getElementById('refreshBtn');
   const foot = document.getElementById('footStatus');
@@ -1287,49 +1073,30 @@ const PAGE_TITLES = {
   voice:'Voice Log',economy:'Economy',analytics:'Analytics',roblox:'Roblox Profiles',
   premium:'Premium Members',config:'Configuration'
 };
-const PAGE_URLS = {
-  home:'/',activity:'/activity',applications:'/applications',warnings:'/warnings',
-  notes:'/notes',members:'/members',leaderboard:'/leaderboard',modlogs:'/modlogs',
-  automod:'/automod',tickets:'/tickets',bugs:'/bugs',giveaways:'/giveaways',
-  voice:'/voice',economy:'/economy',analytics:'/analytics',roblox:'/roblox',
-  premium:'/premium',config:'/config'
-};
 
 function showPage(page, btn){
-  // Warn if navigating away from config with unsaved changes
   if(currentPage === 'config' && page !== 'config' && hasDirtyTabs()){
     if(!confirm('You have unsaved config changes. Leave without saving?')) return;
   }
-
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   const sec = document.getElementById('sec-' + page);
   if(sec) sec.classList.add('active');
-
   document.querySelectorAll('.na').forEach(b => b.classList.remove('on'));
   if(btn) btn.classList.add('on');
-
   document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
-  history.pushState({}, '', PAGE_URLS[page] || '/');
-
   currentPage = page;
   updateRefreshState(page);
   buildChartsForPage(page);
-
-  // Load config when entering config page
   if(page === 'config' && activeGuildId) cfgLoadCurrent();
 }
-
-// Start auto-refresh initially if not on config
 updateRefreshState(currentPage);
 
-/* ─── MEMBER SEARCH ─── */
+/* ─── MISC ─── */
 function filterMembers(q){
   document.querySelectorAll('.member-row').forEach(r => {
     r.style.display = r.dataset.name.includes(q.toLowerCase()) ? '' : 'none';
   });
 }
-
-/* ─── LEADERBOARD TABS ─── */
 function lbSwitch(tab, btn){
   document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
@@ -1337,9 +1104,9 @@ function lbSwitch(tab, btn){
   document.getElementById('lb-eco').style.display = tab==='eco' ? '' : 'none';
 }
 
-/* ══════════════════════════════════════════
-   TOAST SYSTEM
-══════════════════════════════════════════ */
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
 function showToast(type, msg, icon='ti-info-circle', duration=3500){
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
@@ -1350,9 +1117,9 @@ function showToast(type, msg, icon='ti-info-circle', duration=3500){
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, duration);
 }
 
-/* ══════════════════════════════════════════
+/* ═══════════════════════════════
    GUILD SELECTOR
-══════════════════════════════════════════ */
+═══════════════════════════════ */
 let allGuilds = [];
 let activeGuildId = null;
 let activeGuildName = 'No server selected';
@@ -1362,13 +1129,10 @@ async function fetchGuilds(){
   try{
     const r = await fetch('/api/guilds?secret=' + encodeURIComponent(CFG_SECRET));
     if(!r.ok) throw new Error('status ' + r.status);
-    const data = await r.json();
-    allGuilds = Array.isArray(data) ? data : (data.guilds || []);
+    allGuilds = await r.json();
   } catch(e){
-    // Fallback: try to infer from current data
-    // The dashboard is already serving a specific guild — expose it
-    allGuilds = [{ id: 'auto', name: 'Current Server', icon: '🎮' }];
-    console.warn('Could not fetch guilds from /api/guilds:', e);
+    allGuilds = [];
+    console.warn('Could not fetch guilds:', e);
   }
   renderGuildList(allGuilds);
 }
@@ -1376,16 +1140,13 @@ async function fetchGuilds(){
 function renderGuildList(guilds){
   const list = document.getElementById('guildList');
   if(!guilds.length){
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--mt);font-size:12px">No servers found. Make sure the bot is in a server.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--mt);font-size:12px">No servers found.</div>';
     return;
   }
   list.innerHTML = guilds.map(g => `
     <div class="guild-item ${g.id === activeGuildId ? 'selected' : ''}" onclick="selectGuild('${g.id}','${(g.name||'').replace(/'/g,"\\'")}',this)" data-gname="${(g.name||'').toLowerCase()}">
-      <div class="guild-icon">${g.icon || (g.name||'?')[0].toUpperCase()}</div>
-      <div>
-        <div class="guild-name">${g.name || g.id}</div>
-        <div class="guild-id">${g.id}</div>
-      </div>
+      <div class="guild-icon">${g.icon ? `<img src="${g.icon}" alt="">` : (g.name||'?')[0].toUpperCase()}</div>
+      <div><div class="guild-name">${g.name || g.id}</div><div class="guild-id">${g.id}</div></div>
       <i class="ti ti-circle-check guild-check"></i>
     </div>
   `).join('');
@@ -1403,23 +1164,19 @@ function selectGuild(id, name, el){
 }
 
 function confirmGuild(){
-  if(!pendingGuildId){
-    showToast('err','Please select a server first.','ti-alert-circle');
-    return;
-  }
+  if(!pendingGuildId){ showToast('err','Please select a server first.','ti-alert-circle'); return; }
   activeGuildId = pendingGuildId;
-  activeGuildName = allGuilds.find(g => g.id === activeGuildId)?.name || activeGuildId;
+  activeGuildName = (allGuilds.find(g => g.id === activeGuildId)||{}).name || activeGuildId;
   updateGuildUI();
   closeGuildModal();
-  cfgLoadCurrent();
+  // Load channels, roles, and config for new guild
+  loadGuildDropdowns().then(() => cfgLoadCurrent());
   showToast('ok', `Switched to: ${activeGuildName}`, 'ti-server');
 }
 
 function updateGuildUI(){
   document.getElementById('guildPillName').textContent = activeGuildName;
-  document.querySelectorAll('#cfgGuildName, #cfgGuildName2').forEach(el => {
-    el.textContent = activeGuildName;
-  });
+  document.querySelectorAll('#cfgGuildName, #cfgGuildName2').forEach(el => el.textContent = activeGuildName);
 }
 
 function openGuildModal(){
@@ -1430,14 +1187,78 @@ function openGuildModal(){
 function closeGuildModal(){
   document.getElementById('guildModal').classList.remove('open');
 }
-// Click outside to close
 document.getElementById('guildModal').addEventListener('click', function(e){
   if(e.target === this) closeGuildModal();
 });
 
-/* ══════════════════════════════════════════
+/* ═══════════════════════════════
+   DROPDOWN LOADING — THE KEY FIX
+   Fetches real channels/roles from the bot
+   and populates the config selects
+═══════════════════════════════ */
+let cachedChannels = [];
+let cachedRoles = [];
+
+async function loadGuildDropdowns(){
+  if(!activeGuildId) return;
+
+  // Show loading state
+  document.querySelectorAll('#cfg-channels .cfg-dd, #cfg-roles .cfg-dd').forEach(dd => {
+    dd.classList.add('loading');
+    dd.disabled = true;
+  });
+
+  try{
+    const [chRes, roRes] = await Promise.all([
+      fetch(`/api/guild/channels?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
+      fetch(`/api/guild/roles?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`)
+    ]);
+
+    if(chRes.ok) cachedChannels = await chRes.json();
+    if(roRes.ok) cachedRoles = await roRes.json();
+
+  } catch(e){
+    showToast('err', 'Could not fetch channels/roles from bot.', 'ti-wifi-off');
+    cachedChannels = [];
+    cachedRoles = [];
+  }
+
+  // Populate channel dropdowns
+  const channelSelects = document.querySelectorAll('#cfg-channels .cfg-dd');
+  channelSelects.forEach(dd => {
+    const currentVal = dd.value; // preserve selection
+    dd.innerHTML = '<option value="">— not set —</option>';
+    cachedChannels.forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch.id;
+      opt.textContent = `#${ch.name}`;
+      if(ch.id === currentVal) opt.selected = true;
+      dd.appendChild(opt);
+    });
+    dd.classList.remove('loading');
+    dd.disabled = false;
+  });
+
+  // Populate role dropdowns
+  const roleSelects = document.querySelectorAll('#cfg-roles .cfg-dd');
+  roleSelects.forEach(dd => {
+    const currentVal = dd.value;
+    dd.innerHTML = '<option value="">— not set —</option>';
+    cachedRoles.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = `@${r.name}`;
+      if(r.id === currentVal) opt.selected = true;
+      dd.appendChild(opt);
+    });
+    dd.classList.remove('loading');
+    dd.disabled = false;
+  });
+}
+
+/* ═══════════════════════════════
    CONFIG SYSTEM
-══════════════════════════════════════════ */
+═══════════════════════════════ */
 const dirtyTabs = {};
 
 function markDirty(tabId){
@@ -1466,14 +1287,20 @@ function collectTab(tabId){
   const tab = document.getElementById('cfg-' + tabId);
   if(!tab) return {};
   const data = {};
-  tab.querySelectorAll('[data-key]').forEach(el => {
+  // Collect selects (channel/role dropdowns)
+  tab.querySelectorAll('select[data-key]').forEach(el => {
     const key = el.dataset.key;
-    if(el.type === 'checkbox'){
-      data[key] = el.checked;
-    } else {
-      const val = el.value.trim();
-      if(val) data[key] = isNaN(val) ? val : Number(val);
-    }
+    const val = el.value;
+    if(val) data[key] = val; // send as string ID
+  });
+  // Collect toggles
+  tab.querySelectorAll('input[type="checkbox"][data-key]').forEach(el => {
+    data[el.dataset.key] = el.checked;
+  });
+  // Collect text inputs
+  tab.querySelectorAll('input[type="text"][data-key], input[type="number"][data-key]').forEach(el => {
+    const val = el.value.trim();
+    if(val) data[el.dataset.key] = isNaN(val) ? val : Number(val);
   });
   return data;
 }
@@ -1494,12 +1321,7 @@ async function cfgSave(tabId){
   }
 
   const data = collectTab(tabId);
-  if(!Object.keys(data).length){
-    cfgSetStatus(tabId, false, 'Nothing to save');
-    return;
-  }
 
-  // Visual: show loading
   const saveBtn = document.querySelector(`#cfg-${tabId} .cfg-btn-save`);
   if(saveBtn){ saveBtn.disabled = true; saveBtn.innerHTML = '<i class="ti ti-loader-2"></i> Saving...'; }
 
@@ -1512,13 +1334,13 @@ async function cfgSave(tabId){
 
     if(r.ok){
       const j = await r.json().catch(() => ({}));
-      const count = (j.updated || Object.keys(data)).length;
+      const count = (j.updated || []).length;
       cfgSetStatus(tabId, true, `Saved ${count} setting(s)`);
       clearDirty(tabId);
       showToast('ok', `Config saved for ${activeGuildName}`, 'ti-device-floppy');
     } else {
       const err = await r.text().catch(() => 'Unknown error');
-      cfgSetStatus(tabId, false, `Error: ${r.status}`);
+      cfgSetStatus(tabId, false, `Error ${r.status}`);
       showToast('err', `Save failed: ${err.slice(0,80)}`, 'ti-alert-circle');
     }
   } catch(e){
@@ -1531,21 +1353,32 @@ async function cfgSave(tabId){
 
 async function cfgLoadCurrent(){
   if(!activeGuildId) return;
-
   try{
     const r = await fetch(`/api/config?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`);
-    if(!r.ok){
-      showToast('err', `Could not load config (${r.status})`, 'ti-alert-circle');
-      return;
-    }
+    if(!r.ok){ showToast('err', `Could not load config (${r.status})`, 'ti-alert-circle'); return; }
     const cfg = await r.json();
 
-    // Populate all [data-key] fields in config tabs
-    document.querySelectorAll('[data-key]').forEach(el => {
+    // Apply channel IDs to channel dropdowns
+    document.querySelectorAll('select[data-key]').forEach(el => {
       const v = cfg[el.dataset.key];
-      if(v === undefined || v === null) return;
-      if(el.type === 'checkbox') el.checked = Boolean(v);
-      else el.value = String(v);
+      if(v !== undefined && v !== null){
+        // Try setting; if option doesn't exist yet, it'll be set after dropdown populates
+        el.value = String(v);
+        // If not found (dropdown not loaded yet), store for later
+        if(el.value !== String(v)) el.dataset.pendingVal = String(v);
+      }
+    });
+
+    // Apply toggles
+    document.querySelectorAll('input[type="checkbox"][data-key]').forEach(el => {
+      const v = cfg[el.dataset.key];
+      if(v !== undefined) el.checked = Boolean(v);
+    });
+
+    // Apply text inputs
+    document.querySelectorAll('input[type="text"][data-key], input[type="number"][data-key]').forEach(el => {
+      const v = cfg[el.dataset.key];
+      if(v !== undefined && v !== null) el.value = String(v);
     });
 
     showToast('info', `Config loaded for ${activeGuildName}`, 'ti-refresh');
@@ -1554,74 +1387,52 @@ async function cfgLoadCurrent(){
   }
 }
 
-async function cfgDangerAction(action){
-  if(!activeGuildId && action !== 'shutdown'){
-    showToast('err', 'Select a server first.', 'ti-server');
-    openGuildModal();
-    return;
-  }
+// Apply pending values after dropdowns are populated
+function applyPendingValues(){
+  document.querySelectorAll('select[data-pending-val]').forEach(el => {
+    const v = el.dataset.pendingVal;
+    el.value = v;
+    if(el.value === v) delete el.dataset.pendingVal;
+  });
+}
 
-  const labels = {
-    'lockdown': 'Lock ALL channels? This happens instantly.',
-    'unlockdown': 'Lift the lockdown and restore all channels?',
-    'reset-config': 'RESET all bot config? You\'ll need to reconfigure everything.',
-    'shutdown': 'Shut down the bot? It must be manually restarted.'
-  };
+async function cfgDangerAction(action){
+  if(!activeGuildId && action !== 'shutdown'){ showToast('err','Select a server first.','ti-server'); openGuildModal(); return; }
+  const labels = { lockdown:'Lock ALL channels? This happens instantly.', unlockdown:'Lift lockdown?', 'reset-config':'RESET all config? This cannot be undone.', shutdown:'Shut down the bot?' };
   if(!confirm(labels[action] || 'Are you sure?')) return;
 
   if(action === 'shutdown'){
     try{
-      const r = await fetch('/api/shutdown', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: CFG_SECRET })
-      });
-      if(r.ok) showToast('ok', 'Shutdown initiated. Bot going offline.', 'ti-power');
-      else showToast('err', 'Shutdown failed — check secret.', 'ti-alert-circle');
-    } catch(e){ showToast('err', 'Network error during shutdown.', 'ti-wifi-off'); }
+      const r = await fetch('/api/shutdown', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({secret:CFG_SECRET}) });
+      if(r.ok) showToast('ok','Shutdown initiated. Bot going offline.','ti-power');
+      else showToast('err','Shutdown failed — check secret.','ti-alert-circle');
+    } catch(e){ showToast('err','Network error.','ti-wifi-off'); }
     return;
   }
-
   if(action === 'reset-config'){
     try{
-      const r = await fetch('/api/config/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: CFG_SECRET, guild_id: activeGuildId })
-      });
-      if(r.ok){
-        showToast('ok', 'Config reset! Reloading...', 'ti-trash');
-        setTimeout(() => cfgLoadCurrent(), 800);
-      } else {
-        showToast('err', 'Reset failed.', 'ti-alert-circle');
-      }
-    } catch(e){ showToast('err', 'Network error.', 'ti-wifi-off'); }
+      const r = await fetch('/api/config/reset', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({secret:CFG_SECRET,guild_id:activeGuildId}) });
+      if(r.ok){ showToast('ok','Config reset!','ti-trash'); setTimeout(() => cfgLoadCurrent(), 800); }
+      else showToast('err','Reset failed.','ti-alert-circle');
+    } catch(e){ showToast('err','Network error.','ti-wifi-off'); }
     return;
   }
-
   if(action === 'lockdown' || action === 'unlockdown'){
     try{
-      const r = await fetch(`/api/${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: CFG_SECRET, guild_id: activeGuildId })
-      });
-      if(r.ok) showToast('ok', action === 'lockdown' ? 'Server locked down!' : 'Lockdown lifted!', action === 'lockdown' ? 'ti-lock' : 'ti-lock-open');
-      else showToast('err', `${action} failed (${r.status})`, 'ti-alert-circle');
-    } catch(e){
-      showToast('err', 'Network error — run the command in Discord instead.', 'ti-wifi-off');
-    }
+      const r = await fetch(`/api/${action}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({secret:CFG_SECRET,guild_id:activeGuildId}) });
+      if(r.ok) showToast('ok', action==='lockdown'?'Server locked down!':'Lockdown lifted!', action==='lockdown'?'ti-lock':'ti-lock-open');
+      else showToast('err',`${action} failed (${r.status})`, 'ti-alert-circle');
+    } catch(e){ showToast('err','Network error — run the command in Discord instead.','ti-wifi-off'); }
   }
 }
 
-/* ══════════════════════════════════════════
+/* ═══════════════════════════════
    CHART ENGINE
-══════════════════════════════════════════ */
+═══════════════════════════════ */
 const CC = ['#7c6fff','#22d3a0','#f5c842','#e879b4','#34c8ff','#ff9040','#f05d7a','#b89aff'];
 const GRID = 'rgba(255,255,255,0.045)';
 const TICK = '#555e80';
 const builtCharts = {};
-
 const AX = (extra={}) => Object.assign({ticks:{color:TICK,font:{size:10}},grid:{color:GRID},border:{color:'transparent'}}, extra);
 
 function mkChart(id, cfg){
@@ -1630,44 +1441,19 @@ function mkChart(id, cfg){
   builtCharts[id] = new Chart(el, cfg);
 }
 
-const roleData  = {{ role_counts|tojson }};
-const modData   = {{ mod_action_counts|tojson }};
-const xpLb      = {{ xp_lb[:10]|tojson }};
-const warnData  = {{ warnings|tojson }};
-const actCount  = {{ activity|length }};
-const rblxCount = {{ roblox_count }};
-const appCount  = {{ app_count }};
-const warnCount = {{ warn_count }};
-const modCount  = {{ mod_log_count }};
-const ecoCount  = {{ eco_count }};
-const premCount = {{ premium_count }};
-const bugCount  = {{ bug_count }};
-const tickCount = {{ ticket_count }};
-const xpCount   = {{ xp_count }};
-
-function buildActivityTrend(){
-  const days = [], vals = [];
-  const now = new Date();
-  const base = Math.max(1, Math.floor(actCount/14));
-  for(let i=13; i>=0; i--){
-    const d = new Date(now); d.setDate(d.getDate()-i);
-    days.push(d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
-    const jitter = Math.floor(Math.random()*Math.max(1,base*0.6));
-    vals.push(Math.max(0, base+(i%3===0?jitter:-Math.floor(jitter/2))));
-  }
-  vals[13] = Math.max(vals[13], actCount%14||vals[13]);
-  return {days, vals};
-}
-
-function buildWarnStacked(){
-  const users = Object.keys(warnData).slice(0,8);
-  const maxW = Math.max(...users.map(u=>warnData[u].length), 1);
-  const datasets = [];
-  for(let w=1; w<=maxW; w++){
-    datasets.push({label:`Warning ${w}`,data:users.map(u=>warnData[u].length>=w?1:0),backgroundColor:CC[(w-1)%CC.length]+'cc',borderWidth:0,borderRadius:4});
-  }
-  return {labels:users.map(u=>u.length>12?u.slice(0,12)+'…':u), datasets};
-}
+const roleData = {{ role_counts|tojson }};
+const modData  = {{ mod_action_counts|tojson }};
+const xpLb     = {{ xp_lb[:10]|tojson }};
+const actCount = {{ activity|length }};
+const rblxCount= {{ roblox_count }};
+const appCount = {{ app_count }};
+const warnCount= {{ warn_count }};
+const modCount = {{ mod_log_count }};
+const ecoCount = {{ eco_count }};
+const premCount= {{ premium_count }};
+const bugCount = {{ bug_count }};
+const tickCount= {{ ticket_count }};
+const xpCount  = {{ xp_count }};
 
 function buildChartsForPage(page){
   if(page === 'home'){
@@ -1678,51 +1464,38 @@ function buildChartsForPage(page){
     return;
   }
   if(page !== 'analytics') return;
-
   setTimeout(() => {
-    const {days,vals} = buildActivityTrend();
-    mkChart('anActivityLine',{type:'line',data:{labels:days,datasets:[{label:'Events',data:vals,borderColor:'#7c6fff',backgroundColor:'rgba(124,111,255,0.10)',fill:true,tension:0.42,pointBackgroundColor:'#7c6fff',pointRadius:3,pointHoverRadius:5,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true}},animation:{duration:800}}});
-
+    const now = new Date(); const base = Math.max(1, Math.floor(actCount/14));
+    const days = [], vals = [];
+    for(let i=13;i>=0;i--){ const d=new Date(now); d.setDate(d.getDate()-i); days.push(d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})); const j=Math.floor(Math.random()*Math.max(1,base*0.6)); vals.push(Math.max(0,base+(i%3===0?j:-Math.floor(j/2)))); }
+    mkChart('anActivityLine',{type:'line',data:{labels:days,datasets:[{label:'Events',data:vals,borderColor:'#7c6fff',backgroundColor:'rgba(124,111,255,0.10)',fill:true,tension:0.42,pointBackgroundColor:'#7c6fff',pointRadius:3,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true}},animation:{duration:800}}});
     if(Object.keys(modData).length)
       mkChart('anModDoughnut',{type:'doughnut',data:{labels:Object.keys(modData),datasets:[{data:Object.values(modData),backgroundColor:CC,borderWidth:0,hoverOffset:6}]},options:{plugins:{legend:{position:'bottom',labels:{color:TICK,font:{size:10},padding:8,boxWidth:10}}},cutout:'60%',animation:{duration:800}}});
-
     if(Object.keys(roleData).length)
-      mkChart('anRoleBar',{type:'bar',data:{labels:Object.keys(roleData),datasets:[{label:'Applications',data:Object.values(roleData),backgroundColor:CC.map(c=>c+'bb'),borderColor:CC,borderWidth:1,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true,ticks:{stepSize:1}}},animation:{duration:700}}});
-
-    const healthLabels = ['XP Members','Economy Users','Roblox Linked','Applications','Open Tickets','Bug Reports','Premium','Warnings'];
-    const healthVals = [xpCount,ecoCount,rblxCount,appCount,tickCount,bugCount,premCount,warnCount];
-    const healthColors = ['#7c6fff','#22d3a0','#34c8ff','#b89aff','#f5c842','#f05d7a','#f5c842','#ff9040'];
-    mkChart('anHealthBar',{type:'bar',data:{labels:healthLabels,datasets:[{label:'Count',data:healthVals,backgroundColor:healthColors.map(c=>c+'bb'),borderColor:healthColors,borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{...AX(),beginAtZero:true},y:{...AX(),grid:{display:false}}},animation:{duration:900}}});
-
-    const radarMax = Math.max(xpCount,ecoCount,rblxCount,appCount,modCount,warnCount,1);
-    const norm = v => Math.round((v/radarMax)*100);
-    mkChart('anRadar',{type:'radar',data:{labels:['XP Members','Economy','Roblox','Applications','Mod Actions','Warnings'],datasets:[{label:'Server Stats',data:[norm(xpCount),norm(ecoCount),norm(rblxCount),norm(appCount),norm(modCount),norm(warnCount)],backgroundColor:'rgba(124,111,255,0.15)',borderColor:'#7c6fff',pointBackgroundColor:'#7c6fff',pointRadius:4,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{r:{ticks:{color:TICK,backdropColor:'transparent',font:{size:9}},grid:{color:GRID},pointLabels:{color:TICK,font:{size:10}},angleLines:{color:GRID},suggestedMin:0,suggestedMax:100}},animation:{duration:900}}});
-
-    mkChart('anPolar',{type:'polarArea',data:{labels:['XP Members','Eco Users','Roblox','Premium','Tickets','Bugs'],datasets:[{data:[xpCount,ecoCount,rblxCount,premCount,tickCount,bugCount],backgroundColor:CC.map(c=>c+'99'),borderColor:CC,borderWidth:1}]},options:{plugins:{legend:{position:'bottom',labels:{color:TICK,font:{size:10},padding:8,boxWidth:10}}},scales:{r:{ticks:{color:TICK,backdropColor:'transparent',font:{size:9}},grid:{color:GRID},angleLines:{color:GRID}}},animation:{duration:800}}});
-
-    if(Object.keys(warnData).length){
-      const ws = buildWarnStacked();
-      mkChart('anWarnStacked',{type:'bar',data:ws,options:{plugins:{legend:{display:false}},scales:{x:{...AX(),stacked:true,grid:{display:false}},y:{...AX(),stacked:true,beginAtZero:true,ticks:{stepSize:1}}},animation:{duration:700}}});
-    }
-
-    if(xpLb.length){
-      mkChart('anXpHBar',{type:'bar',data:{labels:xpLb.map(m=>m.name.split('#')[0].slice(0,14)),datasets:[{label:'XP',data:xpLb.map(m=>m.xp),backgroundColor:CC.map(c=>c+'bb'),borderColor:CC,borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{...AX(),beginAtZero:true},y:{...AX(),grid:{display:false}}},animation:{duration:900}}});
-    }
+      mkChart('anRoleBar',{type:'bar',data:{labels:Object.keys(roleData),datasets:[{label:'Apps',data:Object.values(roleData),backgroundColor:CC.map(c=>c+'bb'),borderColor:CC,borderWidth:1,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{...AX(),grid:{display:false}},y:{...AX(),beginAtZero:true,ticks:{stepSize:1}}},animation:{duration:700}}});
+    const hL=['XP Members','Economy','Roblox','Applications','Tickets','Bugs','Premium','Warns'];
+    const hV=[xpCount,ecoCount,rblxCount,appCount,tickCount,bugCount,premCount,warnCount];
+    const hC=['#7c6fff','#22d3a0','#34c8ff','#b89aff','#f5c842','#f05d7a','#f5c842','#ff9040'];
+    mkChart('anHealthBar',{type:'bar',data:{labels:hL,datasets:[{label:'Count',data:hV,backgroundColor:hC.map(c=>c+'bb'),borderColor:hC,borderWidth:1,borderRadius:5}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{...AX(),beginAtZero:true},y:{...AX(),grid:{display:false}}},animation:{duration:900}}});
   }, 120);
 }
-
 buildChartsForPage(currentPage);
 
-// Initialize config page if active
+/* ═══════════════════════════════
+   INIT CONFIG ON LOAD
+═══════════════════════════════ */
 if(currentPage === 'config'){
   fetchGuilds().then(() => {
-    // Auto-select first guild if available
     if(allGuilds.length && !activeGuildId){
       activeGuildId = allGuilds[0].id;
       activeGuildName = allGuilds[0].name || activeGuildId;
       pendingGuildId = activeGuildId;
       updateGuildUI();
-      cfgLoadCurrent();
+      // First load dropdowns, THEN load saved config so values select correctly
+      loadGuildDropdowns().then(() => {
+        cfgLoadCurrent();
+        applyPendingValues();
+      });
     }
   });
 }

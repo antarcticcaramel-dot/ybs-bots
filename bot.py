@@ -3966,50 +3966,21 @@ async def slash_automod_panel(interaction: discord.Interaction):
 
 
 # ============================================================
-# FLASK DASHBOARD — DROP-IN REPLACEMENT
-# Replaces everything from "# DASHBOARD (Flask)" to the end
-# of your bot.py (before the final run block).
+# YBS FLASK DASHBOARD — FIXED
+# Replace EVERYTHING from "# DASHBOARD (Flask)" to the bottom
+# of your bot.py with this file.
 # ============================================================
 
-from flask import Flask, render_template, jsonify, request, abort
+from flask import Flask, render_template, jsonify, request
 from threading import Thread
-import os, json
+import os, json, asyncio, discord
 
 flask_app = Flask(__name__)
 flask_app.jinja_env.globals.update(enumerate=enumerate)
 
-# ── Config key allow-lists (same as before) ──────────────────
-CHANNEL_CONFIG_KEYS_DASH = [
-    "welcome_channel", "apply_channel", "applications_channel",
-    "logs_channel", "general_channel", "announcements_channel",
-    "giveaway_channel", "levelup_channel", "rank_channel",
-    "verify_channel", "mod_channel",
-    # extra keys used by config sub-pages
-    "leave_channel", "starboard_channel", "ticket_log_channel",
-]
-ROLE_CONFIG_KEYS_DASH = [
-    "admin_role", "member_role", "muted_role", "builder_role",
-    "scripter_role", "modeller_role", "ui_role", "verified_role",
-    "level5_role", "level10_role", "level25_role", "pending_role",
-    "ticket_support_role", "autorole_id",
-]
-BOT_CONFIG_KEYS_DASH = [
-    "welcome_message", "welcome_embed_title", "welcome_embed_desc",
-    "welcome_embed_color", "welcome_enabled",
-    "leave_message_enabled", "leave_message",
-    "join_dm_enabled", "join_dm_message",
-    "autorole_enabled",
-    "starboard_enabled", "starboard_threshold",
-    "notif_join", "notif_leave", "notif_levelup", "notif_delete",
-    "notif_edit", "notif_bans", "notif_automod", "notif_voice",
-    "ticket_category", "ticket_welcome_message",
-    "automod_enabled",
-]
-ALL_ALLOWED_KEYS = set(
-    CHANNEL_CONFIG_KEYS_DASH + ROLE_CONFIG_KEYS_DASH + BOT_CONFIG_KEYS_DASH
-)
+DASHBOARD_SECRET = os.environ.get("DASHBOARD_SECRET", "changeme")
 
-# Reaction-roles stored in a separate JSON file
+# ── Reaction roles stored separately ────────────────────────
 RR_FILE = "reaction_roles.json"
 
 def load_rr():
@@ -4022,30 +3993,35 @@ def save_rr(data):
     with open(RR_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-# ── Secret guard helper ───────────────────────────────────────
-def _secret_ok(val):
-    return val == os.environ.get("DASHBOARD_SECRET", "changeme")
+# ── Secret helpers ───────────────────────────────────────────
+def secret_ok_qs():
+    return request.args.get("secret", "") == DASHBOARD_SECRET
 
-def _require_secret_qs():
-    """For GET requests — reads ?secret= query param."""
-    if not _secret_ok(request.args.get("secret", "")):
-        abort(403, description="Unauthorized")
+def secret_ok_body():
+    return (request.json or {}).get("secret", "") == DASHBOARD_SECRET
 
-def _require_secret_body():
-    """For POST requests — reads secret from JSON body."""
-    data = request.json or {}
-    if not _secret_ok(data.get("secret", "")):
-        abort(403, description="Unauthorized")
-    return data
+def unauth():
+    return jsonify({"error": "Unauthorized"}), 403
 
-# ── Shared context builder ────────────────────────────────────
+# ── Run a discord.py coroutine safely from Flask thread ──────
+def run_coro(coro, timeout=20):
+    """
+    Schedules a coroutine on the bot's event loop and waits for it.
+    This is the ONLY safe way to call async discord.py code from Flask.
+    """
+    future = asyncio.run_coroutine_threadsafe(coro, bot.loop)
+    return future.result(timeout=timeout)
+
+# ────────────────────────────────────────────────────────────
+# SHARED CONTEXT  (used by every page render)
+# ────────────────────────────────────────────────────────────
 def build_xp_leaderboard():
     result = []
     for uid, d in sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True):
-        lv         = get_level(d["xp"])
-        next_lv_xp = xp_for_level(lv + 1)
-        prev_lv_xp = xp_for_level(lv)
-        pct        = int((d["xp"] - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
+        lv  = get_level(d["xp"])
+        nxt = xp_for_level(lv + 1)
+        prv = xp_for_level(lv)
+        pct = int((d["xp"] - prv) / max(nxt - prv, 1) * 100)
         result.append({
             "uid": uid, "name": d.get("name", "Unknown"),
             "xp": d["xp"], "level": lv,
@@ -4063,34 +4039,30 @@ def build_eco_leaderboard():
 def common():
     role_counts = {}
     for app in applications_data.values():
-        role = app.get("role", "Other")
-        role_counts[role] = role_counts.get(role, 0) + 1
+        r = app.get("role", "Other")
+        role_counts[r] = role_counts.get(r, 0) + 1
 
     mod_action_counts = {}
     for entry in mod_log_data:
-        action = entry.get("action", "Other")
-        mod_action_counts[action] = mod_action_counts.get(action, 0) + 1
+        a = entry.get("action", "Other")
+        mod_action_counts[a] = mod_action_counts.get(a, 0) + 1
 
-    recent_warns = []
-    for uid, wlist in warnings_data.items():
-        if wlist:
-            recent_warns.append({
-                "user_id":     uid,
-                "count":       len(wlist),
-                "last_reason": wlist[-1].get("reason", "—"),
-            })
-    recent_warns.sort(key=lambda x: x["count"], reverse=True)
+    recent_warns = sorted(
+        [{"user_id": uid, "count": len(wl), "last_reason": wl[-1].get("reason","—")}
+         for uid, wl in warnings_data.items() if wl],
+        key=lambda x: x["count"], reverse=True
+    )
 
-    all_member_ids = set(list(xp_data.keys()) + list(economy_data.keys()))
-    members_list   = []
-    for uid in all_member_ids:
-        xd         = xp_data.get(uid, {})
-        ed         = economy_data.get(uid, {})
-        xp_val     = xd.get("xp", 0)
-        lv         = get_level(xp_val)
-        next_lv_xp = xp_for_level(lv + 1)
-        prev_lv_xp = xp_for_level(lv)
-        pct        = int((xp_val - prev_lv_xp) / max(next_lv_xp - prev_lv_xp, 1) * 100)
+    all_ids = set(list(xp_data.keys()) + list(economy_data.keys()))
+    members_list = []
+    for uid in all_ids:
+        xd  = xp_data.get(uid, {})
+        ed  = economy_data.get(uid, {})
+        xp_val = xd.get("xp", 0)
+        lv  = get_level(xp_val)
+        nxt = xp_for_level(lv + 1)
+        prv = xp_for_level(lv)
+        pct = int((xp_val - prv) / max(nxt - prv, 1) * 100)
         members_list.append({
             "uid":      uid,
             "name":     xd.get("name", ed.get("name", str(uid))),
@@ -4101,10 +4073,7 @@ def common():
         })
     members_list.sort(key=lambda x: x["xp"], reverse=True)
 
-    eco_lb            = build_eco_leaderboard()
-    total_coins       = sum(d["balance"]      for d in economy_data.values())
-    total_earned_ever = sum(d["total_earned"] for d in economy_data.values())
-    richest           = max((d["balance"]     for d in economy_data.values()), default=0)
+    eco_lb = build_eco_leaderboard()
 
     roblox_accounts = [
         {
@@ -4120,127 +4089,93 @@ def common():
     ]
 
     return dict(
-        bot_online       = bot.is_ready(),
-        bot_name         = str(bot.user) if bot.user else "YBS Bot",
-        uptime           = uptime_str(),
-        activity         = activity_log,
-        app_count        = len(applications_data),
-        warn_count       = len(warnings_data),
-        notes_count      = sum(len(v) for v in notes_data.values()),
-        giveaway_count   = len(giveaway_data),
-        ticket_count     = sum(1 for t in ticket_data.values() if t["status"] == "open"),
-        xp_count         = len(xp_data),
-        eco_count        = len(economy_data),
-        mod_log_count    = len(mod_log_data),
-        roblox_count     = len(roblox_links),
-        bug_count        = len(bug_reports_data),
-        premium_count    = len(premium_data),
-        applications     = applications_data,
-        warnings         = {str(k): v for k, v in warnings_data.items()},
-        all_notes        = notes_data,
-        giveaways        = giveaway_data,
-        tickets          = ticket_data,
-        mod_logs         = mod_log_data,
-        members          = members_list,
-        voice_events     = voice_log[:100],
-        automod_guilds   = automod_data,
-        total_words      = sum(len(v) for v in automod_data.values()),
-        bug_reports      = bug_reports_data,
-        premium_members  = {str(k): v for k, v in premium_data.items()},
-        roblox_accounts  = roblox_accounts,
-        xp_lb            = build_xp_leaderboard()[:25],
-        eco_lb           = eco_lb[:25],
-        top_xp           = build_xp_leaderboard()[:5],
-        total_coins      = total_coins,
-        total_earned_ever= total_earned_ever,
-        richest          = richest,
-        role_counts      = role_counts,
-        mod_action_counts= mod_action_counts,
-        recent_warns     = recent_warns[:5],
-        recent_apps      = list(applications_data.values())[-5:],
-        dashboard_secret = os.environ.get("DASHBOARD_SECRET", "changeme"),
+        bot_online        = bot.is_ready(),
+        bot_name          = str(bot.user) if bot.user else "YBS Bot",
+        uptime            = uptime_str(),
+        activity          = activity_log,
+        app_count         = len(applications_data),
+        warn_count        = len(warnings_data),
+        notes_count       = sum(len(v) for v in notes_data.values()),
+        giveaway_count    = len(giveaway_data),
+        ticket_count      = sum(1 for t in ticket_data.values() if t["status"] == "open"),
+        xp_count          = len(xp_data),
+        eco_count         = len(economy_data),
+        mod_log_count     = len(mod_log_data),
+        roblox_count      = len(roblox_links),
+        bug_count         = len(bug_reports_data),
+        premium_count     = len(premium_data),
+        applications      = applications_data,
+        warnings          = {str(k): v for k, v in warnings_data.items()},
+        all_notes         = notes_data,
+        giveaways         = giveaway_data,
+        tickets           = ticket_data,
+        mod_logs          = mod_log_data,
+        members           = members_list,
+        voice_events      = voice_log[:100],
+        automod_guilds    = automod_data,
+        total_words       = sum(len(v) for v in automod_data.values()),
+        bug_reports       = bug_reports_data,
+        premium_members   = {str(k): v for k, v in premium_data.items()},
+        roblox_accounts   = roblox_accounts,
+        xp_lb             = build_xp_leaderboard()[:25],
+        eco_lb            = eco_lb[:25],
+        top_xp            = build_xp_leaderboard()[:5],
+        total_coins       = sum(d["balance"] for d in economy_data.values()),
+        total_earned_ever = sum(d["total_earned"] for d in economy_data.values()),
+        richest           = max((d["balance"] for d in economy_data.values()), default=0),
+        role_counts       = role_counts,
+        mod_action_counts = mod_action_counts,
+        recent_warns      = recent_warns[:5],
+        recent_apps       = list(applications_data.values())[-5:],
+        dashboard_secret  = DASHBOARD_SECRET,
     )
 
-# ── Page routes ──────────────────────────────────────────────
-PAGE_ROUTES = {
-    "/":               "home",
-    "/activity":       "activity",
-    "/applications":   "applications",
-    "/warnings":       "warnings",
-    "/notes":          "notes",
-    "/members":        "members",
-    "/leaderboard":    "leaderboard",
-    "/modlogs":        "modlogs",
-    "/automod":        "automod",
-    "/tickets":        "tickets",
-    "/bugs":           "bugs",
-    "/giveaways":      "giveaways",
-    "/voice":          "voice",
-    "/economy":        "economy",
-    "/analytics":      "analytics",
-    "/roblox":         "roblox",
-    "/premium":        "premium",
-    "/config":         "config",
-}
-
-def _page(page_name):
-    return render_template("dashboard.html", page=page_name, **common())
+# ────────────────────────────────────────────────────────────
+# PAGE ROUTES
+# ────────────────────────────────────────────────────────────
+def _page(name):
+    return render_template("dashboard.html", page=name, **common())
 
 @flask_app.route("/")
-def dashboard_home():          return _page("home")
-
+def dashboard_home():           return _page("home")
 @flask_app.route("/activity")
-def dashboard_activity():      return _page("activity")
-
+def dashboard_activity():       return _page("activity")
 @flask_app.route("/applications")
-def dashboard_applications():  return _page("applications")
-
+def dashboard_applications():   return _page("applications")
 @flask_app.route("/warnings")
-def dashboard_warnings():      return _page("warnings")
-
+def dashboard_warnings():       return _page("warnings")
 @flask_app.route("/notes")
-def dashboard_notes():         return _page("notes")
-
+def dashboard_notes():          return _page("notes")
 @flask_app.route("/members")
-def dashboard_members():       return _page("members")
-
+def dashboard_members():        return _page("members")
 @flask_app.route("/leaderboard")
-def dashboard_leaderboard():   return _page("leaderboard")
-
+def dashboard_leaderboard():    return _page("leaderboard")
 @flask_app.route("/modlogs")
-def dashboard_modlogs():       return _page("modlogs")
-
+def dashboard_modlogs():        return _page("modlogs")
 @flask_app.route("/automod")
-def dashboard_automod():       return _page("automod")
-
+def dashboard_automod():        return _page("automod")
 @flask_app.route("/tickets")
-def dashboard_tickets():       return _page("tickets")
-
+def dashboard_tickets():        return _page("tickets")
 @flask_app.route("/bugs")
-def dashboard_bugs():          return _page("bugs")
-
+def dashboard_bugs():           return _page("bugs")
 @flask_app.route("/giveaways")
-def dashboard_giveaways():     return _page("giveaways")
-
+def dashboard_giveaways():      return _page("giveaways")
 @flask_app.route("/voice")
-def dashboard_voice():         return _page("voice")
-
+def dashboard_voice():          return _page("voice")
 @flask_app.route("/economy")
-def dashboard_economy():       return _page("economy")
-
+def dashboard_economy():        return _page("economy")
 @flask_app.route("/analytics")
-def dashboard_analytics():     return _page("analytics")
-
+def dashboard_analytics():      return _page("analytics")
 @flask_app.route("/roblox")
-def dashboard_roblox():        return _page("roblox")
-
+def dashboard_roblox():         return _page("roblox")
 @flask_app.route("/premium")
-def dashboard_premium():       return _page("premium")
-
+def dashboard_premium():        return _page("premium")
 @flask_app.route("/config")
-def dashboard_config():        return _page("config")
+def dashboard_config():         return _page("config")
 
-# ── /api/stats ────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — STATS (no secret needed, public info)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/stats")
 def api_stats():
     return jsonify({
@@ -4258,11 +4193,14 @@ def api_stats():
         "premium_members": len(premium_data),
     })
 
-# ── /api/guilds ───────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — GUILDS  (dashboard guild picker)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/guilds")
 def api_guilds():
-    _require_secret_qs()
-    guilds = [
+    if not secret_ok_qs():
+        return unauth()
+    return jsonify([
         {
             "id":           str(g.id),
             "name":         g.name,
@@ -4270,63 +4208,93 @@ def api_guilds():
             "icon":         str(g.icon.url) if g.icon else None,
         }
         for g in bot.guilds
-    ]
-    return jsonify(guilds)
+    ])
 
-# ── /api/guild/channels ───────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — CHANNELS  (populate channel dropdowns in config page)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/guild/channels")
 def api_guild_channels():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     try:
         guild_id = int(request.args.get("guild_id", 0))
     except ValueError:
         return jsonify({"error": "Invalid guild_id"}), 400
+
     guild = bot.get_guild(guild_id)
     if not guild:
         return jsonify({"error": "Guild not found"}), 404
-    channels = [
+
+    return jsonify([
         {"id": str(c.id), "name": c.name}
         for c in sorted(guild.text_channels, key=lambda c: c.position)
-    ]
-    return jsonify(channels)
+    ])
 
-# ── /api/guild/roles ──────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — ROLES  (populate role dropdowns in config page)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/guild/roles")
 def api_guild_roles():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     try:
         guild_id = int(request.args.get("guild_id", 0))
     except ValueError:
         return jsonify({"error": "Invalid guild_id"}), 400
+
     guild = bot.get_guild(guild_id)
     if not guild:
         return jsonify({"error": "Guild not found"}), 404
-    roles = [
+
+    return jsonify([
         {"id": str(r.id), "name": r.name}
         for r in reversed(guild.roles)
         if r.name != "@everyone"
-    ]
-    return jsonify(roles)
+    ])
 
-# ── /api/config GET ───────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — CONFIG GET  (load saved config into dashboard form)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/config", methods=["GET"])
 def api_config_get():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     guild_id = request.args.get("guild_id")
     cfg = load_config()
-    if guild_id:
-        return jsonify(cfg.get(str(guild_id), {}))
-    return jsonify(cfg)
+    # Return this guild's config, with all values as strings
+    # so the JS can directly set select.value = saved_id
+    raw = cfg.get(str(guild_id), {}) if guild_id else cfg
+    return jsonify({k: str(v) for k, v in raw.items()})
 
-# ── /api/config/save POST ─────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — CONFIG SAVE  (save form values back to config.json)
+# ────────────────────────────────────────────────────────────
+
+# Every key the dashboard is allowed to write
+ALLOWED_CONFIG_KEYS = {
+    # Channels
+    "welcome_channel", "apply_channel", "applications_channel",
+    "logs_channel", "general_channel", "announcements_channel",
+    "giveaway_channel", "levelup_channel", "rank_channel",
+    "verify_channel", "mod_channel",
+    # Roles
+    "admin_role", "member_role", "muted_role", "builder_role",
+    "scripter_role", "modeller_role", "ui_role", "verified_role",
+    "level5_role", "level10_role", "level25_role", "pending_role",
+}
+
 @flask_app.route("/api/config/save", methods=["POST"])
 def api_config_save():
-    data     = _require_secret_body()
-    guild_id = str(data.get("guild_id", ""))
+    if not secret_ok_body():
+        return unauth()
+
+    body     = request.json or {}
+    guild_id = str(body.get("guild_id", ""))
+    incoming = body.get("config", {})
+
     if not guild_id:
         return jsonify({"error": "guild_id required"}), 400
-
-    incoming = data.get("config", {})
     if not isinstance(incoming, dict):
         return jsonify({"error": "config must be an object"}), 400
 
@@ -4336,24 +4304,32 @@ def api_config_save():
 
     updated = []
     for key, value in incoming.items():
-        if key not in ALL_ALLOWED_KEYS:
+        if key not in ALLOWED_CONFIG_KEYS:
             continue
-        # Booleans, empty strings / 0 → remove the key
-        if value is None or value == "" or value == 0:
+        if not value or value == "0":
+            # Empty / unset — remove the key
             cfg[guild_id].pop(key, None)
         else:
-            cfg[guild_id][key] = value
+            # Store as int (channel/role IDs are always integers)
+            try:
+                cfg[guild_id][key] = int(value)
+            except (ValueError, TypeError):
+                cfg[guild_id][key] = value
         updated.append(key)
 
     save_config(cfg)
     add_activity("⚙️", "Dashboard config updated", f"{len(updated)} key(s) saved")
     return jsonify({"status": "ok", "updated": updated})
 
-# ── /api/config/reset POST ───────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — CONFIG RESET
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/config/reset", methods=["POST"])
 def api_config_reset():
-    data     = _require_secret_body()
-    guild_id = str(data.get("guild_id", ""))
+    if not secret_ok_body():
+        return unauth()
+    body     = request.json or {}
+    guild_id = str(body.get("guild_id", ""))
     if not guild_id:
         return jsonify({"error": "guild_id required"}), 400
     cfg = load_config()
@@ -4362,21 +4338,27 @@ def api_config_reset():
     add_activity("🗑️", f"Config reset for guild {guild_id}")
     return jsonify({"status": "ok"})
 
-# ── /api/shutdown POST ────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# API — SHUTDOWN
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/shutdown", methods=["POST"])
 def api_shutdown():
     global bot_shutdown_flag
-    data = _require_secret_body()
+    if not secret_ok_body():
+        return unauth()
     bot_shutdown_flag = True
     add_activity("🔴", "Bot shutdown triggered via dashboard")
     return jsonify({"status": "shutdown initiated"})
 
-# ── /api/lockdown POST ────────────────────────────────────────
-# Called by the dashboard Danger Zone "Trigger Lockdown" button.
+# ────────────────────────────────────────────────────────────
+# API — LOCKDOWN  (the danger zone buttons that already work)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/lockdown", methods=["POST"])
 def api_lockdown():
-    data     = _require_secret_body()
-    guild_id = data.get("guild_id")
+    if not secret_ok_body():
+        return unauth()
+    body     = request.json or {}
+    guild_id = body.get("guild_id")
     if not guild_id:
         return jsonify({"error": "guild_id required"}), 400
 
@@ -4384,30 +4366,28 @@ def api_lockdown():
     if not guild:
         return jsonify({"error": "Guild not found"}), 404
 
-    # Run the coroutine from a sync Flask thread
-    import asyncio
-    count = 0
+    count = [0]
 
     async def _lock():
-        nonlocal count
         for ch in guild.channels:
             if isinstance(ch, discord.TextChannel):
                 try:
                     await ch.set_permissions(guild.default_role, send_messages=False)
-                    count += 1
+                    count[0] += 1
                 except Exception:
                     pass
 
-    asyncio.run_coroutine_threadsafe(_lock(), bot.loop).result(timeout=30)
-    add_activity("🔒", f"SERVER LOCKDOWN via dashboard", guild.name)
+    run_coro(_lock())
+    add_activity("🔒", "SERVER LOCKDOWN via dashboard", guild.name)
     add_mod_log("Lockdown", "All channels", "Dashboard", "Emergency lockdown", "#ed4245")
-    return jsonify({"status": "ok", "channels_locked": count})
+    return jsonify({"status": "ok", "channels_locked": count[0]})
 
-# ── /api/unlockdown POST ─────────────────────────────────────
 @flask_app.route("/api/unlockdown", methods=["POST"])
 def api_unlockdown():
-    data     = _require_secret_body()
-    guild_id = data.get("guild_id")
+    if not secret_ok_body():
+        return unauth()
+    body     = request.json or {}
+    guild_id = body.get("guild_id")
     if not guild_id:
         return jsonify({"error": "guild_id required"}), 400
 
@@ -4415,46 +4395,47 @@ def api_unlockdown():
     if not guild:
         return jsonify({"error": "Guild not found"}), 404
 
-    import asyncio
-    count = 0
+    count = [0]
 
     async def _unlock():
-        nonlocal count
         for ch in guild.channels:
             if isinstance(ch, discord.TextChannel):
                 try:
                     await ch.set_permissions(guild.default_role, send_messages=None)
-                    count += 1
+                    count[0] += 1
                 except Exception:
                     pass
 
-    asyncio.run_coroutine_threadsafe(_unlock(), bot.loop).result(timeout=30)
+    run_coro(_unlock())
     add_activity("🔓", "Lockdown lifted via dashboard")
-    return jsonify({"status": "ok", "channels_unlocked": count})
+    return jsonify({"status": "ok", "channels_unlocked": count[0]})
 
-# ── /api/reaction-roles GET ───────────────────────────────────
-# Returns the list of emoji→role rules for a guild.
+# ────────────────────────────────────────────────────────────
+# API — REACTION ROLES  (dashboard reaction roles page)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/reaction-roles", methods=["GET"])
-def api_reaction_roles_get():
-    _require_secret_qs()
+def api_rr_get():
+    if not secret_ok_qs():
+        return unauth()
     guild_id = request.args.get("guild_id", "")
-    rr = load_rr()
-    return jsonify(rr.get(str(guild_id), []))
+    return jsonify(load_rr().get(str(guild_id), []))
 
-# ── /api/reaction-roles/save POST ────────────────────────────
 @flask_app.route("/api/reaction-roles/save", methods=["POST"])
-def api_reaction_roles_save():
-    data     = _require_secret_body()
-    guild_id = str(data.get("guild_id", ""))
-    rules    = data.get("rules", [])
+def api_rr_save():
+    if not secret_ok_body():
+        return unauth()
+    body     = request.json or {}
+    guild_id = str(body.get("guild_id", ""))
+    rules    = body.get("rules", [])
     if not guild_id:
         return jsonify({"error": "guild_id required"}), 400
-    if not isinstance(rules, list):
-        return jsonify({"error": "rules must be a list"}), 400
 
-    # Validate each rule has emoji + role_id
     clean = [
-        {"emoji": r.get("emoji",""), "role_id": str(r.get("role_id","")), "description": r.get("description","")}
+        {
+            "emoji":       r.get("emoji", ""),
+            "role_id":     str(r.get("role_id", "")),
+            "description": r.get("description", ""),
+        }
         for r in rules
         if r.get("emoji") and r.get("role_id")
     ]
@@ -4462,101 +4443,58 @@ def api_reaction_roles_save():
     rr = load_rr()
     rr[guild_id] = clean
     save_rr(rr)
-    add_activity("😊", f"Reaction roles updated for guild {guild_id}", f"{len(clean)} rule(s)")
+    add_activity("😊", f"Reaction roles saved", f"{len(clean)} rule(s) for guild {guild_id}")
     return jsonify({"status": "ok", "count": len(clean)})
 
-# ── /api/activity GET — live activity feed for JS polling ────
+# ────────────────────────────────────────────────────────────
+# API — LIVE DATA FEEDS  (JS can poll these for live updates)
+# ────────────────────────────────────────────────────────────
 @flask_app.route("/api/activity")
 def api_activity():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     limit = min(int(request.args.get("limit", 50)), 150)
     return jsonify(activity_log[:limit])
 
-# ── /api/modlogs GET ─────────────────────────────────────────
 @flask_app.route("/api/modlogs")
 def api_modlogs():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     limit = min(int(request.args.get("limit", 100)), 500)
     return jsonify(mod_log_data[:limit])
 
-# ── /api/warnings GET ─────────────────────────────────────────
 @flask_app.route("/api/warnings")
-def api_warnings():
-    _require_secret_qs()
-    guild_id = request.args.get("guild_id", "")
+def api_warnings_data():
+    if not secret_ok_qs():
+        return unauth()
     return jsonify({str(k): v for k, v in warnings_data.items()})
 
-# ── /api/member GET — single member snapshot ─────────────────
-@flask_app.route("/api/member")
-def api_member():
-    _require_secret_qs()
-    try:
-        uid = int(request.args.get("uid", 0))
-    except ValueError:
-        return jsonify({"error": "Invalid uid"}), 400
-
-    xd  = xp_data.get(uid, {})
-    ed  = economy_data.get(uid, {})
-    rb  = roblox_links.get(uid)
-    lv  = get_level(xd.get("xp", 0))
-
-    return jsonify({
-        "uid":      uid,
-        "level":    lv,
-        "xp":       xd.get("xp", 0),
-        "messages": xd.get("messages", 0),
-        "balance":  ed.get("balance", 0),
-        "warnings": len(warnings_data.get(uid, [])),
-        "roblox":   {"username": rb["username"], "verified": rb.get("verified", False)} if rb else None,
-        "premium":  premium_data.get(uid, {}).get("tier") if uid in premium_data else None,
-    })
-
-# ── /api/bug-reports GET ─────────────────────────────────────
-@flask_app.route("/api/bug-reports")
-def api_bug_reports():
-    _require_secret_qs()
-    return jsonify(bug_reports_data)
-
-# ── /api/bug-reports/update POST — update bug status ─────────
-@flask_app.route("/api/bug-reports/update", methods=["POST"])
-def api_bug_update():
-    data   = _require_secret_body()
-    bug_id = data.get("id")
-    status = data.get("status")
-    if not bug_id or not status:
-        return jsonify({"error": "id and status required"}), 400
-    for r in bug_reports_data:
-        if r["id"] == bug_id:
-            r["status"] = status
-            return jsonify({"status": "ok"})
-    return jsonify({"error": "Bug not found"}), 404
-
-# ── /api/economy GET — economy leaderboard snapshot ──────────
 @flask_app.route("/api/economy")
 def api_economy():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     return jsonify({
-        "leaderboard":    build_eco_leaderboard()[:25],
-        "total_coins":    sum(d["balance"]      for d in economy_data.values()),
-        "total_earned":   sum(d["total_earned"] for d in economy_data.values()),
-        "richest":        max((d["balance"]     for d in economy_data.values()), default=0),
-        "user_count":     len(economy_data),
+        "leaderboard":  build_eco_leaderboard()[:25],
+        "total_coins":  sum(d["balance"]      for d in economy_data.values()),
+        "total_earned": sum(d["total_earned"] for d in economy_data.values()),
+        "richest":      max((d["balance"]     for d in economy_data.values()), default=0),
+        "user_count":   len(economy_data),
     })
 
-# ── /api/xp GET — xp leaderboard snapshot ───────────────────
 @flask_app.route("/api/xp")
 def api_xp():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     return jsonify({
         "leaderboard": build_xp_leaderboard()[:25],
         "user_count":  len(xp_data),
     })
 
-# ── /api/roblox GET — all linked accounts ───────────────────
 @flask_app.route("/api/roblox")
 def api_roblox():
-    _require_secret_qs()
-    accounts = [
+    if not secret_ok_qs():
+        return unauth()
+    return jsonify([
         {
             "discord_id":   str(uid),
             "discord_name": v.get("discord_name", "Unknown"),
@@ -4567,137 +4505,60 @@ def api_roblox():
             "linked_at":    v.get("linked_at", "—"),
         }
         for uid, v in roblox_links.items()
-    ]
-    return jsonify(accounts)
+    ])
 
-# ── /api/premium GET ─────────────────────────────────────────
-@flask_app.route("/api/premium")
-def api_premium():
-    _require_secret_qs()
-    return jsonify({str(k): v for k, v in premium_data.items()})
-
-# ── /api/tickets GET ─────────────────────────────────────────
 @flask_app.route("/api/tickets")
 def api_tickets():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     return jsonify({
         "open":   [t for t in ticket_data.values() if t.get("status") == "open"],
         "closed": [t for t in ticket_data.values() if t.get("status") != "open"],
         "total":  len(ticket_data),
     })
 
-# ── /api/automod GET ─────────────────────────────────────────
+@flask_app.route("/api/bug-reports")
+def api_bug_reports():
+    if not secret_ok_qs():
+        return unauth()
+    return jsonify(bug_reports_data)
+
+@flask_app.route("/api/bug-reports/update", methods=["POST"])
+def api_bug_update():
+    if not secret_ok_body():
+        return unauth()
+    body   = request.json or {}
+    bug_id = body.get("id")
+    status = body.get("status")
+    if not bug_id or not status:
+        return jsonify({"error": "id and status required"}), 400
+    for r in bug_reports_data:
+        if r["id"] == bug_id:
+            r["status"] = status
+            return jsonify({"status": "ok"})
+    return jsonify({"error": "Bug not found"}), 404
+
 @flask_app.route("/api/automod")
 def api_automod():
-    _require_secret_qs()
+    if not secret_ok_qs():
+        return unauth()
     guild_id = request.args.get("guild_id", "")
     if guild_id:
         return jsonify({"words": automod_data.get(str(guild_id), [])})
-    return jsonify({"guilds": automod_data, "total_words": sum(len(v) for v in automod_data.values())})
+    return jsonify({"guilds": automod_data})
 
-# ── /api/automod/add POST — add a banned word via dashboard ──
-@flask_app.route("/api/automod/add", methods=["POST"])
-def api_automod_add():
-    data     = _require_secret_body()
-    guild_id = str(data.get("guild_id", ""))
-    word     = (data.get("word") or "").lower().strip()
-    if not guild_id or not word:
-        return jsonify({"error": "guild_id and word required"}), 400
-    if guild_id not in automod_data:
-        automod_data[guild_id] = []
-    if word not in automod_data[guild_id]:
-        automod_data[guild_id].append(word)
-    return jsonify({"status": "ok", "words": automod_data[guild_id]})
+@flask_app.route("/api/premium")
+def api_premium():
+    if not secret_ok_qs():
+        return unauth()
+    return jsonify({str(k): v for k, v in premium_data.items()})
 
-# ── /api/automod/remove POST ─────────────────────────────────
-@flask_app.route("/api/automod/remove", methods=["POST"])
-def api_automod_remove():
-    data     = _require_secret_body()
-    guild_id = str(data.get("guild_id", ""))
-    word     = (data.get("word") or "").lower().strip()
-    if not guild_id or not word:
-        return jsonify({"error": "guild_id and word required"}), 400
-    if guild_id in automod_data and word in automod_data[guild_id]:
-        automod_data[guild_id].remove(word)
-    return jsonify({"status": "ok", "words": automod_data.get(guild_id, [])})
-
-# ── /api/givecoins POST — give coins from dashboard ──────────
-@flask_app.route("/api/givecoins", methods=["POST"])
-def api_givecoins():
-    data   = _require_secret_body()
-    uid    = data.get("uid")
-    amount = data.get("amount", 0)
-    if not uid:
-        return jsonify({"error": "uid required"}), 400
-    try:
-        uid    = int(uid)
-        amount = int(amount)
-    except (TypeError, ValueError):
-        return jsonify({"error": "uid and amount must be integers"}), 400
-    eco = get_economy(uid, str(uid))
-    eco["balance"]      += amount
-    eco["total_earned"] += max(amount, 0)
-    return jsonify({"status": "ok", "new_balance": eco["balance"]})
-
-# ── /api/addxp POST — add XP from dashboard ──────────────────
-@flask_app.route("/api/addxp", methods=["POST"])
-def api_addxp():
-    data   = _require_secret_body()
-    uid    = data.get("uid")
-    amount = data.get("amount", 0)
-    if not uid:
-        return jsonify({"error": "uid required"}), 400
-    try:
-        uid    = int(uid)
-        amount = int(amount)
-    except (TypeError, ValueError):
-        return jsonify({"error": "uid and amount must be integers"}), 400
-    if uid not in xp_data:
-        xp_data[uid] = {"xp": 0, "level": 0, "messages": 0, "name": str(uid)}
-    xp_data[uid]["xp"]    += amount
-    xp_data[uid]["level"]  = get_level(xp_data[uid]["xp"])
-    return jsonify({"status": "ok", "new_xp": xp_data[uid]["xp"], "level": xp_data[uid]["level"]})
-
-# ── /api/send-announcement POST — post announcement via API ──
-@flask_app.route("/api/send-announcement", methods=["POST"])
-def api_send_announcement():
-    data     = _require_secret_body()
-    guild_id = data.get("guild_id")
-    ch_id    = data.get("channel_id")
-    title    = data.get("title", "📢 Announcement")
-    content  = data.get("content", "")
-    color    = data.get("color", "5865f2")
-    ping     = data.get("ping", False)
-
-    if not guild_id or not ch_id or not content:
-        return jsonify({"error": "guild_id, channel_id, and content required"}), 400
-
-    guild = bot.get_guild(int(guild_id))
-    if not guild:
-        return jsonify({"error": "Guild not found"}), 404
-    channel = guild.get_channel(int(ch_id))
-    if not channel:
-        return jsonify({"error": "Channel not found"}), 404
-
-    import asyncio
-    try:
-        color_int = int(str(color).replace("#", ""), 16)
-    except ValueError:
-        color_int = 0x5865F2
-
-    async def _send():
-        embed = discord.Embed(title=title, description=content, color=color_int)
-        embed.set_footer(text="Posted via Dashboard")
-        await channel.send(content="@everyone" if ping else None, embed=embed)
-
-    asyncio.run_coroutine_threadsafe(_send(), bot.loop).result(timeout=15)
-    add_activity("📢", f"Announcement via dashboard: {title}")
-    return jsonify({"status": "ok"})
-
-# ── 404 / 403 JSON error handlers ────────────────────────────
+# ────────────────────────────────────────────────────────────
+# ERROR HANDLERS
+# ────────────────────────────────────────────────────────────
 @flask_app.errorhandler(403)
 def err_403(e):
-    return jsonify({"error": str(e.description)}), 403
+    return jsonify({"error": "Unauthorized"}), 403
 
 @flask_app.errorhandler(404)
 def err_404(e):
@@ -4705,9 +4566,11 @@ def err_404(e):
 
 @flask_app.errorhandler(500)
 def err_500(e):
-    return jsonify({"error": "Internal server error"}), 500
+    return jsonify({"error": "Internal server error", "detail": str(e)}), 500
 
-# ── Run both ──────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
+# START BOTH
+# ────────────────────────────────────────────────────────────
 def run_flask():
     flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
 

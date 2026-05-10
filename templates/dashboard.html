@@ -245,6 +245,13 @@ a{text-decoration:none;color:inherit}
 .cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 26px 6px 28px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif;appearance:none;cursor:pointer}
 .cfg-dd:focus{border-color:rgba(124,111,255,.45)}
 .cfg-dd option{background:#10131e;color:var(--tx)}
+.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 11px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
+.cfg-input:focus{border-color:rgba(124,111,255,.45)}
+.cfg-input::placeholder{color:var(--mt)}
+.cfg-toggle{position:relative;width:40px;height:22px;background:var(--s3);border:1px solid var(--bd);border-radius:99px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.cfg-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--mt);border-radius:50%;transition:all .2s}
+.cfg-toggle.on{background:var(--ac);border-color:var(--ac)}
+.cfg-toggle.on::after{left:20px;background:#fff}
 .cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px;background:rgba(245,200,66,.15);color:var(--yw);margin-left:5px}
 .cfg-dirty-badge.show{display:inline-flex;align-items:center;gap:2px}
 .cfg-actions{padding:12px 20px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;flex-shrink:0;background:rgba(255,255,255,.01)}
@@ -322,7 +329,7 @@ a{text-decoration:none;color:inherit}
   <div class="ticker-wrap">
     <div class="ticker-label">Live</div>
     <div class="ticker-scroll">
-      <div class="ticker-inner">
+      <div class="ticker-inner" id="tickerInner">
         {% for e in activity[:6] %}<div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>{% endfor %}
         {% for e in activity[:6] %}<div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>{% endfor %}
       </div>
@@ -352,7 +359,7 @@ a{text-decoration:none;color:inherit}
     <button class="na {% if page=='roblox' %}on{% endif %}" onclick="showPage('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">{{ roblox_count }}</span></button>
     <button class="na {% if page=='premium' %}on{% endif %}" onclick="showPage('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span>{% if premium_count %}<span class="na-badge nby">{{ premium_count }}</span>{% endif %}</button>
     <div class="nl">Configuration</div>
-    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Channels &amp; Roles</span><span class="na-badge nbg">Live</span></button>
+    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Bot Configuration</span><span class="na-badge nbg">Live</span></button>
   </nav>
   <div class="sb-foot">
     <div class="bot-pill">
@@ -380,7 +387,7 @@ a{text-decoration:none;color:inherit}
         <i class="ti ti-chevron-down" style="font-size:10px;opacity:.5"></i>
       </div>
       <div class="tb-clock" id="liveClock">00:00:00</div>
-      <button class="tb-btn" onclick="location.reload()"><i class="ti ti-refresh"></i> Refresh</button>
+      <button class="tb-btn" onclick="manualRefresh()"><i class="ti ti-refresh"></i> Refresh</button>
     </div>
   </div>
 
@@ -556,31 +563,88 @@ a{text-decoration:none;color:inherit}
       </div>
       <div class="cfg-wrap">
         <div class="cfg-sidebar">
-          <div class="cfg-sidebar-head">Settings</div>
-          <div class="cfg-nl">Channels</div>
-          <div class="cfg-nav-item cfg-on" onclick="cfgSwitch('channels',this)"><i class="ti ti-hash"></i> Channel Setup</div>
-          <div class="cfg-nl">Roles</div>
-          <div class="cfg-nav-item" onclick="cfgSwitch('roles',this)"><i class="ti ti-shield"></i> Role Setup</div>
-          <div class="cfg-nl">Categories</div>
-          <div class="cfg-nav-item" onclick="cfgSwitch('categories',this)"><i class="ti ti-layout-grid"></i> Category Setup</div>
+          <div class="cfg-sidebar-head">Configuration</div>
+          <div class="cfg-nl">Core</div>
+          <div class="cfg-nav-item cfg-on" onclick="cfgSwitch('general',this)"><i class="ti ti-settings"></i> General</div>
+          <div class="cfg-nav-item" onclick="cfgSwitch('channels',this)"><i class="ti ti-hash"></i> Channels</div>
+          <div class="cfg-nav-item" onclick="cfgSwitch('roles',this)"><i class="ti ti-shield"></i> Roles</div>
+          <div class="cfg-nl">Features</div>
+          <div class="cfg-nav-item" onclick="cfgSwitch('leveling',this)"><i class="ti ti-trophy"></i> Leveling</div>
+          <div class="cfg-nav-item" onclick="cfgSwitch('moderation',this)"><i class="ti ti-gavel"></i> Moderation</div>
+          <div class="cfg-nav-item" onclick="cfgSwitch('economy',this)"><i class="ti ti-coin"></i> Economy</div>
           <div class="cfg-nl">System</div>
           <div class="cfg-nav-item" onclick="cfgSwitch('danger',this)"><i class="ti ti-alert-triangle" style="color:var(--rd)"></i> <span style="color:var(--rd)">Danger Zone</span></div>
         </div>
 
-        <!-- CHANNELS TAB -->
-        <div class="cfg-tab cfg-tab-on" id="cfg-channels">
+        <!-- GENERAL TAB -->
+        <div class="cfg-tab cfg-tab-on" id="cfg-general">
           <div class="cfg-tab-head">
-            <div class="cfg-tab-title"><i class="ti ti-hash"></i> Channel Configuration <span class="cfg-dirty-badge" id="dirty-channels"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
-            <div class="cfg-tab-desc">Select your Discord server first, then choose a channel for each setting. Click Save when done.</div>
+            <div class="cfg-tab-title"><i class="ti ti-settings"></i> General Settings <span class="cfg-dirty-badge" id="dirty-general"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
+            <div class="cfg-tab-desc">Core bot configuration including prefix, welcome messages, and logging settings.</div>
           </div>
           <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
+          <div class="cfg-body">
+            <div class="cfg-group"><div class="cfg-group-label">Bot Prefix</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Command Prefix</div><div class="cfg-field-desc">Prefix for text commands (e.g., !, ?, >)</div></div>
+                <div class="cfg-field-control">
+                  <input type="text" class="cfg-input" id="bot_prefix" data-key="bot_prefix" placeholder="!" maxlength="5" oninput="markDirty('general')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Welcome System</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Welcome Messages</div><div class="cfg-field-desc">Send welcome messages when members join</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle" id="welcome_enabled" data-key="welcome_enabled" onclick="toggleSwitch(this);markDirty('general')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Welcome Message</div><div class="cfg-field-desc">Use {user} for mention, {server} for server name</div></div>
+                <div class="cfg-field-control">
+                  <input type="text" class="cfg-input" id="welcome_message" data-key="welcome_message" placeholder="Welcome {user} to {server}!" oninput="markDirty('general')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Logging</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Log Message Deletes</div><div class="cfg-field-desc">Log deleted messages to logs channel</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle" id="log_deletes" data-key="log_deletes" onclick="toggleSwitch(this);markDirty('general')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Log Message Edits</div><div class="cfg-field-desc">Log edited messages to logs channel</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle" id="log_edits" data-key="log_edits" onclick="toggleSwitch(this);markDirty('general')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Log Member Joins/Leaves</div><div class="cfg-field-desc">Log member join/leave events</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle" id="log_members" data-key="log_members" onclick="toggleSwitch(this);markDirty('general')"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-actions">
+            <button class="cfg-btn cfg-btn-save" onclick="cfgSave('general')"><i class="ti ti-device-floppy"></i> Save General</button>
+            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
+            <div class="cfg-save-status" id="cfg-status-general"></div>
+          </div>
+        </div>
+
+        <!-- CHANNELS TAB -->
+        <div class="cfg-tab" id="cfg-channels">
+          <div class="cfg-tab-head">
+            <div class="cfg-tab-title"><i class="ti ti-hash"></i> Channel Configuration <span class="cfg-dirty-badge" id="dirty-channels"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
+            <div class="cfg-tab-desc">Assign channels for various bot features and logging.</div>
+          </div>
+          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName2">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">Core Channels</div>
               {% set ch_fields = [
                 ('dd_welcome_channel','welcome_channel','Welcome Channel','Where join messages are sent'),
-                ('dd_apply_channel','apply_channel','Apply Channel','Where the application panel lives'),
-                ('dd_applications_channel','applications_channel','Applications Channel','Where staff receive completed apps'),
-                ('dd_verify_channel','verify_channel','Verification Channel','Where the Roblox verify panel is posted'),
                 ('dd_logs_channel','logs_channel','Logs Channel','Message deletes, edits, joins, leaves'),
                 ('dd_mod_channel','mod_channel','Mod Log Channel','Warns, bans, kicks, timeouts'),
               ] %}
@@ -599,16 +663,16 @@ a{text-decoration:none;color:inherit}
               </div>
               {% endfor %}
             </div>
-            <div class="cfg-group"><div class="cfg-group-label">Community Channels</div>
+            <div class="cfg-group"><div class="cfg-group-label">Feature Channels</div>
               {% set ch_fields2 = [
-                ('dd_announcements_channel','announcements_channel','Announcements Channel','Where /announce posts'),
-                ('dd_giveaway_channel','giveaway_channel','Giveaway Channel','Default giveaway channel'),
-                ('dd_levelup_channel','levelup_channel','Level-Up Channel','Level-up announcements'),
-                ('dd_general_channel','general_channel','General Channel','Suggestions and general messages'),
-                ('dd_rank_channel','rank_channel','Rank Channel','Rank cards and leaderboards'),
-                ('dd_rules_channel','rules_channel','Rules Channel','Server rules and info'),
-                ('dd_suggestions_channel','suggestions_channel','Suggestions Channel','Member suggestions'),
-                ('dd_status_channel','status_channel','Status Channel','Bot status updates'),
+                ('dd_apply_channel','apply_channel','Applications','Where the application panel lives'),
+                ('dd_applications_channel','applications_channel','Application Review','Where staff receive completed apps'),
+                ('dd_verify_channel','verify_channel','Verification','Where the Roblox verify panel is posted'),
+                ('dd_announcements_channel','announcements_channel','Announcements','Where /announce posts'),
+                ('dd_giveaway_channel','giveaway_channel','Giveaways','Default giveaway channel'),
+                ('dd_levelup_channel','levelup_channel','Level-Up','Level-up announcements'),
+                ('dd_general_channel','general_channel','General','General chat'),
+                ('dd_rank_channel','rank_channel','Leaderboard','Rank cards and leaderboards'),
               ] %}
               {% for dd_id, key, name, desc in ch_fields2 %}
               <div class="cfg-field">
@@ -637,32 +701,23 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-tab" id="cfg-roles">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-shield"></i> Role Configuration <span class="cfg-dirty-badge" id="dirty-roles"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
-            <div class="cfg-tab-desc">Roles are pulled live from Discord. Changes save directly to config.json.</div>
+            <div class="cfg-tab-desc">Assign roles for permissions, verification, and auto-assignment.</div>
           </div>
-          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName2">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
+          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName3">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
             {% set role_fields = [
-              ('dd_admin_role','admin_role','Staff','Staff','Admin / Staff Role','Members with this role can use all staff commands'),
-              ('dd_muted_role','muted_role','Staff','Staff','Muted Role','Fallback muted role'),
-              ('dd_member_role','member_role','Members','Members','Member Role','Assigned when an application is accepted'),
-              ('dd_verified_role','verified_role','Members','Members','Verified Role','Given after successful Roblox verification'),
-              ('dd_pending_role','pending_role','Members','Members','Pending Role','Assigned to new members before application'),
-              ('dd_builder_role','builder_role','Dev Roles','Dev Roles','Builder Role','Given to accepted builders'),
-              ('dd_scripter_role','scripter_role','Dev Roles','Dev Roles','Scripter Role','Given to accepted scripters'),
-              ('dd_modeller_role','modeller_role','Dev Roles','Dev Roles','Modeller Role','Given to accepted modellers'),
-              ('dd_ui_role','ui_role','Dev Roles','Dev Roles','UI Designer Role','Given to accepted UI designers'),
-              ('dd_animator_role','animator_role','Dev Roles','Dev Roles','Animator Role','Given to accepted animators'),
-              ('dd_vfx_role','vfx_role','Dev Roles','Dev Roles','VFX Artist Role','Given to accepted VFX artists'),
-              ('dd_composer_role','composer_role','Dev Roles','Dev Roles','Composer Role','Given to accepted composers'),
-              ('dd_level5_role','level5_role','Level Rewards','Level Rewards','Level 5 Role','Given at level 5'),
-              ('dd_level10_role','level10_role','Level Rewards','Level Rewards','Level 10 Role','Given at level 10'),
-              ('dd_level25_role','level25_role','Level Rewards','Level Rewards','Level 25 Role','Given at level 25'),
-              ('dd_level50_role','level50_role','Level Rewards','Level Rewards','Level 50 Role','Given at level 50'),
-              ('dd_level75_role','level75_role','Level Rewards','Level Rewards','Level 75 Role','Given at level 75'),
-              ('dd_level100_role','level100_role','Level Rewards','Level Rewards','Level 100 Role','Given at level 100'),
+              ('dd_admin_role','admin_role','Staff','Admin/Staff Role','Members with this role can use staff commands'),
+              ('dd_muted_role','muted_role','Moderation','Muted Role','Applied when members are muted'),
+              ('dd_member_role','member_role','Members','Member Role','Given after verification or approval'),
+              ('dd_verified_role','verified_role','Members','Verified Role','Given after Roblox verification'),
+              ('dd_pending_role','pending_role','Members','Pending Role','Given to new members before verification'),
+              ('dd_level5_role','level5_role','Level Rewards','Level 5','Given at level 5'),
+              ('dd_level10_role','level10_role','Level Rewards','Level 10','Given at level 10'),
+              ('dd_level25_role','level25_role','Level Rewards','Level 25','Given at level 25'),
+              ('dd_level50_role','level50_role','Level Rewards','Level 50','Given at level 50'),
             ] %}
             {% set last_group = namespace(v='') %}
-            {% for dd_id, key, group_check, group, name, desc in role_fields %}
+            {% for dd_id, key, group, name, desc in role_fields %}
             {% if group != last_group.v %}<div class="cfg-group-label">{{ group }}</div>{% set last_group.v = group %}{% endif %}
             <div class="cfg-field">
               <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
@@ -685,42 +740,195 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- CATEGORIES TAB -->
-        <div class="cfg-tab" id="cfg-categories">
+        <!-- LEVELING TAB -->
+        <div class="cfg-tab" id="cfg-leveling">
           <div class="cfg-tab-head">
-            <div class="cfg-tab-title"><i class="ti ti-layout-grid"></i> Category Configuration <span class="cfg-dirty-badge" id="dirty-categories"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
-            <div class="cfg-tab-desc">Assign Discord categories for automated channel creation and organization.</div>
+            <div class="cfg-tab-title"><i class="ti ti-trophy"></i> Leveling System <span class="cfg-dirty-badge" id="dirty-leveling"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
+            <div class="cfg-tab-desc">Configure XP gain, level-up messages, and rewards.</div>
           </div>
-          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName3">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
+          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName4">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
-            <div class="cfg-group"><div class="cfg-group-label">Auto-Create Categories</div>
-              {% set cat_fields = [
-                ('dd_ticket_category','ticket_category','Ticket Category','New tickets are created here'),
-                ('dd_applications_category','applications_category','Applications Category','Application review channels'),
-                ('dd_archive_category','archive_category','Archive Category','Closed/archived channels'),
-                ('dd_voice_category','voice_category','Voice Category','Voice channels'),
-                ('dd_private_category','private_category','Private Category','Private staff channels'),
-              ] %}
-              {% for dd_id, key, name, desc in cat_fields %}
+            <div class="cfg-group"><div class="cfg-group-label">XP Settings</div>
               <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
+                <div class="cfg-field-info"><div class="cfg-field-name">XP System Enabled</div><div class="cfg-field-desc">Enable or disable the leveling system</div></div>
                 <div class="cfg-field-control">
-                  <div class="cfg-select-wrap">
-                    <i class="ti ti-layout-grid dd-icon" style="color:var(--pk)"></i>
-                    <select class="cfg-dd cat-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('categories')">
-                      <option value="">— not set —</option>
-                    </select>
-                    <i class="ti ti-chevron-down dd-chevron"></i>
-                  </div>
+                  <div class="cfg-toggle on" id="xp_enabled" data-key="xp_enabled" onclick="toggleSwitch(this);markDirty('leveling')"></div>
                 </div>
               </div>
-              {% endfor %}
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">XP Per Message</div><div class="cfg-field-desc">Base XP awarded per message (randomized ±30%)</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="xp_per_message" data-key="xp_per_message" placeholder="15" min="1" max="100" oninput="markDirty('leveling')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">XP Cooldown (seconds)</div><div class="cfg-field-desc">Cooldown between XP gain from messages</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="xp_cooldown" data-key="xp_cooldown" placeholder="60" min="10" max="300" oninput="markDirty('leveling')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Level-Up Notifications</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Level-Up Messages</div><div class="cfg-field-desc">Send messages when members level up</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle on" id="levelup_messages" data-key="levelup_messages" onclick="toggleSwitch(this);markDirty('leveling')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Level-Up Message</div><div class="cfg-field-desc">Use {user} for mention, {level} for level number</div></div>
+                <div class="cfg-field-control">
+                  <input type="text" class="cfg-input" id="levelup_message" data-key="levelup_message" placeholder="GG {user}, you reached level {level}!" oninput="markDirty('leveling')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">XP Multipliers</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Voice XP Multiplier</div><div class="cfg-field-desc">XP multiplier for voice chat activity</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="voice_xp_multi" data-key="voice_xp_multi" placeholder="1.5" step="0.1" min="0" max="10" oninput="markDirty('leveling')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Boost XP Multiplier</div><div class="cfg-field-desc">Extra XP for server boosters</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="boost_xp_multi" data-key="boost_xp_multi" placeholder="2.0" step="0.1" min="0" max="10" oninput="markDirty('leveling')">
+                </div>
+              </div>
             </div>
           </div>
           <div class="cfg-actions">
-            <button class="cfg-btn cfg-btn-save" onclick="cfgSave('categories')"><i class="ti ti-device-floppy"></i> Save Categories</button>
+            <button class="cfg-btn cfg-btn-save" onclick="cfgSave('leveling')"><i class="ti ti-device-floppy"></i> Save Leveling</button>
             <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
-            <div class="cfg-save-status" id="cfg-status-categories"></div>
+            <div class="cfg-save-status" id="cfg-status-leveling"></div>
+          </div>
+        </div>
+
+        <!-- MODERATION TAB -->
+        <div class="cfg-tab" id="cfg-moderation">
+          <div class="cfg-tab-head">
+            <div class="cfg-tab-title"><i class="ti ti-gavel"></i> Moderation <span class="cfg-dirty-badge" id="dirty-moderation"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
+            <div class="cfg-tab-desc">Configure auto-moderation, warnings, and punishment thresholds.</div>
+          </div>
+          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName5">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
+          <div class="cfg-body">
+            <div class="cfg-group"><div class="cfg-group-label">Auto-Moderation</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Auto-Mod Enabled</div><div class="cfg-field-desc">Automatically filter bad words and spam</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle on" id="automod_enabled" data-key="automod_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Anti-Spam</div><div class="cfg-field-desc">Detect and punish message spam</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle on" id="antispam_enabled" data-key="antispam_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Spam Threshold (msgs/5s)</div><div class="cfg-field-desc">Messages allowed within 5 seconds before triggering</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="spam_threshold" data-key="spam_threshold" placeholder="5" min="3" max="20" oninput="markDirty('moderation')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Warning System</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Timeout</div><div class="cfg-field-desc">Warnings before auto-timeout (0 = disabled)</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="warns_before_timeout" data-key="warns_before_timeout" placeholder="3" min="0" max="10" oninput="markDirty('moderation')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Kick</div><div class="cfg-field-desc">Warnings before auto-kick (0 = disabled)</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="warns_before_kick" data-key="warns_before_kick" placeholder="5" min="0" max="10" oninput="markDirty('moderation')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Ban</div><div class="cfg-field-desc">Warnings before auto-ban (0 = disabled)</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="warns_before_ban" data-key="warns_before_ban" placeholder="7" min="0" max="15" oninput="markDirty('moderation')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Invite Protection</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Block Discord Invites</div><div class="cfg-field-desc">Auto-delete messages containing invite links</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle" id="block_invites" data-key="block_invites" onclick="toggleSwitch(this);markDirty('moderation')"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-actions">
+            <button class="cfg-btn cfg-btn-save" onclick="cfgSave('moderation')"><i class="ti ti-device-floppy"></i> Save Moderation</button>
+            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
+            <div class="cfg-save-status" id="cfg-status-moderation"></div>
+          </div>
+        </div>
+
+        <!-- ECONOMY TAB -->
+        <div class="cfg-tab" id="cfg-economy">
+          <div class="cfg-tab-head">
+            <div class="cfg-tab-title"><i class="ti ti-coin"></i> Economy System <span class="cfg-dirty-badge" id="dirty-economy"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
+            <div class="cfg-tab-desc">Configure currency rewards, daily bonuses, and shop settings.</div>
+          </div>
+          <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName6">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
+          <div class="cfg-body">
+            <div class="cfg-group"><div class="cfg-group-label">Currency Settings</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Economy Enabled</div><div class="cfg-field-desc">Enable or disable the economy system</div></div>
+                <div class="cfg-field-control">
+                  <div class="cfg-toggle on" id="economy_enabled" data-key="economy_enabled" onclick="toggleSwitch(this);markDirty('economy')"></div>
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Currency Name</div><div class="cfg-field-desc">Name of your server currency (e.g., coins, credits)</div></div>
+                <div class="cfg-field-control">
+                  <input type="text" class="cfg-input" id="currency_name" data-key="currency_name" placeholder="coins" maxlength="20" oninput="markDirty('economy')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Currency Symbol</div><div class="cfg-field-desc">Symbol/emoji for currency (e.g., 💰, $, ⭐)</div></div>
+                <div class="cfg-field-control">
+                  <input type="text" class="cfg-input" id="currency_symbol" data-key="currency_symbol" placeholder="💰" maxlength="5" oninput="markDirty('economy')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Earning Rates</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Coins Per Message</div><div class="cfg-field-desc">Currency earned per message (randomized ±20%)</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="coins_per_message" data-key="coins_per_message" placeholder="5" min="1" max="100" oninput="markDirty('economy')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Daily Reward</div><div class="cfg-field-desc">Currency given for /daily command</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="daily_reward" data-key="daily_reward" placeholder="500" min="0" max="10000" oninput="markDirty('economy')">
+                </div>
+              </div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">Weekly Reward</div><div class="cfg-field-desc">Currency given for /weekly command</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="weekly_reward" data-key="weekly_reward" placeholder="2500" min="0" max="50000" oninput="markDirty('economy')">
+                </div>
+              </div>
+            </div>
+            <div class="cfg-group"><div class="cfg-group-label">Starting Balance</div>
+              <div class="cfg-field">
+                <div class="cfg-field-info"><div class="cfg-field-name">New Member Balance</div><div class="cfg-field-desc">Currency given to new members automatically</div></div>
+                <div class="cfg-field-control">
+                  <input type="number" class="cfg-input" id="starting_balance" data-key="starting_balance" placeholder="100" min="0" max="10000" oninput="markDirty('economy')">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-actions">
+            <button class="cfg-btn cfg-btn-save" onclick="cfgSave('economy')"><i class="ti ti-device-floppy"></i> Save Economy</button>
+            <button class="cfg-btn cfg-btn-secondary" onclick="cfgLoadCurrent()"><i class="ti ti-refresh"></i> Reload</button>
+            <div class="cfg-save-status" id="cfg-status-economy"></div>
           </div>
         </div>
 
@@ -752,6 +960,7 @@ a{text-decoration:none;color:inherit}
 <script>
 const CFG_SECRET = '{{ dashboard_secret }}';
 const STORAGE_KEY = 'ybs_active_guild';
+let autoRefreshInterval = null;
 
 // ── CLOCK ────────────────────────────────────────────────────
 function tick() {
@@ -759,6 +968,22 @@ function tick() {
     new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 tick(); setInterval(tick, 1000);
+
+// ── AUTO REFRESH ─────────────────────────────────────────────
+function startAutoRefresh() {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+  autoRefreshInterval = setInterval(() => {
+    if (!document.hidden) {
+      location.reload();
+    }
+  }, 30000); // 30 seconds
+}
+
+function manualRefresh() {
+  location.reload();
+}
+
+startAutoRefresh();
 
 // ── TOAST ────────────────────────────────────────────────────
 function showToast(type, msg, icon='ti-info-circle', duration=3500) {
@@ -808,9 +1033,8 @@ function lbSwitch(tab, btn) {
 
 // ── GUILD SELECTOR ───────────────────────────────────────────
 let allGuilds = [], activeGuildId = null, activeGuildName = 'No server', pendingGuildId = null;
-let cachedChannels = [], cachedRoles = [], cachedCategories = [];
+let cachedChannels = [], cachedRoles = [];
 
-// Restore from localStorage
 (function restoreGuild() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -870,7 +1094,7 @@ async function confirmGuild() {
 
 function updateGuildUI() {
   document.getElementById('guildPillName').textContent = activeGuildName;
-  document.querySelectorAll('#cfgGuildName, #cfgGuildName2, #cfgGuildName3').forEach(el => {
+  document.querySelectorAll('[id^="cfgGuildName"]').forEach(el => {
     if (el) el.textContent = activeGuildName;
   });
 }
@@ -891,20 +1115,12 @@ document.getElementById('guildModal').addEventListener('click', function(e) {
 
 // ── CONFIG SYSTEM ────────────────────────────────────────────
 const TAB_KEYS = {
-  channels: [
-    'welcome_channel','apply_channel','applications_channel',
-    'verify_channel','logs_channel','mod_channel',
-    'announcements_channel','giveaway_channel','levelup_channel',
-    'general_channel','rank_channel','rules_channel','suggestions_channel','status_channel',
-  ],
-  roles: [
-    'admin_role','muted_role','member_role','verified_role','pending_role',
-    'builder_role','scripter_role','modeller_role','ui_role','animator_role','vfx_role','composer_role',
-    'level5_role','level10_role','level25_role','level50_role','level75_role','level100_role',
-  ],
-  categories: [
-    'ticket_category','applications_category','archive_category','voice_category','private_category',
-  ],
+  general: ['bot_prefix','welcome_enabled','welcome_message','log_deletes','log_edits','log_members'],
+  channels: ['welcome_channel','logs_channel','mod_channel','apply_channel','applications_channel','verify_channel','announcements_channel','giveaway_channel','levelup_channel','general_channel','rank_channel'],
+  roles: ['admin_role','muted_role','member_role','verified_role','pending_role','level5_role','level10_role','level25_role','level50_role'],
+  leveling: ['xp_enabled','xp_per_message','xp_cooldown','levelup_messages','levelup_message','voice_xp_multi','boost_xp_multi'],
+  moderation: ['automod_enabled','antispam_enabled','spam_threshold','warns_before_timeout','warns_before_kick','warns_before_ban','block_invites'],
+  economy: ['economy_enabled','currency_name','currency_symbol','coins_per_message','daily_reward','weekly_reward','starting_balance'],
 };
 
 const dirtyTabs = {};
@@ -917,6 +1133,10 @@ function clearDirty(t) {
   dirtyTabs[t] = false;
   const b = document.getElementById('dirty-' + t);
   if (b) b.classList.remove('show');
+}
+
+function toggleSwitch(el) {
+  el.classList.toggle('on');
 }
 
 function cfgSetStatus(tabId, ok, msg) {
@@ -942,9 +1162,18 @@ function collectTab(tabId) {
   keys.forEach(key => {
     const el = document.querySelector(`[data-key="${key}"]`);
     if (!el) return;
-    const val = el.value;
-    if (val && val !== '0' && val !== '') {
-      data[key] = val;
+
+    if (el.classList && el.classList.contains('cfg-toggle')) {
+      data[key] = el.classList.contains('on');
+    } else if (el.tagName === 'SELECT') {
+      const val = el.value;
+      if (val && val !== '0' && val !== '') data[key] = val;
+    } else if (el.type === 'number') {
+      const val = parseFloat(el.value);
+      if (!isNaN(val)) data[key] = val;
+    } else {
+      const val = el.value;
+      if (val) data[key] = val;
     }
   });
   return data;
@@ -993,27 +1222,24 @@ async function cfgSave(tabId) {
 async function loadGuildDropdowns() {
   if (!activeGuildId) return;
 
-  document.querySelectorAll('.ch-select, .rl-select, .cat-select').forEach(dd => {
+  document.querySelectorAll('.ch-select, .rl-select').forEach(dd => {
     dd.disabled = true; dd.style.opacity = '.5';
   });
 
   try {
-    const [chRes, roRes, catRes] = await Promise.all([
+    const [chRes, roRes] = await Promise.all([
       fetch(`/api/guild/channels?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
       fetch(`/api/guild/roles?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
-      fetch(`/api/guild/categories?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
     ]);
     if (chRes.ok) cachedChannels = await chRes.json();
     if (roRes.ok) cachedRoles    = await roRes.json();
-    if (catRes.ok) cachedCategories = await catRes.json();
   } catch (e) {
-    showToast('err', 'Could not fetch channels/roles/categories from Discord.', 'ti-wifi-off');
-    cachedChannels = []; cachedRoles = []; cachedCategories = [];
+    showToast('err', 'Could not fetch channels/roles from Discord.', 'ti-wifi-off');
+    cachedChannels = []; cachedRoles = [];
   }
 
   populateChSelects();
   populateRlSelects();
-  populateCatSelects();
 
   await cfgLoadCurrent();
 }
@@ -1042,18 +1268,6 @@ function populateRlSelects() {
   });
 }
 
-function populateCatSelects() {
-  document.querySelectorAll('.cat-select').forEach(dd => {
-    const saved = dd.dataset.savedVal || '';
-    dd.innerHTML = '<option value="">— not set —</option>' +
-      cachedCategories.map(c =>
-        `<option value="${c.id}"${c.id === saved ? ' selected' : ''}>${c.name}</option>`
-      ).join('');
-    dd.disabled = false; dd.style.opacity = '1';
-    if (saved) dd.value = saved;
-  });
-}
-
 async function cfgLoadCurrent() {
   if (!activeGuildId) return;
 
@@ -1071,13 +1285,14 @@ async function cfgLoadCurrent() {
       const el = document.querySelector(`[data-key="${key}"]`);
       if (!el) return;
 
-      if (el.tagName === 'SELECT') {
+      if (el.classList && el.classList.contains('cfg-toggle')) {
+        if (value) el.classList.add('on');
+        else el.classList.remove('on');
+      } else if (el.tagName === 'SELECT') {
         const strVal = String(value);
         el.dataset.savedVal = strVal;
         const opt = [...el.options].find(o => o.value === strVal);
         if (opt) el.value = strVal;
-      } else if (el.type === 'checkbox') {
-        el.checked = Boolean(value);
       } else {
         el.value = String(value);
       }
@@ -1085,7 +1300,6 @@ async function cfgLoadCurrent() {
 
     populateChSelects();
     populateRlSelects();
-    populateCatSelects();
 
     showToast('info', `Config loaded for ${activeGuildName}`, 'ti-refresh');
   } catch (e) {
@@ -1126,9 +1340,11 @@ async function dangerAction(action) {
       });
       if (r.ok) {
         showToast('ok', 'Config reset!', 'ti-trash');
-        document.querySelectorAll('.ch-select, .rl-select, .cat-select').forEach(dd => {
+        document.querySelectorAll('.ch-select, .rl-select').forEach(dd => {
           dd.value = ''; dd.dataset.savedVal = '';
         });
+        document.querySelectorAll('.cfg-toggle').forEach(t => t.classList.remove('on'));
+        document.querySelectorAll('.cfg-input').forEach(i => i.value = '');
       } else showToast('err', 'Reset failed.', 'ti-alert-circle');
     } catch { showToast('err', 'Network error.', 'ti-wifi-off'); }
     return;

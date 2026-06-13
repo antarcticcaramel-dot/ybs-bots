@@ -4,314 +4,349 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YBS · {{ page|title }} · Dashboard</title>
+<!-- Icons & Fonts -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
 <style>
+/* --- VARIABLES & RESET --- */
 :root{
-  --bg:#07090e;--s1:#0b0d16;--s2:#10131e;--s3:#151926;
-  --bd:rgba(255,255,255,0.055);--bd2:rgba(255,255,255,0.10);--bd3:rgba(255,255,255,0.16);
-  --ac:#7c6fff;--ac2:#a998ff;--ac-g:rgba(124,111,255,0.10);
-  --gn:#22d3a0;--rd:#f05d7a;--yw:#f5c842;--cy:#34c8ff;--or:#ff9040;--pk:#e879b4;
-  --tx:#c4cae6;--tx2:#8890b0;--mt:#464e6e;
-  --sw:236px;--r:12px;--rb:8px;
+  --bg:#05070a;--s1:#0b0e16;--s2:#111520;--s3:#181d2c;
+  --bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.12);--bd3:rgba(255,255,255,0.18);
+  --ac:#6d5dfc;--ac2:#9b8aff;--ac-g:rgba(109,93,252,0.15);
+  --gn:#00dc82;--rd:#fa5252;--yw:#fcc419;--cy:#22b8cf;--or:#ff922b;--pk:#e64980;
+  --tx:#c9ceeb;--tx2:#8a91b4;--mt:#535978;
+  --sw:260px;--r:14px;--rb:10px;
+  --shadow:0 10px 30px -10px rgba(0,0,0,0.5);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;overflow-x:hidden;line-height:1.5}
-button{font-family:'DM Sans',sans-serif;cursor:pointer}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;overflow-x:hidden;line-height:1.5;scroll-behavior:smooth}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:none;color:inherit}
 a{text-decoration:none;color:inherit}
-::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
-::selection{background:rgba(124,111,255,.3);color:#fff}
+::-webkit-scrollbar-thumb{background:var(--s3);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--bd2)}
+::selection{background:var(--ac-g);color:#fff}
+
+/* --- LAYOUT --- */
 .wrap{display:flex;min-height:100vh}
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
-.sb{width:var(--sw);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-brand{padding:16px 12px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.sb-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
-.sb-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.3px}
-.sb-tag{font-size:10px;color:var(--mt);margin-top:1px}
-.sb-nav{flex:1;padding:6px;overflow-y:auto}
-.nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.4px;padding:12px 8px 4px}
-.na{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rb);color:var(--tx2);border:none;background:none;width:100%;text-align:left;font-size:12px;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative;cursor:pointer}
-.na:hover{background:var(--s2);color:var(--tx)}
-.na.on{background:rgba(124,111,255,.12);color:var(--ac)}
-.na.on::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;border-radius:0 2px 2px 0;background:var(--ac)}
-.na i{font-size:14px;width:18px;flex-shrink:0;opacity:.8}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.sb{width:var(--sw);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:100;transition:transform .3s}
+.sb-brand{padding:20px 16px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.sb-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--ac),#a890ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;box-shadow:0 4px 15px rgba(109,93,252,0.3)}
+.sb-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.sb-tag{font-size:10px;color:var(--mt);margin-top:2px;font-weight:500}
+
+/* --- NAVIGATION --- */
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;padding:16px 12px 6px;display:flex;align-items:center;gap:6px}
+.nl i{font-size:12px;opacity:.5}
+.na{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rb);color:var(--tx2);width:100%;text-align:left;font-size:13px;font-weight:500;transition:all .2s;margin-bottom:2px;position:relative;overflow:hidden}
+.na:hover{background:var(--s2);color:var(--tx);transform:translateX(2px)}
+.na.on{background:var(--ac-g);color:var(--ac);font-weight:600}
+.na.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac);border-radius:0 4px 4px 0}
+.na i{font-size:18px;width:22px;flex-shrink:0;opacity:.7;transition:opacity .2s}
 .na.on i{opacity:1}
 .na-lbl{flex:1}
-.na-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px}
-.nba{background:rgba(124,111,255,.2);color:var(--ac2)}
-.nbr{background:rgba(240,93,122,.18);color:var(--rd)}
-.nbg{background:rgba(34,211,160,.15);color:var(--gn)}
-.nby{background:rgba(245,200,66,.15);color:var(--yw)}
-.nbc{background:rgba(52,200,255,.15);color:var(--cy)}
-.nbp{background:rgba(232,121,180,.15);color:var(--pk)}
-.sb-foot{padding:10px;border-top:1px solid var(--bd);flex-shrink:0}
-.bot-pill{display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px}
-.pulse{width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0;animation:pulse 2.5s infinite}
+.na-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.05);color:var(--tx2)}
+.nba{background:var(--ac-g);color:var(--ac2)}
+.nbr{background:rgba(250,82,82,0.15);color:var(--rd)}
+.nbg{background:rgba(0,220,130,0.15);color:var(--gn)}
+.nby{background:rgba(252,196,25,0.15);color:var(--yw)}
+.nbc{background:rgba(34,184,207,0.15);color:var(--cy)}
+.nbp{background:rgba(230,73,128,0.15);color:var(--pk)}
+
+/* --- SIDEBAR FOOTER --- */
+.sb-foot{padding:16px;border-top:1px solid var(--bd);flex-shrink:0;background:var(--s1)}
+.bot-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;transition:border-color .2s}
+.bot-pill:hover{border-color:var(--bd2)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--gn);flex-shrink:0;position:relative}
+.pulse::after{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;border-radius:50%;border:2px solid var(--gn);animation:pulse 2s infinite}
 .pulse.off{background:var(--rd);animation:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,211,160,.5)}70%{box-shadow:0 0 0 7px rgba(34,211,160,0)}100%{box-shadow:0 0 0 0 rgba(34,211,160,0)}}
-.bot-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#fff}
-.bot-st{font-size:10px;color:var(--gn)}
+.pulse.off::after{display:none}
+@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.bot-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
+.bot-st{font-size:10px;color:var(--gn);font-weight:500}
 .bot-st.off{color:var(--rd)}
-.ticker-wrap{border-bottom:1px solid var(--bd);overflow:hidden;height:28px;display:flex;align-items:center;background:rgba(34,211,160,.02);flex-shrink:0}
-.ticker-label{font-size:9px;font-weight:700;color:var(--gn);text-transform:uppercase;letter-spacing:1px;padding:0 8px;white-space:nowrap;border-right:1px solid var(--bd);height:100%;display:flex;align-items:center;flex-shrink:0}
-.ticker-scroll{flex:1;overflow:hidden}
-.ticker-inner{display:flex;align-items:center;height:28px;white-space:nowrap;animation:ticker 32s linear infinite}
-.ticker-item{font-size:10px;color:var(--tx2);padding:0 14px;display:flex;align-items:center;gap:4px}
+
+/* --- TICKER --- */
+.ticker-wrap{border-bottom:1px solid var(--bd);overflow:hidden;height:32px;display:flex;align-items:center;background:linear-gradient(90deg,rgba(0,220,130,0.05),transparent);flex-shrink:0}
+.ticker-label{font-size:9px;font-weight:800;color:var(--gn);text-transform:uppercase;letter-spacing:1px;padding:0 10px;white-space:nowrap;border-right:1px solid var(--bd);height:100%;display:flex;align-items:center;gap:4px;flex-shrink:0;background:rgba(0,220,130,0.08)}
+.ticker-label i{font-size:10px;animation:spin 4s linear infinite}
+@keyframes spin{100%{transform:rotate(360deg)}}
+.ticker-scroll{flex:1;overflow:hidden;mask-image:linear-gradient(to right,transparent,black 5%,black 95%,transparent)}
+.ticker-inner{display:flex;align-items:center;height:32px;white-space:nowrap;animation:ticker 30s linear infinite}
+.ticker-item{font-size:11px;color:var(--tx2);padding:0 16px;display:flex;align-items:center;gap:6px}
+.ticker-item i{font-size:12px;color:var(--ac)}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.topbar{background:rgba(11,13,22,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);padding:12px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;flex-shrink:0}
-.tb-crumb{display:flex;align-items:center;gap:6px}
-.tbc-root{font-size:11px;color:var(--mt)}
-.tbc-sep{font-size:10px;color:var(--mt)}
-.tbc-page{font-size:14px;font-family:'Syne',sans-serif;font-weight:700;color:#fff;letter-spacing:-.2px}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.tb-clock{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt);background:var(--s2);border:1px solid var(--bd);padding:4px 10px;border-radius:99px}
-.tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:5px 11px;border-radius:var(--rb);font-size:12px;display:flex;align-items:center;gap:5px;transition:all .15s;cursor:pointer}
-.tb-btn:hover{border-color:var(--bd2);color:var(--tx)}
-.tb-btn i{font-size:13px}
-.guild-pill{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:5px 10px;font-size:11px;color:var(--tx2);cursor:pointer;transition:all .15s}
-.guild-pill:hover{border-color:var(--bd2);color:var(--tx)}
-.guild-pill .gp-name{font-weight:600;color:var(--tx);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.content{padding:18px 22px;flex:1}
-.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:14px}
+
+/* --- TOPBAR --- */
+.topbar{background:rgba(11,14,22,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:90;flex-shrink:0}
+.tb-crumb{display:flex;align-items:center;gap:8px}
+.tbc-root{font-size:11px;color:var(--mt);font-weight:600}
+.tbc-sep{font-size:10px;color:var(--mt);opacity:.5}
+.tbc-page{font-size:16px;font-family:'Syne',sans-serif;font-weight:800;color:#fff;letter-spacing:-.3px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tb-clock{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt);background:var(--s2);border:1px solid var(--bd);padding:6px 12px;border-radius:99px;font-weight:600}
+.tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:6px 12px;border-radius:var(--rb);font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .2s}
+.tb-btn:hover{border-color:var(--ac);color:var(--ac);background:var(--ac-g)}
+.tb-btn i{font-size:14px}
+.guild-pill{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 12px;font-size:12px;color:var(--tx2);cursor:pointer;transition:all .2s;font-weight:500}
+.guild-pill:hover{border-color:var(--ac);color:#fff;box-shadow:0 0 0 2px var(--ac-g)}
+.guild-pill .gp-name{font-weight:600;color:#fff;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* --- CONTENT GRID --- */
+.content{padding:24px;flex:1;overflow-y:auto}
+.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
 .sg.sg-4{grid-template-columns:repeat(4,1fr)}
 .sg.sg-2{grid-template-columns:repeat(2,1fr)}
 .sg.sg-6{grid-template-columns:repeat(6,1fr)}
-.sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:15px 14px 12px;position:relative;overflow:hidden;cursor:default;transition:all .2s}
-.sc:hover{border-color:var(--bd2);transform:translateY(-1px)}
-.sc-top-bar{position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
-.sc-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-.sc-icon i{font-size:14px}
-.sc-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
-.sc-lbl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:.7px;margin-top:3px;font-weight:600}
-.g2{display:grid;grid-template-columns:1fr 290px;gap:11px;margin-bottom:11px}
-.g22{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:11px}
-.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:11px}
-.pn.mb0{margin-bottom:0}
-.ph{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.pt{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px}
-.pt i{font-size:13px;color:var(--mt)}
-.plink{font-size:11px;color:var(--ac);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;opacity:.7;transition:opacity .15s}
-.plink:hover{opacity:1}
-.al{max-height:360px;overflow-y:auto}
-.ai{display:flex;align-items:center;gap:9px;padding:9px 16px;border-bottom:1px solid var(--bd);transition:background .1s;position:relative}
+.sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:all .2s;cursor:default}
+.sc:hover{transform:translateY(-2px);border-color:var(--bd2);box-shadow:var(--shadow)}
+.sc-top-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.sc-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:16px}
+.sc-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
+.sc-lbl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-top:4px;font-weight:700}
+
+/* --- PANELS & LISTS --- */
+.g2{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-bottom:16px}
+.g22{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:16px;transition:border-color .2s}
+.pn:hover{border-color:var(--bd2)}
+.ph{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02)}
+.pt{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.pt i{font-size:15px;color:var(--ac)}
+.al{max-height:380px;overflow-y:auto}
+.ai{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bd);transition:background .15s;position:relative}
 .ai:last-child{border-bottom:none}
 .ai:hover{background:var(--s2)}
-.ai.live-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gn)}
-.ai-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.ai.live-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gn);border-radius:0 4px 4px 0}
+.ai-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;background:var(--ac-g);color:var(--ac)}
 .ai-main{flex:1;min-width:0}
-.ai-act{font-size:12px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ai-det{font-size:11px;color:var(--mt);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ai-time{font-size:10px;color:var(--mt);white-space:nowrap;flex-shrink:0}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gn);flex-shrink:0;animation:livePulse 1.8s infinite}
-@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(34,211,160,.5)}70%{box-shadow:0 0 0 5px rgba(34,211,160,0)}100%{box-shadow:0 0 0 0 rgba(34,211,160,0)}}
-.mr{display:flex;align-items:center;gap:9px;padding:9px 16px;border-bottom:1px solid var(--bd);transition:background .1s}
+.ai-act{font-size:13px;color:var(--tx);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-det{font-size:11px;color:var(--mt);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-time{font-size:10px;color:var(--mt);white-space:nowrap;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(0,220,130,0.7);animation:livePulse 1.5s infinite}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(0,220,130,0.7)}70%{box-shadow:0 0 0 8px rgba(0,220,130,0)}100%{box-shadow:0 0 0 0 rgba(0,220,130,0)}}
+
+/* --- MEMBER ROWS --- */
+.mr{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bd);transition:background .15s}
 .mr:last-child{border-bottom:none}
 .mr:hover{background:var(--s2)}
-.rk{width:24px;text-align:center;font-size:12px;font-weight:700;color:var(--mt);flex-shrink:0}
-.av{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif}
+.rk{width:28px;text-align:center;font-size:13px;font-weight:800;color:var(--mt);flex-shrink:0}
+.av{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif;background:var(--ac)}
 .m-info{flex:1;min-width:0}
-.m-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m-sub{font-size:10px;color:var(--mt);margin-top:1px}
-.xpb{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:4px}
-.xpf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),#b89aff)}
-.bg{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap}
-.bb{background:rgba(124,111,255,.14);color:var(--ac2)}
-.bgg{background:rgba(34,211,160,.12);color:var(--gn)}
-.br{background:rgba(240,93,122,.12);color:var(--rd)}
-.by{background:rgba(245,200,66,.12);color:var(--yw)}
-.bc{background:rgba(52,200,255,.12);color:var(--cy)}
-.bp{background:rgba(232,121,180,.12);color:var(--pk)}
-.bo{background:rgba(255,144,64,.12);color:var(--or)}
+.m-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-sub{font-size:11px;color:var(--mt);margin-top:2px}
+.xpb{height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-top:6px}
+.xpf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),#a890ff)}
+.bg{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap}
+.bb{background:var(--ac-g);color:var(--ac2)}
+.bgg{background:rgba(0,220,130,0.15);color:var(--gn)}
+.br{background:rgba(250,82,82,0.15);color:var(--rd)}
+.by{background:rgba(252,196,25,0.15);color:var(--yw)}
+.bc{background:rgba(34,184,207,0.15);color:var(--cy)}
+.bp{background:rgba(230,73,128,0.15);color:var(--pk)}
+.bo{background:rgba(255,146,43,0.15);color:var(--or)}
+
+/* --- TABLES --- */
 .tbl{width:100%;border-collapse:collapse}
-.tbl th{padding:8px 16px;text-align:left;font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd)}
-.tbl td{padding:8px 16px;border-bottom:1px solid var(--bd);font-size:12px}
+.tbl th{padding:10px 18px;text-align:left;font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--bd)}
+.tbl td{padding:12px 18px;border-bottom:1px solid var(--bd);font-size:12px;color:var(--tx)}
 .tbl tr:last-child td{border-bottom:none}
-.tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
+.tbl tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt)}
-.cw{padding:14px 16px}.cw canvas{max-height:190px}
-.cw-sm canvas{max-height:150px}
-.tabs{display:flex;gap:4px;margin-bottom:11px;background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:4px;width:fit-content}
-.tab{padding:5px 14px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:600;color:var(--mt);transition:all .15s;border:none;background:none}
-.tab.on{background:var(--ac);color:#fff}
+
+/* --- CHARTS & WIDGETS --- */
+.cw{padding:18px}.cw canvas{max-height:200px;width:100% !important}
+.tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:4px;width:fit-content}
+.tab{padding:6px 16px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--mt);transition:all .2s;border:none;background:none}
+.tab.on{background:var(--ac);color:#fff;box-shadow:0 2px 8px rgba(109,93,252,0.3)}
 .tab:hover:not(.on){color:var(--tx)}
-.srch{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:7px 11px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
-.srch:focus{border-color:rgba(124,111,255,.4)}
+.srch{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 14px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.srch:focus{border-color:var(--ac)}
 .srch::placeholder{color:var(--mt)}
 .empty{text-align:center;padding:40px 20px;color:var(--mt)}
-.empty i{font-size:38px;opacity:.2;display:block;margin-bottom:10px}
+.empty i{font-size:42px;opacity:.15;display:block;margin-bottom:12px}
 .empty p{font-size:13px;line-height:1.6}
-.note-card{margin:7px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px}
-.note-by{font-size:11px;font-weight:600;color:var(--ac)}
+
+/* --- CARDS (Notes, Bugs, etc) --- */
+.note-card{margin:8px 18px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;transition:border-color .2s}
+.note-card:hover{border-color:var(--bd2)}
+.note-by{font-size:11px;font-weight:700;color:var(--ac)}
 .note-time{font-size:10px;color:var(--mt)}
-.note-text{font-size:12px;color:var(--tx);line-height:1.55;margin-top:4px}
-.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
-.bug-hd{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:9px}
-.bug-id{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--rd);background:rgba(240,93,122,.1);padding:2px 7px;border-radius:5px}
+.note-text{font-size:12px;color:var(--tx);line-height:1.6;margin-top:6px}
+.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.bug-card:hover{border-color:var(--bd2)}
+.bug-hd{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+.bug-id{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--rd);background:rgba(250,82,82,0.1);padding:3px 8px;border-radius:6px}
 .bug-title{font-size:13px;font-weight:600;color:#fff;flex:1}
-.bug-body{padding:12px 16px}
-.bug-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.bug-field label{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:2px;font-weight:700}
+.bug-body{padding:14px 18px}
+.bug-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.bug-field label{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;font-weight:700}
 .bug-field p{font-size:12px;color:var(--tx)}
 .bug-field.full{grid-column:1/-1}
-.giveaway-card{margin:9px 16px;background:linear-gradient(135deg,rgba(232,121,180,.07),rgba(124,111,255,.07));border:1px solid rgba(232,121,180,.18);border-radius:9px;padding:13px 15px}
-.gw-prize{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
+.giveaway-card{margin:10px 18px;background:linear-gradient(135deg,rgba(230,73,128,0.08),rgba(109,93,252,0.08));border:1px solid rgba(230,73,128,0.2);border-radius:10px;padding:14px 16px}
+.gw-prize{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
 .gw-meta{font-size:11px;color:var(--mt)}
-.ticket-card{margin:7px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px}
-.tc-head{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-.tc-id{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--gn)}
-.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:11px;margin-bottom:12px}
-.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:15px;transition:border-color .2s}
-.roblox-card:hover{border-color:rgba(52,200,255,.25)}
+.ticket-card{margin:8px 18px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}
+.tc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tc-id{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--gn)}
+.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:16px}
+.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:all .2s}
+.roblox-card:hover{border-color:var(--cy);transform:translateY(-2px);box-shadow:0 4px 20px rgba(34,184,207,0.1)}
 .rb-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
 .rb-user{font-size:11px;color:var(--mt)}
-.rb-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cy);margin-top:2px}
-.rb-link{display:block;margin-top:11px;background:rgba(52,200,255,.08);border:1px solid rgba(52,200,255,.18);color:var(--cy);border-radius:7px;padding:6px;font-size:11px;font-weight:600;text-align:center;transition:background .15s}
-.rb-link:hover{background:rgba(52,200,255,.15)}
-.word-list{display:flex;flex-wrap:wrap;gap:6px;padding:14px 16px}
-.word-tag{background:rgba(240,93,122,.1);color:var(--rd);border:1px solid rgba(240,93,122,.18);padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600}
-.foot{text-align:center;padding:10px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s1);letter-spacing:.3px;flex-shrink:0}
-.page-section{display:none}
+.rb-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cy);margin-top:4px}
+.rb-link{display:block;margin-top:12px;background:rgba(34,184,207,0.1);border:1px solid rgba(34,184,207,0.2);color:var(--cy);border-radius:8px;padding:8px;font-size:11px;font-weight:600;text-align:center;transition:all .2s}
+.rb-link:hover{background:var(--cy);color:#000}
+.word-list{display:flex;flex-wrap:wrap;gap:8px;padding:16px 18px}
+.word-tag{background:rgba(250,82,82,0.1);color:var(--rd);border:1px solid rgba(250,82,82,0.2);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
+.foot{text-align:center;padding:16px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s1);letter-spacing:.5px;flex-shrink:0}
+.page-section{display:none;animation:fadeIn .3s ease-out}
 .page-section.active{display:block}
-.flex-col{display:flex;flex-direction:column;gap:10px}
-/* GUILD MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.flex-col{display:flex;flex-direction:column;gap:12px}
+
+/* --- MODAL --- */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal-box{background:var(--s1);border:1px solid var(--bd2);border-radius:16px;padding:22px;width:420px;max-width:calc(100vw - 32px);max-height:80vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
-.modal-overlay.open .modal-box{transform:translateY(0)}
-.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;margin-bottom:3px}
-.modal-sub{font-size:11px;color:var(--mt);margin-bottom:16px}
-.guild-item{display:flex;align-items:center;gap:11px;padding:10px 13px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;cursor:pointer;transition:all .15s;margin-bottom:6px}
-.guild-item:hover{border-color:rgba(124,111,255,.4);background:rgba(124,111,255,.06)}
-.guild-item.selected{border-color:var(--ac);background:rgba(124,111,255,.12)}
-.guild-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#7c6fff,#b89aff);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;overflow:hidden}
-.guild-icon img{width:100%;height:100%;object-fit:cover;border-radius:9px}
+.modal-box{background:var(--s1);border:1px solid var(--bd2);border-radius:18px;padding:24px;width:440px;max-width:calc(100vw - 32px);max-height:85vh;overflow-y:auto;transform:scale(0.95);transition:transform .25s cubic-bezier(0.34,1.56,0.64,1)}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--mt);margin-bottom:18px;line-height:1.5}
+.guild-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;cursor:pointer;transition:all .2s;margin-bottom:8px}
+.guild-item:hover{border-color:var(--ac);background:rgba(109,93,252,0.08)}
+.guild-item.selected{border-color:var(--ac);background:var(--ac-g)}
+.guild-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--ac),#a890ff);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;overflow:hidden}
+.guild-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 .guild-name{font-size:13px;font-weight:600;color:#fff}
-.guild-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mt);margin-top:1px}
-.guild-check{margin-left:auto;color:var(--ac);font-size:17px;opacity:0}
+.guild-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mt);margin-top:2px}
+.guild-check{margin-left:auto;color:var(--ac);font-size:18px;opacity:0;transition:opacity .2s}
 .guild-item.selected .guild-check{opacity:1}
-.modal-input-wrap{position:relative;margin-bottom:13px}
-.modal-input-wrap i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--mt);pointer-events:none}
-.modal-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:7px 11px 7px 32px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
-.modal-input:focus{border-color:rgba(124,111,255,.4)}
-.modal-input::placeholder{color:var(--mt)}
-.modal-btn-row{display:flex;gap:7px;margin-top:14px}
-.modal-btn{flex:1;padding:8px;border-radius:var(--rb);font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s}
+.modal-input-wrap{position:relative;margin-bottom:16px}
+.modal-input-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--mt);pointer-events:none}
+.modal-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:9px 12px 9px 36px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.modal-input:focus{border-color:var(--ac)}
+.modal-btn-row{display:flex;gap:10px;margin-top:18px}
+.modal-btn{flex:1;padding:10px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
 .modal-btn-pri{background:var(--ac);color:#fff}
-.modal-btn-pri:hover{background:#9585ff}
+.modal-btn-pri:hover{background:#8575ff;box-shadow:0 4px 12px rgba(109,93,252,0.4)}
 .modal-btn-sec{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
-.modal-btn-sec:hover{color:var(--tx)}
-/* CONFIG */
-.cfg-wrap{display:grid;grid-template-columns:210px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:12px;min-height:640px}
-.cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column}
-.cfg-sidebar-head{padding:14px 13px 8px;font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;border-bottom:1px solid var(--bd)}
-.cfg-nav-item{display:flex;align-items:center;gap:8px;padding:8px 13px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .14s;position:relative;border-left:2px solid transparent}
+.modal-btn-sec:hover{color:var(--tx);border-color:var(--bd2)}
+
+/* --- CONFIG PANEL --- */
+.cfg-wrap{display:grid;grid-template-columns:220px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:16px;min-height:600px}
+.cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column;background:rgba(0,0,0,0.2)}
+.cfg-sidebar-head{padding:16px 16px 10px;font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;border-bottom:1px solid var(--bd)}
+.cfg-nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .2s;position:relative;border-left:3px solid transparent}
 .cfg-nav-item:hover{background:var(--s2);color:var(--tx)}
-.cfg-nav-item.cfg-on{background:rgba(124,111,255,.10);color:var(--ac);border-left-color:var(--ac)}
-.cfg-nav-item i{font-size:14px;opacity:.7;flex-shrink:0}
+.cfg-nav-item.cfg-on{background:var(--ac-g);color:var(--ac);border-left-color:var(--ac)}
+.cfg-nav-item i{font-size:15px;opacity:.7;flex-shrink:0}
 .cfg-nav-item.cfg-on i{opacity:1}
-.cfg-nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;padding:10px 13px 3px}
+.cfg-nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px}
 .cfg-content{display:flex;flex-direction:column}
 .cfg-tab{display:none;flex:1;flex-direction:column}
 .cfg-tab.cfg-tab-on{display:flex}
-.cfg-tab-head{padding:16px 20px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.cfg-tab-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px;margin-bottom:2px}
-.cfg-tab-title i{font-size:15px;color:var(--ac)}
+.cfg-tab-head{padding:18px 24px 14px;border-bottom:1px solid var(--bd);flex-shrink:0;background:rgba(255,255,255,0.01)}
+.cfg-tab-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cfg-tab-title i{font-size:16px;color:var(--ac)}
 .cfg-tab-desc{font-size:11px;color:var(--mt);line-height:1.5}
-.cfg-guild-banner{margin:12px 20px 0;background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.2);border-radius:9px;padding:10px 13px;display:flex;align-items:center;gap:9px}
-.cfg-guild-banner i{font-size:15px;color:var(--ac);flex-shrink:0}
+.cfg-guild-banner{margin:14px 24px 0;background:var(--ac-g);border:1px solid rgba(109,93,252,0.2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.cfg-guild-banner i{font-size:16px;color:var(--ac);flex-shrink:0}
 .cfg-guild-banner-text{flex:1;font-size:11px;color:var(--tx2)}
 .cfg-guild-banner-text strong{color:var(--ac);font-size:12px}
-.cfg-guild-change{font-size:11px;color:var(--ac);font-weight:600;cursor:pointer;white-space:nowrap;background:rgba(124,111,255,.15);padding:3px 9px;border-radius:5px;border:1px solid rgba(124,111,255,.25);transition:background .15s}
-.cfg-guild-change:hover{background:rgba(124,111,255,.25)}
-.cfg-body{padding:16px 20px;flex:1;overflow-y:auto}
-.cfg-group{margin-bottom:20px}
-.cfg-group-label{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.cfg-guild-change{font-size:11px;color:var(--ac);font-weight:600;cursor:pointer;white-space:nowrap;background:rgba(109,93,252,0.15);padding:4px 10px;border-radius:6px;border:1px solid rgba(109,93,252,0.25);transition:all .2s}
+.cfg-guild-change:hover{background:rgba(109,93,252,0.25)}
+.cfg-body{padding:20px 24px;flex:1;overflow-y:auto}
+.cfg-group{margin-bottom:24px}
+.cfg-group-label{font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .cfg-group-label::after{content:'';flex:1;height:1px;background:var(--bd)}
-.cfg-field{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.cfg-field{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
 .cfg-field:last-child{border-bottom:none}
 .cfg-field-info{flex:1;min-width:0}
-.cfg-field-name{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px}
+.cfg-field-name{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:3px}
 .cfg-field-desc{font-size:10px;color:var(--mt);line-height:1.4}
-.cfg-field-control{flex-shrink:0;min-width:190px}
+.cfg-field-control{flex-shrink:0;min-width:200px}
 .cfg-select-wrap{position:relative}
-.cfg-select-wrap i.dd-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;z-index:1}
+.cfg-select-wrap i.dd-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;z-index:1}
 .cfg-select-wrap i.dd-icon.hash{color:var(--cy)}
 .cfg-select-wrap i.dd-icon.shield{color:var(--gn)}
-.cfg-select-wrap i.dd-chevron{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--mt);pointer-events:none}
-.cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 26px 6px 28px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif;appearance:none;cursor:pointer}
-.cfg-dd:focus{border-color:rgba(124,111,255,.45)}
-.cfg-dd option{background:#10131e;color:var(--tx)}
-.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 11px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:'DM Sans',sans-serif}
-.cfg-input:focus{border-color:rgba(124,111,255,.45)}
+.cfg-select-wrap i.dd-chevron{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--mt);pointer-events:none}
+.cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 30px 8px 32px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif;appearance:none;cursor:pointer}
+.cfg-dd:focus{border-color:var(--ac)}
+.cfg-dd option{background:#111520;color:var(--tx)}
+.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 12px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.cfg-input:focus{border-color:var(--ac)}
 .cfg-input::placeholder{color:var(--mt)}
-.cfg-toggle{position:relative;width:40px;height:22px;background:var(--s3);border:1px solid var(--bd);border-radius:99px;cursor:pointer;transition:all .2s;flex-shrink:0}
-.cfg-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--mt);border-radius:50%;transition:all .2s}
+.cfg-toggle{position:relative;width:44px;height:24px;background:var(--s3);border:1px solid var(--bd);border-radius:99px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.cfg-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--mt);border-radius:50%;transition:all .2s}
 .cfg-toggle.on{background:var(--ac);border-color:var(--ac)}
-.cfg-toggle.on::after{left:20px;background:#fff}
-.cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px;background:rgba(245,200,66,.15);color:var(--yw);margin-left:5px}
-.cfg-dirty-badge.show{display:inline-flex;align-items:center;gap:2px}
-.cfg-actions{padding:12px 20px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;flex-shrink:0;background:rgba(255,255,255,.01)}
-.cfg-btn{padding:7px 16px;border-radius:var(--rb);font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:'DM Sans',sans-serif}
-.cfg-btn i{font-size:13px}
+.cfg-toggle.on::after{left:23px;background:#fff}
+.cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--yw);color:#000;margin-left:6px}
+.cfg-dirty-badge.show{display:inline-flex;align-items:center;gap:3px}
+.cfg-actions{padding:14px 24px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(255,255,255,0.02)}
+.cfg-btn{padding:8px 16px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'DM Sans',sans-serif}
+.cfg-btn i{font-size:14px}
 .cfg-btn-save{background:var(--ac);color:#fff}
-.cfg-btn-save:hover{background:#9585ff}
-.cfg-btn-save:disabled{opacity:.5;cursor:not-allowed}
+.cfg-btn-save:hover{background:#8575ff;box-shadow:0 4px 12px rgba(109,93,252,0.3)}
+.cfg-btn-save:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(1)}
 .cfg-btn-secondary{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
 .cfg-btn-secondary:hover{color:var(--tx);border-color:var(--bd2)}
-.cfg-save-status{font-size:11px;color:var(--mt);display:flex;align-items:center;gap:5px;opacity:0;transition:opacity .3s;margin-left:auto}
+.cfg-save-status{font-size:11px;color:var(--mt);display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s;margin-left:auto}
 .cfg-save-status.visible{opacity:1}
-.cfg-save-status i{font-size:13px}
 .cfg-save-status.ok{color:var(--gn)}
 .cfg-save-status.err{color:var(--rd)}
-.cfg-danger-zone{background:rgba(240,93,122,.04);border:1px solid rgba(240,93,122,.15);border-radius:9px;padding:14px 16px;margin-bottom:10px}
-.cfg-danger-title{font-size:12px;font-weight:700;color:var(--rd);margin-bottom:3px;display:flex;align-items:center;gap:5px}
-.cfg-danger-desc{font-size:11px;color:var(--mt);margin-bottom:10px;line-height:1.5}
-.cfg-danger-btn{background:rgba(240,93,122,.12);color:var(--rd);border:1px solid rgba(240,93,122,.25);padding:6px 13px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:'DM Sans',sans-serif}
-.cfg-danger-btn:hover{background:rgba(240,93,122,.22)}
-.cfg-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
-.cfg-stat-mini{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 11px;text-align:center}
-.cfg-stat-mini-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1}
-.cfg-stat-mini-lbl{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
-/* TOAST */
-.toast-container{position:fixed;bottom:20px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{background:var(--s1);border:1px solid var(--bd2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:9px;font-size:12px;min-width:220px;max-width:300px;transform:translateX(120%);transition:transform .25s cubic-bezier(.34,1.56,.64,1);pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.cfg-danger-zone{background:rgba(250,82,82,0.05);border:1px solid rgba(250,82,82,0.15);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.cfg-danger-title{font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.cfg-danger-desc{font-size:11px;color:var(--mt);margin-bottom:12px;line-height:1.5}
+.cfg-danger-btn{background:rgba(250,82,82,0.12);color:var(--rd);border:1px solid rgba(250,82,82,0.25);padding:8px 14px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'DM Sans',sans-serif}
+.cfg-danger-btn:hover{background:rgba(250,82,82,0.22)}
+.cfg-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.cfg-stat-mini{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;text-align:center}
+.cfg-stat-mini-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1}
+.cfg-stat-mini-lbl{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-top:4px}
+
+/* --- TOAST NOTIFICATIONS --- */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{background:var(--s1);border:1px solid var(--bd2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:12px;min-width:260px;max-width:340px;transform:translateX(120%);transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:all;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
 .toast.show{transform:translateX(0)}
-.toast.toast-ok{border-color:rgba(34,211,160,.3)}
-.toast.toast-err{border-color:rgba(240,93,122,.3)}
-.toast.toast-info{border-color:rgba(124,111,255,.3)}
-.toast i{font-size:15px;flex-shrink:0}
+.toast.toast-ok{border-color:rgba(0,220,130,0.3)}
+.toast.toast-err{border-color:rgba(250,82,82,0.3)}
+.toast.toast-info{border-color:rgba(109,93,252,0.3)}
+.toast i{font-size:16px;flex-shrink:0}
 .toast.toast-ok i{color:var(--gn)}
 .toast.toast-err i{color:var(--rd)}
 .toast.toast-info i{color:var(--ac)}
-.toast-msg{flex:1;color:var(--tx)}
-.toast-close{font-size:13px;color:var(--mt);cursor:pointer;padding:2px;transition:color .15s;background:none;border:none}
+.toast-msg{flex:1;color:var(--tx);font-weight:500}
+.toast-close{font-size:14px;color:var(--mt);cursor:pointer;padding:2px;transition:color .2s;background:none;border:none}
 .toast-close:hover{color:var(--tx)}
+
+/* --- RESPONSIVE --- */
 @media(max-width:1200px){.g2{grid-template-columns:1fr}.sg{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}.g22{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}:root{--sw:196px}}
-@media(max-width:640px){.sb{display:none}.sg{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}.g22{grid-template-columns:1fr}.cfg-wrap{grid-template-columns:1fr}.cfg-sidebar{display:none}:root{--sw:220px}}
+@media(max-width:640px){.sb{display:none}.sg{grid-template-columns:1fr}.content{padding:16px}}
 </style>
 </head>
 <body>
 
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- GUILD MODAL -->
+<!-- GUILD SELECTOR MODAL -->
 <div class="modal-overlay" id="guildModal">
   <div class="modal-box">
-    <div class="modal-title">Select a Server</div>
-    <div class="modal-sub">Choose which Discord server to manage.</div>
+    <div class="modal-title">Select Server</div>
+    <div class="modal-sub">Choose which Discord server to manage configurations for.</div>
     <div class="modal-input-wrap">
       <i class="ti ti-search"></i>
       <input class="modal-input" type="text" placeholder="Search servers..." oninput="filterGuilds(this.value)" id="guildSearch">
     </div>
-    <div id="guildList"><div style="text-align:center;padding:20px;color:var(--mt);font-size:12px">Loading...</div></div>
+    <div id="guildList"><div style="text-align:center;padding:24px;color:var(--mt);font-size:12px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i></div></div>
     <div class="modal-btn-row">
       <button class="modal-btn modal-btn-sec" onclick="closeGuildModal()">Cancel</button>
-      <button class="modal-btn modal-btn-pri" onclick="confirmGuild()"><i class="ti ti-check" style="font-size:13px"></i> Confirm</button>
+      <button class="modal-btn modal-btn-pri" onclick="confirmGuild()"><i class="ti ti-check" style="font-size:14px"></i> Confirm Selection</button>
     </div>
   </div>
 </div>
@@ -326,41 +361,50 @@ a{text-decoration:none;color:inherit}
       <div class="sb-tag">Control Panel</div>
     </div>
   </div>
+  
+  <!-- LIVE TICKER -->
   <div class="ticker-wrap">
-    <div class="ticker-label">Live</div>
+    <div class="ticker-label"><i class="ti ti-bolt"></i> Live</div>
     <div class="ticker-scroll">
       <div class="ticker-inner" id="tickerInner">
-        {% for e in activity[:6] %}<div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>{% endfor %}
-        {% for e in activity[:6] %}<div class="ticker-item">{{ e.icon }} {{ e.action }} · {{ e.time }}</div>{% endfor %}
+        {% for e in activity[:6] %}<div class="ticker-item"><i class="ti {{ e.icon }}"></i> {{ e.action }} · {{ e.time }}</div>{% endfor %}
+        {% for e in activity[:6] %}<div class="ticker-item"><i class="ti {{ e.icon }}"></i> {{ e.action }} · {{ e.time }}</div>{% endfor %}
       </div>
     </div>
   </div>
+
   <nav class="sb-nav">
-    <div class="nl">General</div>
+    <div class="nl"><i class="ti ti-layout-dashboard"></i> General</div>
     <button class="na {% if page=='home' %}on{% endif %}" onclick="showPage('home',this)"><i class="ti ti-layout-dashboard"></i><span class="na-lbl">Overview</span></button>
     <button class="na {% if page=='activity' %}on{% endif %}" onclick="showPage('activity',this)"><i class="ti ti-bolt"></i><span class="na-lbl">Live Activity</span><span class="na-badge nba">{{ activity|length }}</span></button>
-    <div class="nl">Members</div>
+    
+    <div class="nl"><i class="ti ti-users"></i> Members</div>
     <button class="na {% if page=='applications' %}on{% endif %}" onclick="showPage('applications',this)"><i class="ti ti-file-description"></i><span class="na-lbl">Applications</span><span class="na-badge nba">{{ app_count }}</span></button>
     <button class="na {% if page=='warnings' %}on{% endif %}" onclick="showPage('warnings',this)"><i class="ti ti-alert-triangle"></i><span class="na-lbl">Warnings</span>{% if warn_count %}<span class="na-badge nbr">{{ warn_count }}</span>{% endif %}</button>
     <button class="na {% if page=='notes' %}on{% endif %}" onclick="showPage('notes',this)"><i class="ti ti-notes"></i><span class="na-lbl">Staff Notes</span>{% if notes_count %}<span class="na-badge nbp">{{ notes_count }}</span>{% endif %}</button>
     <button class="na {% if page=='members' %}on{% endif %}" onclick="showPage('members',this)"><i class="ti ti-users"></i><span class="na-lbl">Members</span></button>
     <button class="na {% if page=='leaderboard' %}on{% endif %}" onclick="showPage('leaderboard',this)"><i class="ti ti-trophy"></i><span class="na-lbl">Leaderboard</span></button>
-    <div class="nl">Moderation</div>
+    
+    <div class="nl"><i class="ti ti-shield"></i> Moderation</div>
     <button class="na {% if page=='modlogs' %}on{% endif %}" onclick="showPage('modlogs',this)"><i class="ti ti-scroll"></i><span class="na-lbl">Mod Logs</span>{% if mod_log_count %}<span class="na-badge nbr">{{ mod_log_count }}</span>{% endif %}</button>
     <button class="na {% if page=='automod' %}on{% endif %}" onclick="showPage('automod',this)"><i class="ti ti-robot"></i><span class="na-lbl">Auto-Mod</span></button>
     <button class="na {% if page=='tickets' %}on{% endif %}" onclick="showPage('tickets',this)"><i class="ti ti-ticket"></i><span class="na-lbl">Tickets</span>{% if ticket_count %}<span class="na-badge nbg">{{ ticket_count }}</span>{% endif %}</button>
     <button class="na {% if page=='bugs' %}on{% endif %}" onclick="showPage('bugs',this)"><i class="ti ti-bug"></i><span class="na-lbl">Bug Reports</span>{% if bug_count %}<span class="na-badge nbr">{{ bug_count }}</span>{% endif %}</button>
-    <div class="nl">Events</div>
+    
+    <div class="nl"><i class="ti ti-calendar-event"></i> Events</div>
     <button class="na {% if page=='giveaways' %}on{% endif %}" onclick="showPage('giveaways',this)"><i class="ti ti-confetti"></i><span class="na-lbl">Giveaways</span>{% if giveaway_count %}<span class="na-badge nbp">{{ giveaway_count }}</span>{% endif %}</button>
     <button class="na {% if page=='voice' %}on{% endif %}" onclick="showPage('voice',this)"><i class="ti ti-microphone"></i><span class="na-lbl">Voice Log</span></button>
     <button class="na {% if page=='economy' %}on{% endif %}" onclick="showPage('economy',this)"><i class="ti ti-coin"></i><span class="na-lbl">Economy</span></button>
     <button class="na {% if page=='analytics' %}on{% endif %}" onclick="showPage('analytics',this)"><i class="ti ti-chart-bar"></i><span class="na-lbl">Analytics</span></button>
-    <div class="nl">Roblox</div>
+    
+    <div class="nl"><i class="ti ti-brand-google-play"></i> Roblox</div>
     <button class="na {% if page=='roblox' %}on{% endif %}" onclick="showPage('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">{{ roblox_count }}</span></button>
     <button class="na {% if page=='premium' %}on{% endif %}" onclick="showPage('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span>{% if premium_count %}<span class="na-badge nby">{{ premium_count }}</span>{% endif %}</button>
-    <div class="nl">Configuration</div>
-    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Bot Configuration</span><span class="na-badge nbg">Live</span></button>
+    
+    <div class="nl"><i class="ti ti-settings"></i> System</div>
+    <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Configuration</span><span class="na-badge nbg">Live</span></button>
   </nav>
+
   <div class="sb-foot">
     <div class="bot-pill">
       <div class="pulse {% if not bot_online %}off{% endif %}"></div>
@@ -372,7 +416,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </aside>
 
-<!-- MAIN -->
+<!-- MAIN CONTENT -->
 <div class="main">
   <div class="topbar">
     <div class="tb-crumb">
@@ -381,9 +425,9 @@ a{text-decoration:none;color:inherit}
       <span class="tbc-page" id="pageTitle">{{ page|title }}</span>
     </div>
     <div class="tb-right">
-      <div class="guild-pill" onclick="openGuildModal()" id="guildPill" title="Switch server">
+      <div class="guild-pill" onclick="openGuildModal()" id="guildPill" title="Switch Server">
         <i class="ti ti-server"></i>
-        <span class="gp-name" id="guildPillName">No server</span>
+        <span class="gp-name" id="guildPillName">No Server</span>
         <i class="ti ti-chevron-down" style="font-size:10px;opacity:.5"></i>
       </div>
       <div class="tb-clock" id="liveClock">00:00:00</div>
@@ -393,21 +437,21 @@ a{text-decoration:none;color:inherit}
 
   <div class="content">
 
-    <!-- HOME -->
+    <!-- HOME PAGE -->
     <div class="page-section {% if page=='home' %}active{% endif %}" id="sec-home">
       <div class="sg">
-        {% for icon,lbl,val,col in [('ti-file-description','Applications',app_count,'#7c6fff'),('ti-alert-triangle','Warnings',warn_count,'#f05d7a'),('ti-ticket','Open Tickets',ticket_count,'#22d3a0'),('ti-users','XP Members',xp_count,'#f5c842'),('ti-coin','Eco Users',eco_count,'#34c8ff'),('ti-scroll','Mod Actions',mod_log_count,'#ff9040'),('ti-bug','Bug Reports',bug_count,'#f05d7a'),('ti-brand-google-play','Roblox Linked',roblox_count,'#34c8ff'),('ti-crown','Premium',premium_count,'#f5c842'),('ti-confetti','Giveaways',giveaway_count,'#e879b4')] %}
+        {% for icon,lbl,val,col in [('ti-file-description','Applications',app_count,'#6d5dfc'),('ti-alert-triangle','Warnings',warn_count,'#fa5252'),('ti-ticket','Open Tickets',ticket_count,'#00dc82'),('ti-users','XP Members',xp_count,'#fcc419'),('ti-coin','Eco Users',eco_count,'#22b8cf'),('ti-scroll','Mod Actions',mod_log_count,'#ff922b'),('ti-bug','Bug Reports',bug_count,'#fa5252'),('ti-brand-google-play','Roblox Linked',roblox_count,'#22b8cf'),('ti-crown','Premium',premium_count,'#fcc419'),('ti-confetti','Giveaways',giveaway_count,'#e64980')] %}
         <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}20"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
         {% endfor %}
       </div>
       <div class="g2">
         <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Live Activity</div></div>
-          <div class="al">{% for e in activity[:12] %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No activity yet.</p></div>{% endfor %}</div>
+          <div class="al">{% for e in activity[:12] %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico"><i class="ti {{ e.icon }}"></i></div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No recent activity.</p></div>{% endfor %}</div>
         </div>
         <div class="flex-col">
           <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaders</div></div>
             {% for m in top_xp[:3] %}{% set medals=['🥇','🥈','🥉'] %}
-            <div class="mr"><div class="rk">{{ medals[loop.index0] }}</div><div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>
+            <div class="mr"><div class="rk">{{ medals[loop.index0] }}</div><div class="av">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>
             {% else %}<div class="empty" style="padding:20px"><p>No XP data yet.</p></div>{% endfor %}
           </div>
           <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>Recent Warnings</div></div>
@@ -417,22 +461,22 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ACTIVITY -->
+    <!-- ACTIVITY PAGE -->
     <div class="page-section {% if page=='activity' %}active{% endif %}" id="sec-activity">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div><span style="font-size:11px;color:var(--mt)">{{ activity|length }} events</span></div>
-        <div class="al" style="max-height:none">{% for e in activity %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico" style="background:rgba(124,111,255,.12)">{{ e.icon }}</div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No activity.</p></div>{% endfor %}</div>
+        <div class="al" style="max-height:none">{% for e in activity %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico"><i class="ti {{ e.icon }}"></i></div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No activity recorded.</p></div>{% endfor %}</div>
       </div>
     </div>
 
-    <!-- APPLICATIONS -->
+    <!-- APPLICATIONS PAGE -->
     <div class="page-section {% if page=='applications' %}active{% endif %}" id="sec-applications">
       {% if applications %}{% for uid, a in applications.items() %}{% set sc={'accepted':'bgg','declined':'br','interview':'by','pending':'bb'}.get(a.status,'bb') %}
-      <div class="pn"><div class="ph"><div style="display:flex;align-items:center;gap:9px"><div class="av" style="background:var(--ac);width:34px;height:34px;font-size:13px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div><div><div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div><div style="font-size:11px;color:var(--mt);margin-top:1px">Status: <span class="bg {{ sc }}">{{ a.status|title }}</span></div></div></div><span class="bg bb">{{ a.role }}</span></div>
-        <div style="padding:14px 16px"><div class="bug-fields"><div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div><div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div><div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div><div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div><div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div></div></div>
-      </div>{% endfor %}{% else %}<div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications yet.</p></div></div>{% endif %}
+      <div class="pn"><div class="ph"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div><div><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div><div style="font-size:11px;color:var(--mt);margin-top:2px">Status: <span class="bg {{ sc }}">{{ a.status|title }}</span></div></div></div><span class="bg bb">{{ a.role }}</span></div>
+        <div style="padding:16px 18px"><div class="bug-fields"><div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div><div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div><div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div><div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div><div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div></div></div>
+      </div>{% endfor %}{% else %}<div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications submitted yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- WARNINGS -->
+    <!-- WARNINGS PAGE -->
     <div class="page-section {% if page=='warnings' %}active{% endif %}" id="sec-warnings">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div><span style="font-size:11px;color:var(--mt)">{{ warnings|length }} users warned</span></div>
         {% if warnings %}<table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
@@ -441,49 +485,49 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- NOTES -->
+    <!-- NOTES PAGE -->
     <div class="page-section {% if page=='notes' %}active{% endif %}" id="sec-notes">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-notes"></i>Staff Notes</div><span style="font-size:11px;color:var(--mt)">{{ notes_count }} notes</span></div>
-        {% if all_notes %}{% for uid, nlist in all_notes.items() %}<div style="border-bottom:1px solid var(--bd)"><div style="padding:8px 16px 3px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>{% for n in nlist %}<div class="note-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="note-by">{{ n.by }}</span><span class="note-time">{{ n.time }}</span></div><div class="note-text">{{ n.note }}</div></div>{% endfor %}</div>{% endfor %}
+        {% if all_notes %}{% for uid, nlist in all_notes.items() %}<div style="border-bottom:1px solid var(--bd)"><div style="padding:10px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>{% for n in nlist %}<div class="note-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="note-by">{{ n.by }}</span><span class="note-time">{{ n.time }}</span></div><div class="note-text">{{ n.note }}</div></div>{% endfor %}</div>{% endfor %}
         {% else %}<div class="empty"><i class="ti ti-notes"></i><p>No staff notes yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- MEMBERS -->
+    <!-- MEMBERS PAGE -->
     <div class="page-section {% if page=='members' %}active{% endif %}" id="sec-members">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-users"></i>All Members</div><span style="font-size:11px;color:var(--mt)">{{ members|length }} tracked</span></div>
-        <div style="padding:9px 14px;border-bottom:1px solid var(--bd)"><input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)"></div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--bd)"><input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)"></div>
         <table class="tbl" id="membersTable"><thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead><tbody>
-          {% for m in members %}<tr class="member-row" data-name="{{ m.name|lower }}"><td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:var(--ac);width:26px;height:26px;font-size:10px">{{ m.name[0]|upper }}</div><span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span></div></td><td><span class="bg bb">Lv {{ m.level }}</span></td><td>{{ m.xp|int }} XP<div class="xpb" style="margin-top:3px"><div class="xpf" style="width:{{ m.pct }}%"></div></div></td><td style="color:var(--yw)">💰 {{ m.balance|int }}</td><td class="mono">{{ m.messages }}</td><td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td></tr>
+          {% for m in members %}<tr class="member-row" data-name="{{ m.name|lower }}"><td><div style="display:flex;align-items:center;gap:10px"><div class="av">{{ m.name[0]|upper }}</div><span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span></div></td><td><span class="bg bb">Lv {{ m.level }}</span></td><td>{{ m.xp|int }} XP<div class="xpb" style="margin-top:4px"><div class="xpf" style="width:{{ m.pct }}%"></div></div></td><td style="color:var(--yw)">💰 {{ m.balance|int }}</td><td class="mono">{{ m.messages }}</td><td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td></tr>
           {% else %}<tr><td colspan="6" style="text-align:center;color:var(--mt);padding:32px">No member data yet.</td></tr>{% endfor %}
         </tbody></table>
       </div>
     </div>
 
-    <!-- LEADERBOARD -->
+    <!-- LEADERBOARD PAGE -->
     <div class="page-section {% if page=='leaderboard' %}active{% endif %}" id="sec-leaderboard">
       <div class="tabs"><button class="tab on" onclick="lbSwitch('xp',this)">XP Rankings</button><button class="tab" onclick="lbSwitch('eco',this)">Rich List</button></div>
-      <div id="lb-xp"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div></div>{% for m in xp_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:var(--ac)">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP · {{ m.messages }} messages</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>{% else %}<div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>{% endfor %}</div></div>
-      <div id="lb-eco" style="display:none"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div></div>
+      <div id="lb-xp"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div></div>{% for m in xp_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP · {{ m.messages }} messages</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>{% else %}<div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>{% endfor %}</div></div>
+      <div id="lb-eco" style="display:none"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#fcc419;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div></div>
     </div>
 
-    <!-- MOD LOGS -->
+    <!-- MOD LOGS PAGE -->
     <div class="page-section {% if page=='modlogs' %}active{% endif %}" id="sec-modlogs">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Mod Log</div><span style="font-size:11px;color:var(--mt)">{{ mod_logs|length }} actions</span></div>
-        {% for m in mod_logs %}<div class="ai"><div class="ai-ico" style="background:{{ m.color }}20;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px">⚡</div><div class="ai-main"><div class="ai-act" style="font-weight:600">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ai-det">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div></div></div>
+        {% for m in mod_logs %}<div class="ai"><div class="ai-ico" style="background:{{ m.color }}20;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">⚡</div><div class="ai-main"><div class="ai-act" style="font-weight:600">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ai-det">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div></div></div>
         {% else %}<div class="empty"><i class="ti ti-scroll"></i><p>No moderation actions logged yet.</p></div>{% endfor %}
       </div>
     </div>
 
-    <!-- AUTOMOD -->
+    <!-- AUTOMOD PAGE -->
     <div class="page-section {% if page=='automod' %}active{% endif %}" id="sec-automod">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div><span style="font-size:11px;color:var(--mt)">{{ total_words }} words</span></div>
-        {% if automod_guilds %}{% for gid, words in automod_guilds.items() %}{% if words %}<div style="padding:7px 12px 2px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:1px solid var(--bd)">Guild {{ gid }}</div><div class="word-list">{% for w in words %}<span class="word-tag">{{ w }}</span>{% endfor %}</div>{% endif %}{% endfor %}
+        {% if automod_guilds %}{% for gid, words in automod_guilds.items() %}{% if words %}<div style="padding:8px 14px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:1px solid var(--bd)">Guild {{ gid }}</div><div class="word-list">{% for w in words %}<span class="word-tag">{{ w }}</span>{% endfor %}</div>{% endif %}{% endfor %}
         {% else %}<div class="empty"><i class="ti ti-robot"></i><p>No words in the filter yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- TICKETS -->
+    <!-- TICKETS PAGE -->
     <div class="page-section {% if page=='tickets' %}active{% endif %}" id="sec-tickets">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div><span style="font-size:11px;color:var(--mt)">{{ ticket_count }} open</span></div>
         {% for ch_id, t in tickets.items() %}<div class="ticket-card"><div class="tc-head"><span class="tc-id">#{{ loop.index }}</span><div style="font-size:12px;font-weight:600;color:#fff">{{ t.user_name }}</div><span class="bg {% if t.status=='open' %}bgg{% else %}br{% endif %}">{{ t.status }}</span></div><div style="font-size:11px;color:var(--mt)">{{ t.reason }} · {{ t.created }}</div></div>
@@ -491,14 +535,14 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- BUGS -->
+    <!-- BUGS PAGE -->
     <div class="page-section {% if page=='bugs' %}active{% endif %}" id="sec-bugs">
       {% if bug_reports %}{% for r in bug_reports %}{% set stCls={'fixed':'bgg','open':'br','in_progress':'bc'}.get(r.status,'by') %}{% set svCls={'critical':'br','high':'bo','medium':'by','low':'bgg'}.get(r.severity,'by') %}
       <div class="bug-card"><div class="bug-hd"><span class="bug-id">{{ r.id }}</span><span class="bug-title">{{ r.title }}</span><span class="bg {{ stCls }}">{{ r.status.replace('_',' ') }}</span><span class="bg {{ svCls }}">{{ r.severity }}</span></div><div class="bug-body"><div class="bug-fields"><div class="bug-field"><label>Area</label><p>{{ r.game_area }}</p></div><div class="bug-field"><label>Reporter</label><p>{{ r.reporter_name }}</p></div><div class="bug-field"><label>Status</label><p>{{ r.status }}</p></div><div class="bug-field full"><label>Description</label><p>{{ r.description }}</p></div><div class="bug-field full"><label>Steps</label><p>{{ r.steps }}</p></div></div></div></div>
       {% endfor %}{% else %}<div class="pn"><div class="empty"><i class="ti ti-bug"></i><p>No bug reports yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- GIVEAWAYS -->
+    <!-- GIVEAWAYS PAGE -->
     <div class="page-section {% if page=='giveaways' %}active{% endif %}" id="sec-giveaways">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div></div>
         {% for msg_id, g in giveaways.items() %}<div class="giveaway-card"><div class="gw-prize">🎁 {{ g.prize }}</div><div class="gw-meta">Hosted by {{ g.host }} · Ends {{ g.ends[:16].replace('T',' ') }}</div></div>
@@ -506,7 +550,7 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- VOICE -->
+    <!-- VOICE PAGE -->
     <div class="page-section {% if page=='voice' %}active{% endif %}" id="sec-voice">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div></div>
         {% if voice_events %}<table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>{% for v in voice_events %}<tr><td><span class="bg {% if v.action=='joined' %}bgg{% elif v.action=='left' %}br{% else %}by{% endif %}">{{ v.action|title }}</span></td><td>{{ v.member }}</td><td style="color:var(--mt)">#{{ v.channel }}</td><td class="mono">{{ v.time }}</td></tr>{% endfor %}</tbody></table>
@@ -514,21 +558,21 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ECONOMY -->
+    <!-- ECONOMY PAGE -->
     <div class="page-section {% if page=='economy' %}active{% endif %}" id="sec-economy">
       <div class="sg sg-4">
-        <div class="sc"><div class="sc-top-bar" style="background:#f5c842"></div><div class="sc-icon" style="background:#f5c84215"><i class="ti ti-coin" style="color:#f5c842"></i></div><div class="sc-val">{{ total_coins|int }}</div><div class="sc-lbl">Circulating</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#22d3a0"></div><div class="sc-icon" style="background:#22d3a015"><i class="ti ti-users" style="color:#22d3a0"></i></div><div class="sc-val">{{ eco_count }}</div><div class="sc-lbl">Eco Users</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#7c6fff"></div><div class="sc-icon" style="background:#7c6fff15"><i class="ti ti-trending-up" style="color:#7c6fff"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Earned</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#ff9040"></div><div class="sc-icon" style="background:#ff904015"><i class="ti ti-trophy" style="color:#ff9040"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#fcc419"></div><div class="sc-icon" style="background:#fcc41915"><i class="ti ti-coin" style="color:#fcc419"></i></div><div class="sc-val">{{ total_coins|int }}</div><div class="sc-lbl">Circulating</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#00dc82"></div><div class="sc-icon" style="background:#00dc8215"><i class="ti ti-users" style="color:#00dc82"></i></div><div class="sc-val">{{ eco_count }}</div><div class="sc-lbl">Eco Users</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#6d5dfc"></div><div class="sc-icon" style="background:#6d5dfc15"><i class="ti ti-trending-up" style="color:#6d5dfc"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Earned</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#ff922b"></div><div class="sc-icon" style="background:#ff922b15"><i class="ti ti-trophy" style="color:#ff922b"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
       </div>
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#f5c842;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#fcc419;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div>
     </div>
 
-    <!-- ANALYTICS -->
+    <!-- ANALYTICS PAGE -->
     <div class="page-section {% if page=='analytics' %}active{% endif %}" id="sec-analytics">
       <div class="sg sg-6">
-        {% for icon,lbl,val,col in [('ti-bolt','Events',activity|length,'#7c6fff'),('ti-brand-google-play','Roblox',roblox_count,'#34c8ff'),('ti-file-description','Applications',app_count,'#22d3a0'),('ti-alert-triangle','Warns',warn_count,'#f05d7a'),('ti-scroll','Mod Actions',mod_log_count,'#ff9040'),('ti-crown','Premium',premium_count,'#f5c842')] %}
+        {% for icon,lbl,val,col in [('ti-bolt','Events',activity|length,'#6d5dfc'),('ti-brand-google-play','Roblox',roblox_count,'#22b8cf'),('ti-file-description','Applications',app_count,'#00dc82'),('ti-alert-triangle','Warns',warn_count,'#fa5252'),('ti-scroll','Mod Actions',mod_log_count,'#ff922b'),('ti-crown','Premium',premium_count,'#fcc419')] %}
         <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}15"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
         {% endfor %}
       </div>
@@ -538,14 +582,14 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ROBLOX -->
+    <!-- ROBLOX PAGE -->
     <div class="page-section {% if page=='roblox' %}active{% endif %}" id="sec-roblox">
-      <div class="sg sg-2"><div class="sc"><div class="sc-top-bar" style="background:#34c8ff"></div><div class="sc-icon" style="background:#34c8ff15"><i class="ti ti-brand-google-play" style="color:#34c8ff"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Linked Accounts</div></div><div class="sc"><div class="sc-top-bar" style="background:#22d3a0"></div><div class="sc-icon" style="background:#22d3a015"><i class="ti ti-shield-check" style="color:#22d3a0"></i></div><div class="sc-val">{{ roblox_accounts|selectattr('verified')|list|length }}</div><div class="sc-lbl">Verified</div></div></div>
-      {% if roblox_accounts %}<div class="roblox-grid">{% for a in roblox_accounts %}<div class="roblox-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">{% if a.thumb %}<img src="{{ a.thumb }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover" alt="">{% else %}<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎮</div>{% endif %}<div><div class="rb-name">{{ a.display }}</div><div class="rb-user">@{{ a.username }}</div><div class="rb-id">ID: {{ a.roblox_id }}</div></div></div><div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:9px;font-size:10px;color:var(--mt)"><span>{{ a.discord_name }}</span><span>{% if a.verified %}✅ Verified{% else %}🔗 Manual{% endif %}</span></div><a href="https://www.roblox.com/users/{{ a.roblox_id }}/profile" target="_blank" class="rb-link">View Profile →</a></div>{% endfor %}</div>
+      <div class="sg sg-2"><div class="sc"><div class="sc-top-bar" style="background:#22b8cf"></div><div class="sc-icon" style="background:#22b8cf15"><i class="ti ti-brand-google-play" style="color:#22b8cf"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Linked Accounts</div></div><div class="sc"><div class="sc-top-bar" style="background:#00dc82"></div><div class="sc-icon" style="background:#00dc8215"><i class="ti ti-shield-check" style="color:#00dc82"></i></div><div class="sc-val">{{ roblox_accounts|selectattr('verified')|list|length }}</div><div class="sc-lbl">Verified</div></div></div>
+      {% if roblox_accounts %}<div class="roblox-grid">{% for a in roblox_accounts %}<div class="roblox-card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">{% if a.thumb %}<img src="{{ a.thumb }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">{% else %}<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎮</div>{% endif %}<div><div class="rb-name">{{ a.display }}</div><div class="rb-user">@{{ a.username }}</div><div class="rb-id">ID: {{ a.roblox_id }}</div></div></div><div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;font-size:10px;color:var(--mt)"><span>{{ a.discord_name }}</span><span>{% if a.verified %}✅ Verified{% else %}🔗 Manual{% endif %}</span></div><a href="https://www.roblox.com/users/{{ a.roblox_id }}/profile" target="_blank" class="rb-link">View Profile →</a></div>{% endfor %}</div>
       {% else %}<div class="pn"><div class="empty"><i class="ti ti-brand-google-play"></i><p>No Roblox accounts linked yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- PREMIUM -->
+    <!-- PREMIUM PAGE -->
     <div class="page-section {% if page=='premium' %}active{% endif %}" id="sec-premium">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div><span style="font-size:11px;color:var(--mt)">{{ premium_count }} members</span></div>
         {% if premium_members %}<table class="tbl"><thead><tr><th>User ID</th><th>Tier</th><th>Granted By</th><th>Granted At</th><th>Expires</th></tr></thead><tbody>{% for uid, p in premium_members.items() %}<tr><td class="mono">{{ uid }}</td><td><span class="bg by">👑 {{ p.tier|title }}</span></td><td style="color:var(--mt)">{{ p.granted_by }}</td><td class="mono">{{ p.granted_at[:10] if p.granted_at else '—' }}</td><td class="mono">{{ p.expires[:10] if p.expires != 'permanent' else 'Permanent' }}</td></tr>{% endfor %}</tbody></table>
@@ -553,7 +597,7 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- CONFIG -->
+    <!-- CONFIGURATION PAGE -->
     <div class="page-section {% if page=='config' %}active{% endif %}" id="sec-config">
       <div class="cfg-stats-grid">
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ app_count }}</div><div class="cfg-stat-mini-lbl">Applications</div></div>
@@ -561,6 +605,7 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ mod_log_count }}</div><div class="cfg-stat-mini-lbl">Mod Actions</div></div>
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ premium_count }}</div><div class="cfg-stat-mini-lbl">Premium</div></div>
       </div>
+      
       <div class="cfg-wrap">
         <div class="cfg-sidebar">
           <div class="cfg-sidebar-head">Configuration</div>
@@ -973,19 +1018,13 @@ tick(); setInterval(tick, 1000);
 function startAutoRefresh() {
   if (autoRefreshInterval) clearInterval(autoRefreshInterval);
   autoRefreshInterval = setInterval(() => {
-    if (!document.hidden) {
-      location.reload();
-    }
+    if (!document.hidden) location.reload();
   }, 30000); // 30 seconds
 }
-
-function manualRefresh() {
-  location.reload();
-}
-
+function manualRefresh() { location.reload(); }
 startAutoRefresh();
 
-// ── TOAST ────────────────────────────────────────────────────
+// ── TOAST NOTIFICATIONS ──────────────────────────────────────
 function showToast(type, msg, icon='ti-info-circle', duration=3500) {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
@@ -996,7 +1035,7 @@ function showToast(type, msg, icon='ti-info-circle', duration=3500) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, duration);
 }
 
-// ── PAGE NAV ─────────────────────────────────────────────────
+// ── PAGE NAVIGATION ──────────────────────────────────────────
 const PAGE_TITLES = {
   home:'Overview', activity:'Live Activity', applications:'Applications',
   warnings:'Warnings', notes:'Staff Notes', members:'Members',
@@ -1031,8 +1070,8 @@ function lbSwitch(tab, btn) {
   document.getElementById('lb-eco').style.display = tab === 'eco' ? '' : 'none';
 }
 
-// ── GUILD SELECTOR ───────────────────────────────────────────
-let allGuilds = [], activeGuildId = null, activeGuildName = 'No server', pendingGuildId = null;
+// ── GUILD SELECTOR LOGIC ─────────────────────────────────────
+let allGuilds = [], activeGuildId = null, activeGuildName = 'No Server', pendingGuildId = null;
 let cachedChannels = [], cachedRoles = [];
 
 (function restoreGuild() {
@@ -1113,7 +1152,7 @@ document.getElementById('guildModal').addEventListener('click', function(e) {
   if (e.target === this) closeGuildModal();
 });
 
-// ── CONFIG SYSTEM ────────────────────────────────────────────
+// ── CONFIG SYSTEM LOGIC ──────────────────────────────────────
 const TAB_KEYS = {
   general: ['bot_prefix','welcome_enabled','welcome_message','log_deletes','log_edits','log_members'],
   channels: ['welcome_channel','logs_channel','mod_channel','apply_channel','applications_channel','verify_channel','announcements_channel','giveaway_channel','levelup_channel','general_channel','rank_channel'],
@@ -1162,7 +1201,6 @@ function collectTab(tabId) {
   keys.forEach(key => {
     const el = document.querySelector(`[data-key="${key}"]`);
     if (!el) return;
-
     if (el.classList && el.classList.contains('cfg-toggle')) {
       data[key] = el.classList.contains('on');
     } else if (el.tagName === 'SELECT') {
@@ -1185,24 +1223,17 @@ async function cfgSave(tabId) {
     openGuildModal();
     return;
   }
-
   const data = collectTab(tabId);
-
   const btn = document.querySelector(`[onclick="cfgSave('${tabId}')"]`);
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Saving...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Saving...'; }
 
   try {
     const res = await fetch('/api/config/save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        secret:   CFG_SECRET,
-        guild_id: activeGuildId,
-        config:   data,
-      }),
+      body: JSON.stringify({ secret: CFG_SECRET, guild_id: activeGuildId, config: data }),
     });
     const json = await res.json();
-
     if (res.ok && json.status === 'ok') {
       cfgSetStatus(tabId, true, `Saved ${(json.updated || []).length} setting(s)`);
       clearDirty(tabId);
@@ -1221,11 +1252,9 @@ async function cfgSave(tabId) {
 
 async function loadGuildDropdowns() {
   if (!activeGuildId) return;
-
   document.querySelectorAll('.ch-select, .rl-select').forEach(dd => {
     dd.disabled = true; dd.style.opacity = '.5';
   });
-
   try {
     const [chRes, roRes] = await Promise.all([
       fetch(`/api/guild/channels?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
@@ -1237,10 +1266,8 @@ async function loadGuildDropdowns() {
     showToast('err', 'Could not fetch channels/roles from Discord.', 'ti-wifi-off');
     cachedChannels = []; cachedRoles = [];
   }
-
   populateChSelects();
   populateRlSelects();
-
   await cfgLoadCurrent();
 }
 
@@ -1248,9 +1275,7 @@ function populateChSelects() {
   document.querySelectorAll('.ch-select').forEach(dd => {
     const saved = dd.dataset.savedVal || '';
     dd.innerHTML = '<option value="">— not set —</option>' +
-      cachedChannels.map(ch =>
-        `<option value="${ch.id}"${ch.id === saved ? ' selected' : ''}>#${ch.name}</option>`
-      ).join('');
+      cachedChannels.map(ch => `<option value="${ch.id}"${ch.id === saved ? ' selected' : ''}>#${ch.name}</option>`).join('');
     dd.disabled = false; dd.style.opacity = '1';
     if (saved) dd.value = saved;
   });
@@ -1260,9 +1285,7 @@ function populateRlSelects() {
   document.querySelectorAll('.rl-select').forEach(dd => {
     const saved = dd.dataset.savedVal || '';
     dd.innerHTML = '<option value="">— not set —</option>' +
-      cachedRoles.map(r =>
-        `<option value="${r.id}"${r.id === saved ? ' selected' : ''}>${r.name}</option>`
-      ).join('');
+      cachedRoles.map(r => `<option value="${r.id}"${r.id === saved ? ' selected' : ''}>${r.name}</option>`).join('');
     dd.disabled = false; dd.style.opacity = '1';
     if (saved) dd.value = saved;
   });
@@ -1270,24 +1293,15 @@ function populateRlSelects() {
 
 async function cfgLoadCurrent() {
   if (!activeGuildId) return;
-
   try {
-    const res = await fetch(
-      `/api/config?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`
-    );
-    if (!res.ok) {
-      showToast('err', `Config load failed (${res.status})`, 'ti-alert-circle');
-      return;
-    }
+    const res = await fetch(`/api/config?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`);
+    if (!res.ok) { showToast('err', `Config load failed (${res.status})`, 'ti-alert-circle'); return; }
     const cfg = await res.json();
-
     Object.entries(cfg).forEach(([key, value]) => {
       const el = document.querySelector(`[data-key="${key}"]`);
       if (!el) return;
-
       if (el.classList && el.classList.contains('cfg-toggle')) {
-        if (value) el.classList.add('on');
-        else el.classList.remove('on');
+        if (value) el.classList.add('on'); else el.classList.remove('on');
       } else if (el.tagName === 'SELECT') {
         const strVal = String(value);
         el.dataset.savedVal = strVal;
@@ -1297,10 +1311,8 @@ async function cfgLoadCurrent() {
         el.value = String(value);
       }
     });
-
     populateChSelects();
     populateRlSelects();
-
     showToast('info', `Config loaded for ${activeGuildName}`, 'ti-refresh');
   } catch (e) {
     showToast('err', 'Failed to load config.', 'ti-wifi-off');
@@ -1308,7 +1320,7 @@ async function cfgLoadCurrent() {
   }
 }
 
-// ── DANGER ZONE ──────────────────────────────────────────────
+// ── DANGER ZONE ACTIONS ──────────────────────────────────────
 async function dangerAction(action) {
   const labels = {
     lockdown:       'Lock ALL channels instantly?',
@@ -1320,11 +1332,7 @@ async function dangerAction(action) {
 
   if (action === 'shutdown') {
     try {
-      const r = await fetch('/api/shutdown', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({secret: CFG_SECRET}),
-      });
+      const r = await fetch('/api/shutdown', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({secret: CFG_SECRET}) });
       showToast(r.ok ? 'ok' : 'err', r.ok ? 'Shutdown initiated.' : 'Shutdown failed.', r.ok ? 'ti-power' : 'ti-alert-circle');
     } catch { showToast('err', 'Network error.', 'ti-wifi-off'); }
     return;
@@ -1333,16 +1341,10 @@ async function dangerAction(action) {
   if (action === 'reset-config') {
     if (!activeGuildId) { showToast('err', 'Select a server first.', 'ti-server'); return; }
     try {
-      const r = await fetch('/api/config/reset', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({secret: CFG_SECRET, guild_id: activeGuildId}),
-      });
+      const r = await fetch('/api/config/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({secret: CFG_SECRET, guild_id: activeGuildId}) });
       if (r.ok) {
         showToast('ok', 'Config reset!', 'ti-trash');
-        document.querySelectorAll('.ch-select, .rl-select').forEach(dd => {
-          dd.value = ''; dd.dataset.savedVal = '';
-        });
+        document.querySelectorAll('.ch-select, .rl-select').forEach(dd => { dd.value = ''; dd.dataset.savedVal = ''; });
         document.querySelectorAll('.cfg-toggle').forEach(t => t.classList.remove('on'));
         document.querySelectorAll('.cfg-input').forEach(i => i.value = '');
       } else showToast('err', 'Reset failed.', 'ti-alert-circle');
@@ -1353,27 +1355,18 @@ async function dangerAction(action) {
   if (!activeGuildId) { showToast('err', 'Select a server first.', 'ti-server'); return; }
   const endpoint = action === 'lockdown' ? '/api/lockdown' : '/api/unlockdown';
   try {
-    const r = await fetch(endpoint, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({secret: CFG_SECRET, guild_id: activeGuildId}),
-    });
+    const r = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({secret: CFG_SECRET, guild_id: activeGuildId}) });
     if (r.ok) {
       const j = await r.json();
-      showToast('ok',
-        action === 'lockdown'
-          ? `Locked ${j.channels_locked || '?'} channels!`
-          : `Unlocked ${j.channels_unlocked || '?'} channels!`,
-        action === 'lockdown' ? 'ti-lock' : 'ti-lock-open'
-      );
+      showToast('ok', action === 'lockdown' ? `Locked ${j.channels_locked || '?'} channels!` : `Unlocked ${j.channels_unlocked || '?'} channels!`, action === 'lockdown' ? 'ti-lock' : 'ti-lock-open');
     } else showToast('err', `${action} failed (${r.status})`, 'ti-alert-circle');
   } catch { showToast('err', 'Network error.', 'ti-wifi-off'); }
 }
 
 // ── ANALYTICS CHARTS ─────────────────────────────────────────
-const CC = ['#7c6fff','#22d3a0','#f5c842','#e879b4','#34c8ff','#ff9040','#f05d7a','#b89aff'];
+const CC = ['#6d5dfc','#00dc82','#fcc419','#e64980','#22b8cf','#ff922b','#fa5252','#a890ff'];
 const GRID = 'rgba(255,255,255,0.045)';
-const TICK = '#555e80';
+const TICK = '#535978';
 const builtCharts = {};
 
 function mkChart(id, cfg) {
@@ -1398,39 +1391,20 @@ function buildAnalyticsCharts() {
 
   mkChart('anActivityLine', {
     type: 'line',
-    data: {
-      labels: days,
-      datasets: [{
-        label: 'Events', data: vals,
-        borderColor: '#7c6fff', backgroundColor: 'rgba(124,111,255,0.10)',
-        fill: true, tension: .42, pointBackgroundColor: '#7c6fff', pointRadius: 3, borderWidth: 2,
-      }],
-    },
-    options: {
-      plugins: {legend: {display: false}},
-      scales: {
-        x: {ticks: {color: TICK, font:{size:10}}, grid: {display:false}, border:{color:'transparent'}},
-        y: {ticks: {color: TICK, font:{size:10}}, grid: {color: GRID}, border:{color:'transparent'}, beginAtZero: true},
-      },
-    },
+    data: { labels: days, datasets: [{ label: 'Events', data: vals, borderColor: '#6d5dfc', backgroundColor: 'rgba(109,93,252,0.10)', fill: true, tension: .42, pointBackgroundColor: '#6d5dfc', pointRadius: 3, borderWidth: 2 }] },
+    options: { plugins: {legend: {display: false}}, scales: { x: {ticks: {color: TICK, font:{size:10}}, grid: {display:false}, border:{color:'transparent'}}, y: {ticks: {color: TICK, font:{size:10}}, grid: {color: GRID}, border:{color:'transparent'}, beginAtZero: true} } }
   });
 
   if (Object.keys(modData).length) {
     mkChart('anModDoughnut', {
       type: 'doughnut',
-      data: {
-        labels: Object.keys(modData),
-        datasets: [{data: Object.values(modData), backgroundColor: CC, borderWidth: 0, hoverOffset: 6}],
-      },
-      options: {
-        plugins: {legend: {position: 'bottom', labels: {color: TICK, font:{size:10}, padding:10, boxWidth:10}}},
-        cutout: '68%',
-      },
+      data: { labels: Object.keys(modData), datasets: [{data: Object.values(modData), backgroundColor: CC, borderWidth: 0, hoverOffset: 6}] },
+      options: { plugins: {legend: {position: 'bottom', labels: {color: TICK, font:{size:10}, padding:10, boxWidth:10}}}, cutout: '68%' }
     });
   }
 }
 
-// ── INIT ─────────────────────────────────────────────────────
+// ── INITIALIZATION ───────────────────────────────────────────
 (async () => {
   await fetchGuilds();
   if (!activeGuildId && allGuilds.length) {
@@ -1440,12 +1414,8 @@ function buildAnalyticsCharts() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({id: activeGuildId, name: activeGuildName})); } catch {}
     updateGuildUI();
   }
-  if (activeGuildId) {
-    await loadGuildDropdowns();
-  }
-  if (document.getElementById('sec-analytics')?.classList.contains('active')) {
-    buildAnalyticsCharts();
-  }
+  if (activeGuildId) await loadGuildDropdowns();
+  if (document.getElementById('sec-analytics')?.classList.contains('active')) buildAnalyticsCharts();
 })();
 </script>
 </body>

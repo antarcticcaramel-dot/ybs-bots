@@ -2993,40 +2993,606 @@ async def slash_closeticket(interaction: discord.Interaction):
     except: pass
 
 # ============================================================
-# SLASH — AUTOMOD
+# AUTOMOD — CONFIG
 # ============================================================
-@tree.command(name="addword", description="Add a word to the auto-mod filter [Staff]")
+import json, os, re, unicodedata
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+AUTOMOD_FILE = "automod_data.json"
+LOG_CHANNEL_NAME = "mod-log"  # change to your log channel name/id
+
+def load_automod():
+    if os.path.exists(AUTOMOD_FILE):
+        with open(AUTOMOD_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_automod():
+    with open(AUTOMOD_FILE, "w") as f:
+        json.dump(automod_data, f, indent=2)
+
+automod_data = load_automod()
+# Structure per guild:
+# {
+#   "words": ["badword1", "badword2"],
+#   "phrases": ["go die", "kys"],
+#   "patterns": ["regex1"],
+#   "actions": { "1": "delete", "2": "mute_5m", "3": "kick", "4": "ban" },
+#   "log_channel": 123456789,
+#   "exempt_roles": [123],
+#   "exempt_channels": [456],
+#   "caps_threshold": 70,
+#   "max_mentions": 5,
+#   "max_emojis": 10,
+#   "anti_invite": true,
+#   "anti_links": false,
+#   "anti_spam": true,
+#   "spam_interval": 5,
+#   "spam_count": 5,
+#   "anti_duplicate": true,
+#   "duplicate_count": 3
+# }
+
+# In-memory tracking (not persisted, resets on restart)
+user_infractions = defaultdict(lambda: defaultdict(int))  # {guild_id: {user_id: count}}
+user_messages = defaultdict(list)  # {guild_id:user_id: [(content, timestamp)]}
+duplicate_tracker = defaultdict(list)
+
+# ============================================================
+# AUTOMOD — HELPERS
+# ============================================================
+async def staff_only(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("❌ No permission.", ephemeral=True)
+        return False
+    return True
+
+def get_guild_config(gid: str) -> dict:
+    """Get guild config with safe defaults."""
+    defaults = {
+        "words": [], "phrases": [], "patterns": [],
+        "actions": {"1": "delete", "2": "delete+warn", "3": "mute_10m", "4": "kick", "5": "ban"},
+        "log_channel": None, "exempt_roles": [], "exempt_channels": [],
+        "caps_threshold": 70, "max_mentions": 5, "max_emojis": 10,
+        "anti_invite": True, "anti_links": False,
+        "anti_spam": True, "spam_interval": 5, "spam_count": 5,
+        "anti_duplicate": True, "duplicate_count": 3
+    }
+    config = automod_data.get(gid, {})
+    for key, val in defaults.items():
+        config.setdefault(key, val)
+    return config
+
+def normalize_text(text: str) -> str:
+    """Normalize unicode, leetspeak, and obfuscation."""
+    # Unicode normalization
+    text = unicodedata.normalize("NFKD", text)
+    # Leetspeak substitutions
+    leet_map = {
+        "0": "o", "1": "i", "3": "e", "4": "a", "5": "s",
+        "7": "t", "8": "b", "@": "a", "$": "s", "!": "i",
+        "+": "t", "(": "c", "|": "l"
+    }
+    result = []
+    for char in text:
+        result.append(leet_map.get(char, char))
+    text = "".join(result)
+    # Remove repeated chars (heeeeello -> hello)
+    text = re.sub(r'(.)\1{2,}', r'\1', text)
+    # Remove zero-width characters
+    text = re.sub(r'[\u200b\u200c\u200d\ufeff]', '', text)
+    return text.lower()
+
+async def get_log_channel(guild: discord.Guild, config: dict):
+    """Fetch the mod-log channel."""
+    ch_id = config.get("log_channel")
+    if ch_id:
+        return guild.get_channel(int(ch_id))
+    # Fallback: search by name
+    return discord.utils.get(guild.text_channels, name=LOG_CHANNEL_NAME)
+
+async def log_action(guild, user, action, reason, config):
+    """Send a mod-log entry."""
+    channel = await get_log_channel(guild, config)
+    if not channel:
+        return
+    embed = discord.Embed(title="🤖 AutoMod Action", color=0xed4245, timestamp=datetime.utcnow())
+    embed.add_field(name="User", value=f"{user.mention} (`{user.id}`)", inline=True)
+    embed.add_field(name="Action", value=action, inline=True)
+    embed.add_field(name="Reason", value=reason, inline=False)
+    embed.set_thumbnail(url=user.display_avatar.url)
+    try:
+        await channel.send(embed=embed)
+    except discord.Forbidden:
+        pass
+
+def is_exempt(member: discord.Member, channel, config: dict) -> bool:
+    """Check if user/channel is exempt."""
+    if member.guild_permissions.manage_messages:
+        return True
+    exempt_roles = [str(r) for r in config.get("exempt_roles", [])]
+    if any(str(r.id) in exempt_roles for r in member.roles):
+        return True
+    exempt_channels = [str(c) for c in config.get("exempt_channels", [])]
+    if str(channel.id) in exempt_channels:
+        return True
+    return False
+
+async def execute_action(message: discord.Message, config: dict, reason: str):
+    """Execute the escalation action based on infraction count."""
+    gid = str(message.guild.id)
+    uid = str(message.author.id)
+    user_infractions[gid][uid] += 1
+    count = user_infractions[gid][uid]
+    actions = config.get("actions", {})
+    action = actions.get(str(count), actions.get(str(max(int(k) for k in actions)), "delete"))
+
+    save_automod()
+
+    # Always delete the message first
+    try:
+        await message.delete()
+    except (discord.Forbidden, discord.NotFound):
+        pass
+
+    member = message.author
+
+    if action == "delete":
+        pass  # already deleted
+
+    elif action == "delete+warn":
+        try:
+            await member.send(f"⚠️ **Warning** in **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+
+    elif action.startswith("mute"):
+        # Parse duration: "mute_5m", "mute_1h", "mute_1d"
+        duration_str = action.split("_")[1] if "_" in action else "10m"
+        unit = duration_str[-1]
+        amount = int(duration_str[:-1])
+        durations = {"m": "minutes", "h": "hours", "d": "days"}
+        until = discord.utils.utcnow() + timedelta(**{durations.get(unit, "minutes"): amount})
+        try:
+            await member.timeout(until, reason=f"AutoMod: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.send(f"🔇 You've been muted in **{message.guild.name}** for: {reason}")
+        except discord.Forbidden:
+            pass
+
+    elif action == "kick":
+        try:
+            await member.send(f"👢 You've been kicked from **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.kick(reason=f"AutoMod: {reason}")
+        except discord.Forbidden:
+            pass
+
+    elif action == "ban":
+        try:
+            await member.send(f"🔨 You've been banned from **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.ban(reason=f"AutoMod: {reason}", delete_message_days=1)
+        except discord.Forbidden:
+            pass
+
+    await log_action(message.guild, member, action, reason, config)
+    return count, action
+
+# ============================================================
+# AUTOMOD — MAIN MESSAGE LISTENER
+# ============================================================
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot or not message.guild:
+        await bot.process_commands(message)
+        return
+
+    gid = str(message.guild.id)
+    config = get_guild_config(gid)
+
+    if is_exempt(message.author, message.channel, config):
+        await bot.process_commands(message)
+        return
+
+    content = message.content
+    normalized = normalize_text(content)
+    uid = str(message.author.id)
+
+    # --- WORD FILTER ---
+    for word in config["words"]:
+        if word in normalized:
+            count, action = await execute_action(
+                message, config, f"Filtered word detected (`{word}`)"
+            )
+            return
+
+    # --- PHRASE FILTER ---
+    for phrase in config["phrases"]:
+        if phrase in normalized:
+            count, action = await execute_action(
+                message, config, f"Filtered phrase detected (`{phrase}`)"
+            )
+            return
+
+    # --- REGEX PATTERNS ---
+    for pattern in config["patterns"]:
+        try:
+            if re.search(pattern, normalized):
+                count, action = await execute_action(
+                    message, config, f"Matched pattern (`{pattern}`)"
+                )
+                return
+        except re.error:
+            pass
+
+    # --- DISCORD INVITE FILTER ---
+    if config.get("anti_invite"):
+        invite_pattern = r'(discord\.gg|discord\.com/invite|discordapp\.com/invite)/\w+'
+        if re.search(invite_pattern, content, re.IGNORECASE):
+            count, action = await execute_action(
+                message, config, "Discord invite link detected"
+            )
+            return
+
+    # --- LINK FILTER ---
+    if config.get("anti_links"):
+        link_pattern = r'https?://\S+'
+        if re.search(link_pattern, content):
+            count, action = await execute_action(
+                message, config, "Unauthorized link"
+            )
+            return
+
+    # --- EXCESSIVE CAPS (>70% caps, min 8 chars) ---
+    threshold = config.get("caps_threshold", 70)
+    alpha = [c for c in content if c.isalpha()]
+    if len(alpha) >= 8:
+        caps_pct = (sum(1 for c in alpha if c.isupper()) / len(alpha)) * 100
+        if caps_pct >= threshold:
+            count, action = await execute_action(
+                message, config, f"Excessive caps ({caps_pct:.0f}%)"
+            )
+            return
+
+    # --- EXCESSIVE MENTIONS ---
+    max_mentions = config.get("max_mentions", 5)
+    if len(message.mentions) > max_mentions:
+        count, action = await execute_action(
+            message, config, f"Too many mentions ({len(message.mentions)})"
+        )
+        return
+
+    # --- EXCESSIVE EMOJIS ---
+    max_emojis = config.get("max_emojis", 10)
+    emoji_pattern = r'<a?:\w+:\d+>|[\U0001F600-\U0001F9FF]'
+    if len(re.findall(emoji_pattern, content)) > max_emojis:
+        count, action = await execute_action(
+            message, config, f"Too many emojis"
+        )
+        return
+
+    # --- SPAM DETECTION ---
+    if config.get("anti_spam"):
+        now = datetime.utcnow().timestamp()
+        interval = config.get("spam_interval", 5)
+        max_count = config.get("spam_count", 5)
+        key = f"{gid}:{uid}"
+        user_messages[key].append(now)
+        user_messages[key] = [t for t in user_messages[key] if now - t < interval]
+        if len(user_messages[key]) > max_count:
+            user_messages[key].clear()
+            count, action = await execute_action(
+                message, config, f"Spam detected ({max_count}+ messages in {interval}s)"
+            )
+            return
+
+    # --- DUPLICATE MESSAGE DETECTION ---
+    if config.get("anti_duplicate"):
+        dup_count = config.get("duplicate_count", 3)
+        key = f"{gid}:{uid}"
+        duplicate_tracker[key].append(content.lower().strip())
+        duplicate_tracker[key] = duplicate_tracker[key][-dup_count + 1:]
+        if (len(duplicate_tracker[key]) >= dup_count - 1
+                and len(set(duplicate_tracker[key])) == 1
+                and len(content.strip()) > 0):
+            duplicate_tracker[key].clear()
+            count, action = await execute_action(
+                message, config, f"Duplicate messages ({dup_count}x)"
+            )
+            return
+
+    await bot.process_commands(message)
+
+# ============================================================
+# SLASH — AUTOMOD COMMANDS
+# ============================================================
+
+# --- WORD MANAGEMENT ---
+@tree.command(name="addword", description="Add a word to the filter [Staff]")
 @app_commands.describe(word="Word to ban")
 async def slash_addword(interaction: discord.Interaction, word: str):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("❌ No permission.", ephemeral=True)
-    gid = str(interaction.guild.id)
-    if gid not in automod_data: automod_data[gid] = []
-    if word.lower() not in automod_data[gid]:
-        automod_data[gid].append(word.lower())
+    if not await staff_only(interaction): return
+    word = word.lower().strip()
+    if not word:
+        return await interaction.response.send_message("❌ Can't be empty.", ephemeral=True)
+    config = get_guild_config(str(interaction.guild.id))
+    if word in config["words"]:
+        return await interaction.response.send_message(f"⚠️ `{word}` already filtered.", ephemeral=True)
+    config["words"].append(word)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
     await interaction.response.send_message(f"✅ Added `{word}` to filter.", ephemeral=True)
 
 @tree.command(name="removeword", description="Remove a word from the filter [Staff]")
 @app_commands.describe(word="Word to remove")
 async def slash_removeword(interaction: discord.Interaction, word: str):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("❌ No permission.", ephemeral=True)
-    gid = str(interaction.guild.id)
-    if gid in automod_data and word.lower() in automod_data[gid]:
-        automod_data[gid].remove(word.lower())
-        await interaction.response.send_message(f"✅ Removed `{word}` from filter.", ephemeral=True)
-    else:
-        await interaction.response.send_message(f"❌ `{word}` not in filter.", ephemeral=True)
+    if not await staff_only(interaction): return
+    word = word.lower().strip()
+    config = get_guild_config(str(interaction.guild.id))
+    if word not in config["words"]:
+        return await interaction.response.send_message(f"❌ `{word}` not in filter.", ephemeral=True)
+    config["words"].remove(word)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ Removed `{word}` from filter.", ephemeral=True)
 
 @tree.command(name="wordlist", description="View the auto-mod word filter [Staff]")
 async def slash_wordlist(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("❌ No permission.", ephemeral=True)
-    words = automod_data.get(str(interaction.guild.id), [])
-    embed = discord.Embed(title="🤖 AutoMod Word Filter", color=0xed4245)
-    embed.description = " · ".join(f"`{w}`" for w in words) if words else "No words in filter."
-    if words: embed.set_footer(text=f"{len(words)} word(s)")
+    if not await staff_only(interaction): return
+    config = get_guild_config(str(interaction.guild.id))
+
+    embed = discord.Embed(title="🤖 AutoMod Config", color=0xed4245)
+
+    words = config["words"]
+    phrases = config["phrases"]
+    patterns = config["patterns"]
+
+    embed.add_field(
+        name=f"🔤 Words ({len(words)})",
+        value=" · ".join(f"`{w}`" for w in words) if words else "*None*",
+        inline=False
+    )
+    embed.add_field(
+        name=f"📝 Phrases ({len(phrases)})",
+        value=" · ".join(f"`{p}`" for p in phrases) if phrases else "*None*",
+        inline=False
+    )
+    embed.add_field(
+        name=f"🔍 Regex ({len(patterns)})",
+        value=" · ".join(f"`{p}`" for p in patterns) if patterns else "*None*",
+        inline=False
+    )
+
+    toggles = []
+    if config["anti_invite"]: toggles.append("✅ Anti-Invite")
+    else: toggles.append("❌ Anti-Invite")
+    if config["anti_links"]: toggles.append("✅ Anti-Links")
+    else: toggles.append("❌ Anti-Links")
+    if config["anti_spam"]: toggles.append("✅ Anti-Spam")
+    else: toggles.append("❌ Anti-Spam")
+    if config["anti_duplicate"]: toggles.append("✅ Anti-Duplicate")
+    else: toggles.append("❌ Anti-Duplicate")
+
+    embed.add_field(name="🛡️ Toggles", value="\n".join(toggles), inline=False)
+
+    actions = config.get("actions", {})
+    action_display = " → ".join(f"`{k}`: {v}" for k, v in sorted(actions.items()))
+    embed.add_field(name="⚖️ Escalation", value=action_display, inline=False)
+    embed.add_field(
+        name="⚙️ Limits",
+        value=(
+            f"Caps: `{config['caps_threshold']}%` · "
+            f"Mentions: `{config['max_mentions']}` · "
+            f"Emojis: `{config['max_emojis']}` · "
+            f"Spam: `{config['spam_count']}msg/{config['spam_interval']}s` · "
+            f"Dupe: `{config['duplicate_count']}x`"
+        ),
+        inline=False
+    )
+
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
+# --- PHRASE MANAGEMENT ---
+@tree.command(name="addphrase", description="Add a phrase to the filter [Staff]")
+@app_commands.describe(phrase="Phrase to ban")
+async def slash_addphrase(interaction: discord.Interaction, phrase: str):
+    if not await staff_only(interaction): return
+    phrase = phrase.lower().strip()
+    config = get_guild_config(str(interaction.guild.id))
+    if phrase in config["phrases"]:
+        return await interaction.response.send_message(f"⚠️ Already filtered.", ephemeral=True)
+    config["phrases"].append(phrase)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ Added phrase `{phrase}`.", ephemeral=True)
+
+@tree.command(name="removephrase", description="Remove a phrase from the filter [Staff]")
+@app_commands.describe(phrase="Phrase to remove")
+async def slash_removephrase(interaction: discord.Interaction, phrase: str):
+    if not await staff_only(interaction): return
+    phrase = phrase.lower().strip()
+    config = get_guild_config(str(interaction.guild.id))
+    if phrase not in config["phrases"]:
+        return await interaction.response.send_message(f"❌ Not found.", ephemeral=True)
+    config["phrases"].remove(phrase)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ Removed phrase `{phrase}`.", ephemeral=True)
+
+# --- REGEX MANAGEMENT ---
+@tree.command(name="addpattern", description="Add a regex pattern [Staff]")
+@app_commands.describe(pattern="Regex pattern")
+async def slash_addpattern(interaction: discord.Interaction, pattern: str):
+    if not await staff_only(interaction): return
+    try:
+        re.compile(pattern)
+    except re.error as e:
+        return await interaction.response.send_message(f"❌ Invalid regex: `{e}`", ephemeral=True)
+    config = get_guild_config(str(interaction.guild.id))
+    if pattern in config["patterns"]:
+        return await interaction.response.send_message(f"⚠️ Already added.", ephemeral=True)
+    config["patterns"].append(pattern)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ Added pattern `{pattern}`.", ephemeral=True)
+
+@tree.command(name="removepattern", description="Remove a regex pattern [Staff]")
+@app_commands.describe(pattern="Regex pattern to remove")
+async def slash_removepattern(interaction: discord.Interaction, pattern: str):
+    if not await staff_only(interaction): return
+    config = get_guild_config(str(interaction.guild.id))
+    if pattern not in config["patterns"]:
+        return await interaction.response.send_message(f"❌ Not found.", ephemeral=True)
+    config["patterns"].remove(pattern)
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ Removed pattern.", ephemeral=True)
+
+# --- CONFIG TOGGLES ---
+@tree.command(name="automodconfig", description="Configure automod settings [Staff]")
+@app_commands.describe(
+    setting="Setting to change",
+    value="New value (true/false/number)"
+)
+@app_commands.choices(setting=[
+    app_commands.Choice(name="Anti-Invite", value="anti_invite"),
+    app_commands.Choice(name="Anti-Links", value="anti_links"),
+    app_commands.Choice(name="Anti-Spam", value="anti_spam"),
+    app_commands.Choice(name="Anti-Duplicate", value="anti_duplicate"),
+    app_commands.Choice(name="Caps Threshold %", value="caps_threshold"),
+    app_commands.Choice(name="Max Mentions", value="max_mentions"),
+    app_commands.Choice(name="Max Emojis", value="max_emojis"),
+    app_commands.Choice(name="Spam Count", value="spam_count"),
+    app_commands.Choice(name="Spam Interval (s)", value="spam_interval"),
+    app_commands.Choice(name="Duplicate Count", value="duplicate_count"),
+    app_commands.Choice(name="Log Channel", value="log_channel"),
+])
+async def slash_automodconfig(interaction: discord.Interaction, setting: str, value: str):
+    if not await staff_only(interaction): return
+    config = get_guild_config(str(interaction.guild.id))
+
+    bool_settings = {"anti_invite", "anti_links", "anti_spam", "anti_duplicate"}
+    int_settings = {"caps_threshold", "max_mentions", "max_emojis", "spam_count", "spam_interval", "duplicate_count"}
+
+    if setting in bool_settings:
+        config[setting] = value.lower() in ("true", "yes", "1", "on")
+    elif setting in int_settings:
+        try:
+            config[setting] = int(value)
+        except ValueError:
+            return await interaction.response.send_message("❌ Must be a number.", ephemeral=True)
+    elif setting == "log_channel":
+        config["log_channel"] = value.strip().lstrip("#").strip("<>")
+    else:
+        return await interaction.response.send_message("❌ Unknown setting.", ephemeral=True)
+
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(f"✅ `{setting}` → `{config[setting]}`", ephemeral=True)
+
+# --- ESCALATION MANAGEMENT ---
+@tree.command(name="setaction", description="Set escalation action for infraction level [Staff]")
+@app_commands.describe(
+    level="Infraction level (1-10)",
+    action="Action to take"
+)
+@app_commands.choices(action=[
+    app_commands.Choice(name="Delete only", value="delete"),
+    app_commands.Choice(name="Delete + Warn DM", value="delete+warn"),
+    app_commands.Choice(name="Mute 5 min", value="mute_5m"),
+    app_commands.Choice(name="Mute 10 min", value="mute_10m"),
+    app_commands.Choice(name="Mute 1 hour", value="mute_1h"),
+    app_commands.Choice(name="Mute 1 day", value="mute_1d"),
+    app_commands.Choice(name="Kick", value="kick"),
+    app_commands.Choice(name="Ban", value="ban"),
+])
+async def slash_setaction(interaction: discord.Interaction, level: int, action: str):
+    if not await staff_only(interaction): return
+    if level < 1 or level > 10:
+        return await interaction.response.send_message("❌ Level must be 1-10.", ephemeral=True)
+    config = get_guild_config(str(interaction.guild.id))
+    config["actions"][str(level)] = action
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(
+        f"✅ Infraction `#{level}` → `{action}`", ephemeral=True
+    )
+
+# --- EXEMPT ROLES/CHANNELS ---
+@tree.command(name="exemptrole", description="Toggle role exemption from automod [Staff]")
+@app_commands.describe(role="Role to exempt")
+async def slash_exemptrole(interaction: discord.Interaction, role: discord.Role):
+    if not await staff_only(interaction): return
+    config = get_guild_config(str(interaction.guild.id))
+    rid = str(role.id)
+    if rid in [str(r) for r in config["exempt_roles"]]:
+        config["exempt_roles"].remove(role.id)
+        msg = f"✅ `{role.name}` is no longer exempt."
+    else:
+        config["exempt_roles"].append(role.id)
+        msg = f"✅ `{role.name}` is now exempt."
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(msg, ephemeral=True)
+
+@tree.command(name="exemptchannel", description="Toggle channel exemption from automod [Staff]")
+@app_commands.describe(channel="Channel to exempt")
+async def slash_exemptchannel(interaction: discord.Interaction, channel: discord.TextChannel):
+    if not await staff_only(interaction): return
+    config = get_guild_config(str(interaction.guild.id))
+    cid = str(channel.id)
+    if cid in [str(c) for c in config["exempt_channels"]]:
+        config["exempt_channels"].remove(channel.id)
+        msg = f"✅ `#{channel.name}` is no longer exempt."
+    else:
+        config["exempt_channels"].append(channel.id)
+        msg = f"✅ `#{channel.name}` is now exempt."
+    automod_data[str(interaction.guild.id)] = config
+    save_automod()
+    await interaction.response.send_message(msg, ephemeral=True)
+
+# --- INFRACTION MANAGEMENT ---
+@tree.command(name="infractions", description="Check a user's infraction count [Staff]")
+@app_commands.describe(user="User to check")
+async def slash_infractions(interaction: discord.Interaction, user: discord.Member):
+    if not await staff_only(interaction): return
+    gid = str(interaction.guild.id)
+    uid = str(user.id)
+    count = user_infractions[gid].get(uid, 0)
+    embed = discord.Embed(title=f"📋 Infractions — {user}", color=0xed4245)
+    embed.add_field(name="Count", value=str(count), inline=True)
+    config = get_guild_config(gid)
+    actions = config.get("actions", {})
+    next_action = actions.get(str(count + 1), "default escalation")
+    embed.add_field(name="Next Action", value=next_action, inline=True)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@tree.command(name="clearinfractions", description="Reset a user's infractions [Staff]")
+@app_commands.describe(user="User to reset")
+async def slash_clearinfractions(interaction: discord.Interaction, user: discord.Member):
+    if not await staff_only(interaction): return
+    gid = str(interaction.guild.id)
+    uid = str(user.id)
+    user_infractions[gid][uid] = 0
+    await interaction.response.send_message(f"✅ Cleared infractions for `{user}`.", ephemeral=True)
+
+# --- RESET ---
+@tree.command(name="automodreset", description="Reset ALL automod config for this server [Staff]")
+async def slash_automodreset(interaction: discord.Interaction):
+    if not await staff_only(interaction): return
+    gid = str(interaction.guild.id)
+    if gid in automod_data:
+        del automod_data[gid]
+    save_automod()
+    await interaction.response.send_message("✅ Automod config reset to defaults.", ephemeral=True)
 
 # ============================================================
 # SLASH — STAFF PANEL

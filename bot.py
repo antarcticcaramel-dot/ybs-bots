@@ -2993,16 +2993,17 @@ async def slash_closeticket(interaction: discord.Interaction):
     except: pass
 
 # ============================================================
-# AUTOMOD — CONFIG & DATA (UNCHANGED LOGIC)
+# AUTOMOD — PERSISTENCE & HELPERS
 # ============================================================
 import json, os, re, unicodedata
 from collections import defaultdict
 from datetime import datetime, timedelta
 import discord
 from discord import app_commands
-from discord.ui import View, Button, Select, Modal, TextInput
+from discord.ui import View, Select, Modal, TextInput
 
 AUTOMOD_FILE = "automod_data.json"
+LOG_CHANNEL_NAME = "mod-log"  # change to your log channel name/id
 
 def load_automod():
     if os.path.exists(AUTOMOD_FILE):
@@ -3019,7 +3020,7 @@ user_infractions = defaultdict(lambda: defaultdict(int))
 user_messages = defaultdict(list)
 duplicate_tracker = defaultdict(list)
 
-def get_config(gid: str):
+def get_guild_config(gid: str) -> dict:
     defaults = {
         "words": [], "phrases": [], "patterns": [],
         "actions": {"1": "delete", "2": "delete+warn", "3": "mute_10m", "4": "kick", "5": "ban"},
@@ -3029,336 +3030,703 @@ def get_config(gid: str):
         "anti_spam": True, "spam_interval": 5, "spam_count": 5,
         "anti_duplicate": True, "duplicate_count": 3
     }
-    config = automod_data.get(gid, {})
-    for k, v in defaults.items():
-        config.setdefault(k, v)
-    return config
+    if gid not in automod_data:
+        automod_data[gid] = {}
+    for key, val in defaults.items():
+        automod_data[gid].setdefault(key, val)
+    return automod_data[gid]
 
-def save_config(gid, config):
-    automod_data[gid] = config
-    save_automod()
-
-# ============================================================
-# MODALS (Pop-up forms for input)
-# ============================================================
-class InputModal(Modal, title="AutoMod Input"):
-    def __init__(self, action_type, current_list=None):
-        super().__init__()
-        self.action_type = action_type
-        self.current_list = current_list or []
-        
-        label_map = {
-            "add_word": "Word to Ban",
-            "rem_word": "Word to Remove",
-            "add_phrase": "Phrase to Ban",
-            "rem_phrase": "Phrase to Remove",
-            "add_pattern": "Regex Pattern",
-            "rem_pattern": "Pattern to Remove",
-            "exempt_role": "Role ID to Exempt",
-            "exempt_channel": "Channel ID to Exempt"
-        }
-        
-        self.input_field = TextInput(
-            label=label_map.get(action_type, "Input"),
-            placeholder="Enter value here...",
-            required=True,
-            max_length=200
-        )
-        self.add_item(self.input_field)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        gid = str(interaction.guild.id)
-        config = get_config(gid)
-        val = self.input_field.value.strip()
-        msg = ""
-
-        try:
-            if self.action_type == "add_word":
-                if val.lower() in config["words"]: msg = "⚠️ Already exists."
-                else:
-                    config["words"].append(val.lower())
-                    msg = f"✅ Added `{val}`."
-            elif self.action_type == "rem_word":
-                if val.lower() in config["words"]:
-                    config["words"].remove(val.lower())
-                    msg = f"✅ Removed `{val}`."
-                else: msg = "❌ Not found."
-            
-            elif self.action_type == "add_phrase":
-                if val.lower() in config["phrases"]: msg = "⚠️ Already exists."
-                else:
-                    config["phrases"].append(val.lower())
-                    msg = f"✅ Added phrase."
-            elif self.action_type == "rem_phrase":
-                if val.lower() in config["phrases"]:
-                    config["phrases"].remove(val.lower())
-                    msg = "✅ Removed phrase."
-                else: msg = "❌ Not found."
-
-            elif self.action_type == "add_pattern":
-                re.compile(val) # Validate regex
-                if val in config["patterns"]: msg = "⚠️ Already exists."
-                else:
-                    config["patterns"].append(val)
-                    msg = "✅ Added pattern."
-            elif self.action_type == "rem_pattern":
-                if val in config["patterns"]:
-                    config["patterns"].remove(val)
-                    msg = "✅ Removed pattern."
-                else: msg = "❌ Not found."
-
-            elif self.action_type == "exempt_role":
-                rid = int(val)
-                if rid in config["exempt_roles"]:
-                    config["exempt_roles"].remove(rid)
-                    msg = "✅ Role un-exempted."
-                else:
-                    config["exempt_roles"].append(rid)
-                    msg = "✅ Role exempted."
-            
-            elif self.action_type == "exempt_channel":
-                cid = int(val)
-                if cid in config["exempt_channels"]:
-                    config["exempt_channels"].remove(cid)
-                    msg = "✅ Channel un-exempted."
-                else:
-                    config["exempt_channels"].append(cid)
-                    msg = "✅ Channel exempted."
-
-            save_config(gid, config)
-            await interaction.response.send_message(msg, ephemeral=True)
-        except ValueError:
-            await interaction.response.send_message("❌ Invalid ID format.", ephemeral=True)
-        except re.error:
-            await interaction.response.send_message("❌ Invalid Regex pattern.", ephemeral=True)
-
-# ============================================================
-# THE MAIN UI VIEW (Dropdown + Buttons)
-# ============================================================
-class AutoModPanel(View):
-    def __init__(self, gid: str, config: dict):
-        super().__init__(timeout=None)
-        self.gid = gid
-        self.config = config
-        self.update_components()
-
-    def update_components(self):
-        # Update Dropdown Options dynamically based on counts
-        options = [
-            discord.SelectOption(label="➕ Add Word", value="add_word", description="Ban a specific word"),
-            discord.SelectOption(label="➖ Remove Word", value="rem_word", description="Unban a word"),
-            discord.SelectOption(label="📝 Manage Phrases", value="phrases", description="Add/Remove multi-word phrases"),
-            discord.SelectOption(label="🔍 Manage Regex", value="patterns", description="Advanced pattern matching"),
-            discord.SelectOption(label="🛡️ Exemptions", value="exemptions", description="Whitelist Roles/Channels"),
-            discord.SelectOption(label="⚖️ Escalation Ladder", value="actions", description="Configure Warn/Mute/Ban levels"),
-            discord.SelectOption(label="📊 View Full Stats", value="stats", description="See all settings & counts"),
-            discord.SelectOption(label="🗑️ Reset Config", value="reset", description="Wipe all settings for this server"),
-        ]
-        self.select_menu.options = options
-        
-        # Update Button Labels
-        self.btn_invite.label = f"{'🚫' if self.config['anti_invite'] else '✅'} Invites"
-        self.btn_spam.label = f"{'🚫' if self.config['anti_spam'] else '✅'} Spam"
-        self.btn_caps.label = f"{'🚫' if self.config['caps_threshold'] > 0 else '✅'} Caps"
-
-    @discord.ui.select(placeholder="Select an action to manage...", options=[])
-    async def select_menu(self, interaction: discord.Interaction, select: Select):
-        choice = select.values[0]
-        
-        if choice in ["add_word", "rem_word", "add_phrase", "rem_phrase", "add_pattern", "rem_pattern", "exempt_role", "exempt_channel"]:
-            # Direct input modals
-            modal = InputModal(choice)
-            await interaction.response.send_modal(modal)
-        
-        elif choice == "phrases":
-            # Sub-menu for phrases could go here, but let's just show list + add/remove buttons
-            words = self.config["phrases"]
-            embed = discord.Embed(title="📝 Banned Phrases", color=0x5865F2)
-            embed.description = "\n".join([f"`{p}`" for p in words]) if words else "None"
-            view = View()
-            view.add_item(Button(label="Add Phrase", style=discord.ButtonStyle.green, custom_id="add_phrase_btn"))
-            view.add_item(Button(label="Remove Phrase", style=discord.ButtonStyle.red, custom_id="rem_phrase_btn"))
-            # Note: In a real persistent view, you'd handle these button callbacks globally. 
-            # For simplicity in this single-block script, we'll just open the modal directly via a trick:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            # Since we can't easily nest views in this snippet without global callback registration, 
-            # we will just trigger the modal immediately for simplicity in this specific implementation:
-            # (In a full bot, you'd register a global callback for 'add_phrase_btn')
-            # HERE IS THE QUICK FIX FOR THIS SINGLE FILE SCRIPT:
-            await interaction.followup.send("Type the phrase to ADD below:", ephemeral=True)
-            # Actually, let's stick to the main dropdown flow to keep it robust. 
-            # Let's just show the list and tell them to use the main dropdown again or simplify:
-            pass 
-
-        elif choice == "patterns":
-             embed = discord.Embed(title="🔍 Regex Patterns", color=0x5865F2)
-             embed.description = "\n".join([f"`{p}`" for p in self.config["patterns"]]) if self.config["patterns"] else "None"
-             await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        elif choice == "exemptions":
-            roles = [str(r) for r in self.config["exempt_roles"]]
-            chans = [str(c) for c in self.config["exempt_channels"]]
-            embed = discord.Embed(title="🛡️ Exemptions", color=0x5865F2)
-            embed.add_field(name="Exempt Roles IDs", value=", ".join(roles) or "None", inline=False)
-            embed.add_field(name="Exempt Channel IDs", value=", ".join(chans) or "None", inline=False)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        elif choice == "actions":
-            acts = self.config["actions"]
-            desc = "\n".join([f"**Strike {k}**: {v}" for k, v in sorted(acts.items())])
-            embed = discord.Embed(title="⚖️ Escalation Ladder", description=desc, color=0xFEE75C)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        elif choice == "stats":
-            # Re-generate the main stats embed
-            embed = discord.Embed(title="🤖 AutoMod Status", color=0x5865F2)
-            embed.add_field(name="Words", value=str(len(self.config["words"])), inline=True)
-            embed.add_field(name="Phrases", value=str(len(self.config["phrases"])), inline=True)
-            embed.add_field(name="Patterns", value=str(len(self.config["patterns"])), inline=True)
-            embed.add_field(name="Anti-Invite", value="ON" if self.config["anti_invite"] else "OFF", inline=True)
-            embed.add_field(name="Anti-Spam", value="ON" if self.config["anti_spam"] else "OFF", inline=True)
-            embed.add_field(name="Caps Limit", value=f"{self.config['caps_threshold']}%", inline=True)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        elif choice == "reset":
-            if str(self.gid) in automod_data:
-                del automod_data[str(self.gid)]
-                save_automod()
-                self.config = get_config(self.gid) # Reload defaults
-                self.update_components()
-                await interaction.response.edit_message(view=self, content="⚠️ **Config Reset to Defaults.**")
-            else:
-                await interaction.response.send_message("Already default.", ephemeral=True)
-
-    # Quick Toggle Buttons
-    @button(label="Toggle Invites", style=discord.ButtonStyle.secondary)
-    async def btn_invite(self, interaction: discord.Interaction, button: Button):
-        self.config['anti_invite'] = not self.config['anti_invite']
-        save_config(self.gid, self.config)
-        self.update_components()
-        await interaction.response.edit_message(view=self, content=f"Invites are now {'DISABLED' if self.config['anti_invite'] else 'ALLOWED'}.")
-
-    @button(label="Toggle Spam", style=discord.ButtonStyle.secondary)
-    async def btn_spam(self, interaction: discord.Interaction, button: Button):
-        self.config['anti_spam'] = not self.config['anti_spam']
-        save_config(self.gid, self.config)
-        self.update_components()
-        await interaction.response.edit_message(view=self, content=f"Spam filter is now {'ON' if self.config['anti_spam'] else 'OFF'}.")
-
-    @button(label="Toggle Caps", style=discord.ButtonStyle.secondary)
-    async def btn_caps(self, interaction: discord.Interaction, button: Button):
-        self.config['caps_threshold'] = 0 if self.config['caps_threshold'] > 0 else 70
-        save_config(self.gid, self.config)
-        self.update_components()
-        await interaction.response.edit_message(view=self, content=f"Caps filter is now {'ON' if self.config['caps_threshold'] > 0 else 'OFF'}.")
-
-# ============================================================
-# THE SINGLE COMMAND
-# ============================================================
-@tree.command(name="automod", description="Open the AutoMod Control Panel [Staff]")
-async def slash_automod(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("❌ No permission.", ephemeral=True)
-    
-    gid = str(interaction.guild.id)
-    config = get_config(gid)
-    
-    embed = discord.Embed(title="🤖 AutoMod Control Center", color=0x5865F2)
-    embed.description = "Use the dropdown below to manage filters, or buttons to toggle features."
-    
-    view = AutoModPanel(gid, config)
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-
-# ============================================================
-# MESSAGE LISTENER (YOUR ORIGINAL LOGIC - UNCHANGED)
-# ============================================================
-async def staff_only_check(member):
-    return member.guild_permissions.manage_messages
-
-def normalize_text(text):
+def normalize_text(text: str) -> str:
     text = unicodedata.normalize("NFKD", text)
-    leet_map = {"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "8": "b", "@": "a", "$": "s", "!": "i", "+": "t", "(": "c", "|": "l"}
-    text = "".join([leet_map.get(c, c) for c in text])
+    leet_map = {
+        "0": "o", "1": "i", "3": "e", "4": "a", "5": "s",
+        "7": "t", "8": "b", "@": "a", "$": "s", "!": "i",
+        "+": "t", "(": "c", "|": "l"
+    }
+    result = []
+    for char in text:
+        result.append(leet_map.get(char, char))
+    text = "".join(result)
     text = re.sub(r'(.)\1{2,}', r'\1', text)
     text = re.sub(r'[\u200b\u200c\u200d\ufeff]', '', text)
     return text.lower()
 
-async def execute_action(message, config, reason):
+async def get_log_channel(guild: discord.Guild, config: dict):
+    ch_id = config.get("log_channel")
+    if ch_id:
+        try:
+            return guild.get_channel(int(ch_id))
+        except:
+            pass
+    return discord.utils.get(guild.text_channels, name=LOG_CHANNEL_NAME)
+
+async def log_action(guild, user, action, reason, config):
+    channel = await get_log_channel(guild, config)
+    if not channel:
+        return
+    embed = discord.Embed(title="🤖 AutoMod Action", color=0xed4245, timestamp=datetime.utcnow())
+    embed.add_field(name="User", value=f"{user.mention} (`{user.id}`)", inline=True)
+    embed.add_field(name="Action", value=action, inline=True)
+    embed.add_field(name="Reason", value=reason, inline=False)
+    embed.set_thumbnail(url=user.display_avatar.url)
+    try:
+        await channel.send(embed=embed)
+    except discord.Forbidden:
+        pass
+
+def is_exempt(member: discord.Member, channel, config: dict) -> bool:
+    if member.guild_permissions.manage_messages:
+        return True
+    if any(str(r.id) in [str(r_id) for r_id in config.get("exempt_roles", [])] for r in member.roles):
+        return True
+    if str(channel.id) in [str(c_id) for c_id in config.get("exempt_channels", [])]:
+        return True
+    return False
+
+async def execute_action(message: discord.Message, config: dict, reason: str):
     gid = str(message.guild.id)
     uid = str(message.author.id)
     user_infractions[gid][uid] += 1
     count = user_infractions[gid][uid]
     actions = config.get("actions", {})
-    action = actions.get(str(count), "delete")
-    
-    try: await message.delete()
-    except: pass
+    action = actions.get(str(count), actions.get(str(max(int(k) for k in actions)), "delete"))
+
+    # Always delete the message first
+    try:
+        await message.delete()
+    except (discord.Forbidden, discord.NotFound):
+        pass
 
     member = message.author
-    if action == "delete+warn":
-        try: await member.send(f"⚠️ Warning: {reason}")
-        except: pass
+
+    if action == "delete":
+        pass
+
+    elif action == "delete+warn":
+        try:
+            await member.send(f"⚠️ **Warning** in **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+
     elif action.startswith("mute"):
-        dur_str = action.split("_")[1] if "_" in action else "10m"
-        unit = dur_str[-1]
-        amt = int(dur_str[:-1])
-        until = discord.utils.utcnow() + timedelta(**{"minutes": amt if unit=='m' else "hours": amt if unit=='h' else "days": amt})
-        try: await member.timeout(until, reason=reason)
-        except: pass
+        # FIXED: proper mute duration parsing
+        duration_str = action.split("_")[1] if "_" in action else "10m"
+        unit = duration_str[-1]
+        amount = int(duration_str[:-1])
+        durations = {"m": "minutes", "h": "hours", "d": "days"}
+        until = discord.utils.utcnow() + timedelta(**{durations.get(unit, "minutes"): amount})
+        try:
+            await member.timeout(until, reason=f"AutoMod: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.send(f"🔇 You've been muted in **{message.guild.name}** for: {reason}")
+        except discord.Forbidden:
+            pass
+
     elif action == "kick":
-        try: await member.kick(reason=reason)
-        except: pass
+        try:
+            await member.send(f"👢 You've been kicked from **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.kick(reason=f"AutoMod: {reason}")
+        except discord.Forbidden:
+            pass
+
     elif action == "ban":
-        try: await member.ban(reason=reason)
-        except: pass
-    
-    # Log logic omitted for brevity, same as your original
+        try:
+            await member.send(f"🔨 You've been banned from **{message.guild.name}**: {reason}")
+        except discord.Forbidden:
+            pass
+        try:
+            await member.ban(reason=f"AutoMod: {reason}", delete_message_days=1)
+        except discord.Forbidden:
+            pass
+
+    await log_action(message.guild, member, action, reason, config)
     return count, action
 
+# ============================================================
+# AUTOMOD — MAIN MESSAGE LISTENER
+# ============================================================
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
-        return await bot.process_commands(message)
+        await bot.process_commands(message)
+        return
 
     gid = str(message.guild.id)
-    config = get_config(gid)
+    config = get_guild_config(gid)
 
-    # Exemptions
-    if message.author.guild_permissions.manage_messages: return await bot.process_commands(message)
-    if any(r.id in config['exempt_roles'] for r in message.author.roles): return await bot.process_commands(message)
-    if message.channel.id in config['exempt_channels']: return await bot.process_commands(message)
+    if is_exempt(message.author, message.channel, config):
+        await bot.process_commands(message)
+        return
 
     content = message.content
     normalized = normalize_text(content)
-    reason = None
+    uid = str(message.author.id)
 
-    if any(w in normalized for w in config["words"]): reason = "Banned word"
-    elif any(p in normalized for p in config["phrases"]): reason = "Banned phrase"
-    elif any(re.search(pat, normalized) for pat in config["patterns"]): reason = "Bad Pattern"
-    elif config["anti_invite"] and re.search(r'(discord\.gg|discord\.com/invite)', content): reason = "Invite Link"
-    elif config["anti_links"] and re.search(r'https?://\S+', content): reason = "Link"
-    elif config["caps_threshold"] > 0:
-        alpha = [c for c in content if c.isalpha()]
-        if len(alpha) >= 8 and (sum(1 for c in alpha if c.isupper()) / len(alpha)) * 100 >= config["caps_threshold"]:
-            reason = "Excessive Caps"
-    elif len(message.mentions) > config["max_mentions"]: reason = "Too many mentions"
-    
-    # Simple Spam Check
-    if not reason and config["anti_spam"]:
-        now = datetime.utcnow().timestamp()
-        key = f"{gid}:{message.author.id}"
-        user_messages[key].append(now)
-        user_messages[key] = [t for t in user_messages[key] if now - t < config["spam_interval"]]
-        if len(user_messages[key]) > config["spam_count"]:
-            reason = "Spam"
-            user_messages[key] = []
+    # --- WORD FILTER ---
+    for word in config["words"]:
+        if word in normalized:
+            await execute_action(message, config, f"Filtered word detected (`{word}`)")
+            return
 
-    if reason:
-        await execute_action(message, config, reason)
+    # --- PHRASE FILTER ---
+    for phrase in config["phrases"]:
+        if phrase in normalized:
+            await execute_action(message, config, f"Filtered phrase detected (`{phrase}`)")
+            return
+
+    # --- REGEX PATTERNS ---
+    for pattern in config["patterns"]:
+        try:
+            if re.search(pattern, normalized):
+                await execute_action(message, config, f"Matched pattern (`{pattern}`)")
+                return
+        except re.error:
+            pass
+
+    # --- DISCORD INVITE FILTER ---
+    if config.get("anti_invite"):
+        if re.search(r'(discord\.gg|discord\.com/invite|discordapp\.com/invite)/\w+', content, re.IGNORECASE):
+            await execute_action(message, config, "Discord invite link detected")
+            return
+
+    # --- LINK FILTER ---
+    if config.get("anti_links"):
+        if re.search(r'https?://\S+', content):
+            await execute_action(message, config, "Unauthorized link")
+            return
+
+    # --- EXCESSIVE CAPS (>70% caps, min 8 chars) ---
+    threshold = config.get("caps_threshold", 70)
+    alpha = [c for c in content if c.isalpha()]
+    if len(alpha) >= 8:
+        caps_pct = (sum(1 for c in alpha if c.isupper()) / len(alpha)) * 100
+        if caps_pct >= threshold:
+            await execute_action(message, config, f"Excessive caps ({caps_pct:.0f}%)")
+            return
+
+    # --- EXCESSIVE MENTIONS ---
+    max_mentions = config.get("max_mentions", 5)
+    if len(message.mentions) > max_mentions:
+        await execute_action(message, config, f"Too many mentions ({len(message.mentions)})")
         return
-    
+
+    # --- EXCESSIVE EMOJIS ---
+    max_emojis = config.get("max_emojis", 10)
+    emoji_pattern = r'<a?:\w+:\d+>|[\U0001F600-\U0001F9FF]'
+    if len(re.findall(emoji_pattern, content)) > max_emojis:
+        await execute_action(message, config, "Too many emojis")
+        return
+
+    # --- SPAM DETECTION ---
+    if config.get("anti_spam"):
+        now = datetime.utcnow().timestamp()
+        interval = config.get("spam_interval", 5)
+        max_count = config.get("spam_count", 5)
+        key = f"{gid}:{uid}"
+        user_messages[key].append(now)
+        user_messages[key] = [t for t in user_messages[key] if now - t < interval]
+        if len(user_messages[key]) > max_count:
+            user_messages[key].clear()
+            await execute_action(message, config, f"Spam detected ({max_count}+ messages in {interval}s)")
+            return
+
+    # --- DUPLICATE MESSAGE DETECTION ---
+    if config.get("anti_duplicate"):
+        dup_count = config.get("duplicate_count", 3)
+        key = f"{gid}:{uid}"
+        duplicate_tracker[key].append(content.lower().strip())
+        duplicate_tracker[key] = duplicate_tracker[key][-dup_count + 1:]
+        if (len(duplicate_tracker[key]) >= dup_count - 1
+                and len(set(duplicate_tracker[key])) == 1
+                and len(content.strip()) > 0):
+            duplicate_tracker[key].clear()
+            await execute_action(message, config, f"Duplicate messages ({dup_count}x)")
+            return
+
     await bot.process_commands(message)
 
+# ============================================================
+# DROPDOWN PANEL VIEWS & MODALS (replaces all old slash cmds)
+# ============================================================
+class AutomodView(View):
+    def __init__(self, guild_id: str, config: dict):
+        super().__init__(timeout=300)
+        self.gid = guild_id
+        self.config = config
+        sel = Select(
+            placeholder="Choose an action…",
+            options=[
+                discord.SelectOption(label="Manage Words", emoji="🔤", value="words"),
+                discord.SelectOption(label="Manage Phrases", emoji="📝", value="phrases"),
+                discord.SelectOption(label="Manage Patterns", emoji="🔍", value="patterns"),
+                discord.SelectOption(label="View / Toggle Settings", emoji="⚙️", value="settings"),
+                discord.SelectOption(label="Escalation Actions", emoji="⚖️", value="actions"),
+                discord.SelectOption(label="Exemptions", emoji="🛡️", value="exemptions"),
+                discord.SelectOption(label="Infraction Tools", emoji="📋", value="infractions"),
+                discord.SelectOption(label="Full Config & Reset", emoji="📄", value="reset"),
+            ]
+        )
+        sel.callback = self.main_callback
+        self.add_item(sel)
+
+    async def main_callback(self, interaction: discord.Interaction):
+        choice = interaction.data['values'][0]
+        self.config = get_guild_config(self.gid)
+        if choice in ("words", "phrases", "patterns"):
+            await self._manage_list(interaction, choice)
+        elif choice == "settings":
+            await self._settings_menu(interaction)
+        elif choice == "actions":
+            await self._actions_menu(interaction)
+        elif choice == "exemptions":
+            await self._exemptions_menu(interaction)
+        elif choice == "infractions":
+            await self._infractions_menu(interaction)
+        elif choice == "reset":
+            await self._reset_menu(interaction)
+
+    async def _manage_list(self, interaction, category):
+        items = self.config[category]
+        desc = "\n".join(f"• `{i}`" for i in items) if items else "*None*"
+        embed = discord.Embed(title=f"Manage {category.capitalize()}", description=desc, color=0xed4245)
+        view = ManageListView(self.gid, category, self.config)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def _settings_menu(self, interaction):
+        c = self.config
+        log_msg = f"**Log Channel:** <#{c['log_channel']}>" if c.get('log_channel') else "**Log Channel:** not set"
+        desc = (
+            f"**Anti-Invite:** {'✅' if c['anti_invite'] else '❌'}\n"
+            f"**Anti-Links:** {'✅' if c['anti_links'] else '❌'}\n"
+            f"**Anti-Spam:** {'✅' if c['anti_spam'] else '❌'}\n"
+            f"**Anti-Duplicate:** {'✅' if c['anti_duplicate'] else '❌'}\n"
+            f"**Caps Threshold:** {c['caps_threshold']}%\n"
+            f"**Max Mentions:** {c['max_mentions']}\n"
+            f"**Max Emojis:** {c['max_emojis']}\n"
+            f"**Spam Interval:** {c['spam_interval']}s\n"
+            f"**Spam Count:** {c['spam_count']}\n"
+            f"**Duplicate Count:** {c['duplicate_count']}\n"
+            f"{log_msg}"
+        )
+        embed = discord.Embed(title="⚙️ Current Settings", description=desc, color=0xed4245)
+        embed.set_footer(text="Select a setting to change.")
+        view = SettingsView(self.gid)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def _actions_menu(self, interaction):
+        c = self.config
+        embed = discord.Embed(title="⚖️ Escalation Actions", color=0xed4245)
+        for lvl in sorted(c['actions'], key=lambda x: int(x)):
+            embed.add_field(name=f"Level {lvl}", value=f"`{c['actions'][lvl]}`", inline=True)
+        embed.set_footer(text="Select a level to change.")
+        view = ActionsView(self.gid, c['actions'])
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def _exemptions_menu(self, interaction):
+        c = self.config
+        roles = [f"<@&{r}>" for r in c['exempt_roles']]
+        channels = [f"<#{ch}>" for ch in c['exempt_channels']]
+        embed = discord.Embed(title="🛡️ Exemptions", color=0xed4245)
+        embed.add_field(name="Exempt Roles", value=", ".join(roles) if roles else "None", inline=False)
+        embed.add_field(name="Exempt Channels", value=", ".join(channels) if channels else "None", inline=False)
+        view = ExemptionsView(self.gid)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def _infractions_menu(self, interaction):
+        embed = discord.Embed(title="📋 Infraction Tools", description="Check or clear user infractions.", color=0xed4245)
+        view = InfractionsView(self.gid)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def _reset_menu(self, interaction):
+        c = self.config
+        embed = discord.Embed(title="📄 Full Config", color=0xed4245)
+        embed.add_field(name="Words", value=", ".join(f"`{w}`" for w in c['words']) or "None", inline=False)
+        embed.add_field(name="Phrases", value=", ".join(f"`{p}`" for p in c['phrases']) or "None", inline=False)
+        embed.add_field(name="Patterns", value=", ".join(f"`{p}`" for p in c['patterns']) or "None", inline=False)
+        actions_str = " → ".join(f"`{k}`:{v}" for k,v in sorted(c['actions'].items()))
+        embed.add_field(name="Actions", value=actions_str, inline=False)
+        embed.add_field(name="Toggles", value=f"Invite:{c['anti_invite']} Links:{c['anti_links']} Spam:{c['anti_spam']} Dupe:{c['anti_duplicate']}", inline=False)
+        embed.add_field(name="Limits", value=f"Caps:{c['caps_threshold']}% Mentions:{c['max_mentions']} Emojis:{c['max_emojis']} Spam:{c['spam_count']}/{c['spam_interval']}s Dupe:{c['duplicate_count']}x", inline=False)
+        view = ResetView(self.gid)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class ManageListView(View):
+    def __init__(self, guild_id, category, config):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        self.category = category
+        self.config = config
+        sel = Select(placeholder="Choose action…", options=[
+            discord.SelectOption(label=f"Add {category[:-1]}", value="add"),
+            discord.SelectOption(label=f"Remove {category[:-1]}", value="remove"),
+            discord.SelectOption(label="Back", value="back")
+        ])
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        val = interaction.data['values'][0]
+        if val == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        elif val == "add":
+            await interaction.response.send_modal(AddItemModal(self.gid, self.category))
+        else:
+            await interaction.response.send_modal(RemoveItemModal(self.gid, self.category))
+
+class AddItemModal(Modal, title="Add item"):
+    item = TextInput(label="Value", placeholder="Enter the item to add")
+    def __init__(self, guild_id, category):
+        super().__init__()
+        self.gid = guild_id
+        self.category = category
+
+    async def on_submit(self, interaction: discord.Interaction):
+        value = self.item.value.lower().strip()
+        if not value:
+            return await interaction.response.send_message("❌ Cannot be empty.", ephemeral=True)
+        config = get_guild_config(self.gid)
+        if value in config[self.category]:
+            return await interaction.response.send_message("⚠️ Already exists.", ephemeral=True)
+        config[self.category].append(value)
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(f"✅ Added `{value}`.", ephemeral=True)
+        items = config[self.category]
+        desc = "\n".join(f"• `{i}`" for i in items) if items else "*None*"
+        embed = discord.Embed(title=f"Manage {self.category.capitalize()}", description=desc, color=0xed4245)
+        view = ManageListView(self.gid, self.category, config)
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=view)
+
+class RemoveItemModal(Modal, title="Remove item"):
+    item = TextInput(label="Value", placeholder="Enter the item to remove")
+    def __init__(self, guild_id, category):
+        super().__init__()
+        self.gid = guild_id
+        self.category = category
+
+    async def on_submit(self, interaction: discord.Interaction):
+        value = self.item.value.lower().strip()
+        config = get_guild_config(self.gid)
+        if value not in config[self.category]:
+            return await interaction.response.send_message("❌ Not found.", ephemeral=True)
+        config[self.category].remove(value)
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(f"✅ Removed `{value}`.", ephemeral=True)
+        items = config[self.category]
+        desc = "\n".join(f"• `{i}`" for i in items) if items else "*None*"
+        embed = discord.Embed(title=f"Manage {self.category.capitalize()}", description=desc, color=0xed4245)
+        view = ManageListView(self.gid, self.category, config)
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=view)
+
+class SettingsView(View):
+    def __init__(self, guild_id):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        options = [
+            discord.SelectOption(label="Anti-Invite", value="anti_invite"),
+            discord.SelectOption(label="Anti-Links", value="anti_links"),
+            discord.SelectOption(label="Anti-Spam", value="anti_spam"),
+            discord.SelectOption(label="Anti-Duplicate", value="anti_duplicate"),
+            discord.SelectOption(label="Caps Threshold", value="caps_threshold"),
+            discord.SelectOption(label="Max Mentions", value="max_mentions"),
+            discord.SelectOption(label="Max Emojis", value="max_emojis"),
+            discord.SelectOption(label="Spam Interval", value="spam_interval"),
+            discord.SelectOption(label="Spam Count", value="spam_count"),
+            discord.SelectOption(label="Duplicate Count", value="duplicate_count"),
+            discord.SelectOption(label="Log Channel", value="log_channel"),
+            discord.SelectOption(label="Back", value="back"),
+        ]
+        sel = Select(placeholder="Choose a setting to change…", options=options)
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        setting = interaction.data['values'][0]
+        if setting == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        else:
+            await interaction.response.send_modal(SettingModal(self.gid, setting))
+
+class SettingModal(Modal):
+    value = TextInput(label="New value", placeholder="true/false or a number")
+    def __init__(self, guild_id, setting):
+        super().__init__(title=f"Change {setting}")
+        self.gid = guild_id
+        self.setting = setting
+
+    async def on_submit(self, interaction: discord.Interaction):
+        config = get_guild_config(self.gid)
+        bools = {"anti_invite","anti_links","anti_spam","anti_duplicate"}
+        ints = {"caps_threshold","max_mentions","max_emojis","spam_count","spam_interval","duplicate_count"}
+        val = self.value.value.strip().lower()
+        try:
+            if self.setting in bools:
+                config[self.setting] = val in ("true","yes","1","on")
+            elif self.setting in ints:
+                config[self.setting] = int(val)
+            elif self.setting == "log_channel":
+                ch = discord.utils.get(interaction.guild.text_channels, mention=val) or interaction.guild.get_channel(int(val.strip("#<>")))
+                if ch:
+                    config["log_channel"] = ch.id
+                else:
+                    return await interaction.response.send_message("❌ Channel not found.", ephemeral=True)
+            else:
+                return await interaction.response.send_message("❌ Unknown setting.", ephemeral=True)
+        except ValueError:
+            return await interaction.response.send_message("❌ Invalid value.", ephemeral=True)
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(f"✅ `{self.setting}` updated.", ephemeral=True)
+        # refresh settings embed
+        c = config
+        log_msg = f"**Log Channel:** <#{c['log_channel']}>" if c.get('log_channel') else "**Log Channel:** not set"
+        desc = (
+            f"**Anti-Invite:** {'✅' if c['anti_invite'] else '❌'}\n"
+            f"**Anti-Links:** {'✅' if c['anti_links'] else '❌'}\n"
+            f"**Anti-Spam:** {'✅' if c['anti_spam'] else '❌'}\n"
+            f"**Anti-Duplicate:** {'✅' if c['anti_duplicate'] else '❌'}\n"
+            f"**Caps Threshold:** {c['caps_threshold']}%\n"
+            f"**Max Mentions:** {c['max_mentions']}\n"
+            f"**Max Emojis:** {c['max_emojis']}\n"
+            f"**Spam Interval:** {c['spam_interval']}s\n"
+            f"**Spam Count:** {c['spam_count']}\n"
+            f"**Duplicate Count:** {c['duplicate_count']}\n"
+            f"{log_msg}"
+        )
+        embed = discord.Embed(title="⚙️ Current Settings", description=desc, color=0xed4245)
+        embed.set_footer(text="Select a setting to change.")
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=SettingsView(self.gid))
+
+class ActionsView(View):
+    def __init__(self, guild_id, actions):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        options = [discord.SelectOption(label=f"Level {lvl}", value=lvl) for lvl in sorted(actions, key=int)]
+        options.append(discord.SelectOption(label="Back", value="back"))
+        sel = Select(placeholder="Select a level to change…", options=options)
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        val = interaction.data['values'][0]
+        if val == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        else:
+            await interaction.response.send_modal(ActionModal(self.gid, val))
+
+class ActionModal(Modal):
+    def __init__(self, guild_id, level):
+        super().__init__(title=f"Set action for level {level}")
+        self.gid = guild_id
+        self.level = level
+        self.action = TextInput(label="Action", placeholder="delete, mute_5m, kick, ban...")
+        self.add_item(self.action)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        act = self.action.value.strip().lower()
+        valid = ("delete", "delete+warn", "mute_5m", "mute_10m", "mute_1h", "mute_1d", "kick", "ban")
+        if act not in valid:
+            return await interaction.response.send_message(f"❌ Invalid. Use: {', '.join(valid)}", ephemeral=True)
+        config = get_guild_config(self.gid)
+        config['actions'][self.level] = act
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(f"✅ Level {self.level} → `{act}`", ephemeral=True)
+        embed = discord.Embed(title="⚖️ Escalation Actions", color=0xed4245)
+        for lvl in sorted(config['actions'], key=lambda x: int(x)):
+            embed.add_field(name=f"Level {lvl}", value=f"`{config['actions'][lvl]}`", inline=True)
+        embed.set_footer(text="Select a level to change.")
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=ActionsView(self.gid, config['actions']))
+
+class ExemptionsView(View):
+    def __init__(self, guild_id):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        sel = Select(placeholder="Toggle exemption…", options=[
+            discord.SelectOption(label="Add/Remove Exempt Role", value="role"),
+            discord.SelectOption(label="Add/Remove Exempt Channel", value="channel"),
+            discord.SelectOption(label="Back", value="back")
+        ])
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        val = interaction.data['values'][0]
+        if val == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        elif val == "role":
+            await interaction.response.send_modal(ExemptRoleModal(self.gid))
+        else:
+            await interaction.response.send_modal(ExemptChannelModal(self.gid))
+
+class ExemptRoleModal(Modal, title="Toggle Exempt Role"):
+    role_id = TextInput(label="Role ID or mention", placeholder="e.g. @Mods or 123456789")
+    def __init__(self, guild_id):
+        super().__init__()
+        self.gid = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        val = self.role_id.value.strip().lstrip("<@&").rstrip(">")
+        try:
+            role = interaction.guild.get_role(int(val))
+        except ValueError:
+            return await interaction.response.send_message("❌ Invalid role ID.", ephemeral=True)
+        if not role:
+            return await interaction.response.send_message("❌ Role not found.", ephemeral=True)
+        config = get_guild_config(self.gid)
+        if role.id in config["exempt_roles"]:
+            config["exempt_roles"].remove(role.id)
+            msg = f"✅ `{role.name}` is no longer exempt."
+        else:
+            config["exempt_roles"].append(role.id)
+            msg = f"✅ `{role.name}` is now exempt."
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(msg, ephemeral=True)
+        roles = [f"<@&{r}>" for r in config['exempt_roles']]
+        channels = [f"<#{ch}>" for ch in config['exempt_channels']]
+        embed = discord.Embed(title="🛡️ Exemptions", color=0xed4245)
+        embed.add_field(name="Exempt Roles", value=", ".join(roles) if roles else "None", inline=False)
+        embed.add_field(name="Exempt Channels", value=", ".join(channels) if channels else "None", inline=False)
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=ExemptionsView(self.gid))
+
+class ExemptChannelModal(Modal, title="Toggle Exempt Channel"):
+    channel_id = TextInput(label="Channel ID or mention", placeholder="e.g. #general or 123456789")
+    def __init__(self, guild_id):
+        super().__init__()
+        self.gid = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        val = self.channel_id.value.strip().lstrip("<#").rstrip(">")
+        try:
+            channel = interaction.guild.get_channel(int(val))
+        except ValueError:
+            return await interaction.response.send_message("❌ Invalid channel ID.", ephemeral=True)
+        if not channel:
+            return await interaction.response.send_message("❌ Channel not found.", ephemeral=True)
+        config = get_guild_config(self.gid)
+        if channel.id in config["exempt_channels"]:
+            config["exempt_channels"].remove(channel.id)
+            msg = f"✅ `#{channel.name}` is no longer exempt."
+        else:
+            config["exempt_channels"].append(channel.id)
+            msg = f"✅ `#{channel.name}` is now exempt."
+        automod_data[self.gid] = config
+        save_automod()
+        await interaction.response.send_message(msg, ephemeral=True)
+        roles = [f"<@&{r}>" for r in config['exempt_roles']]
+        channels = [f"<#{ch}>" for ch in config['exempt_channels']]
+        embed = discord.Embed(title="🛡️ Exemptions", color=0xed4245)
+        embed.add_field(name="Exempt Roles", value=", ".join(roles) if roles else "None", inline=False)
+        embed.add_field(name="Exempt Channels", value=", ".join(channels) if channels else "None", inline=False)
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=ExemptionsView(self.gid))
+
+class InfractionsView(View):
+    def __init__(self, guild_id):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        sel = Select(placeholder="Choose action…", options=[
+            discord.SelectOption(label="Check User Infractions", value="check"),
+            discord.SelectOption(label="Clear User Infractions", value="clear"),
+            discord.SelectOption(label="Back", value="back")
+        ])
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        val = interaction.data['values'][0]
+        if val == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        elif val == "check":
+            await interaction.response.send_modal(InfractionModal(self.gid, mode="check"))
+        else:
+            await interaction.response.send_modal(InfractionModal(self.gid, mode="clear"))
+
+class InfractionModal(Modal):
+    user_id = TextInput(label="User ID or mention", placeholder="@User or 123456789")
+    def __init__(self, guild_id, mode):
+        super().__init__(title=f"{'Check' if mode == 'check' else 'Clear'} Infractions")
+        self.gid = guild_id
+        self.mode = mode
+
+    async def on_submit(self, interaction: discord.Interaction):
+        val = self.user_id.value.strip().lstrip("<@").lstrip("!").rstrip(">")
+        try:
+            uid = int(val)
+            user = interaction.guild.get_member(uid)
+        except ValueError:
+            return await interaction.response.send_message("❌ Invalid user ID.", ephemeral=True)
+        if not user:
+            return await interaction.response.send_message("❌ User not found.", ephemeral=True)
+        gid = self.gid
+        if self.mode == "check":
+            count = user_infractions[gid].get(str(uid), 0)
+            config = get_guild_config(gid)
+            next_act = config['actions'].get(str(count+1), "default escalation")
+            embed = discord.Embed(title=f"📋 Infractions — {user}", color=0xed4245)
+            embed.add_field(name="Count", value=str(count), inline=True)
+            embed.add_field(name="Next Action", value=next_act, inline=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        else:
+            user_infractions[gid][str(uid)] = 0
+            await interaction.response.send_message(f"✅ Cleared infractions for `{user}`.", ephemeral=True)
+        # refresh infractions view
+        embed = discord.Embed(title="📋 Infraction Tools", description="Check or clear user infractions.", color=0xed4245)
+        await interaction.followup.edit_message(interaction.message.id, embed=embed, view=InfractionsView(self.gid))
+
+class ResetView(View):
+    def __init__(self, guild_id):
+        super().__init__(timeout=180)
+        self.gid = guild_id
+        sel = Select(placeholder="⚠️ Danger Zone", options=[
+            discord.SelectOption(label="Reset All Automod Config", value="reset", emoji="⚠️"),
+            discord.SelectOption(label="Back", value="back")
+        ])
+        sel.callback = self.callback
+        self.add_item(sel)
+
+    async def callback(self, interaction: discord.Interaction):
+        val = interaction.data['values'][0]
+        if val == "back":
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage automod.", color=0xed4245)
+            await interaction.response.edit_message(embed=embed, view=AutomodView(self.gid, config))
+        else:
+            if self.gid in automod_data:
+                del automod_data[self.gid]
+                save_automod()
+            await interaction.response.send_message("✅ Automod config reset to defaults.", ephemeral=True)
+            config = get_guild_config(self.gid)
+            embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Everything reset. The panel is fresh.", color=0xed4245)
+            await interaction.followup.edit_message(interaction.message.id, embed=embed, view=AutomodView(self.gid, config))
+
+# ============================================================
+# SINGLE /automod COMMAND
+# ============================================================
+@tree.command(name="automod", description="Open the AutoMod control panel [Staff]")
+async def slash_automod(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.manage_messages:
+        return await interaction.response.send_message("❌ No permission.", ephemeral=True)
+    gid = str(interaction.guild.id)
+    config = get_guild_config(gid)
+    embed = discord.Embed(title="🤖 AutoMod Control Panel", description="Use the dropdown to manage everything.", color=0xed4245)
+    await interaction.response.send_message(embed=embed, view=AutomodView(gid, config), ephemeral=True)
 # ============================================================
 # SLASH — STAFF PANEL
 # ============================================================

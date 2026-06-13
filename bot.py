@@ -4238,126 +4238,147 @@ async def slash_mod_tools(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=ModToolsView(), ephemeral=True)
 
 # ============================================================
-# ROBLOX GROUP NOTIFIER (FAST VERSION)
+# ROBLOX GROUP NOTIFIER (ANTARCTIC CARAMEL)
+# Target: Group 35116281 -> Channel 1323070194586882173
 # ============================================================
+import aiohttp
+import asyncio
+import discord
 
-TARGET_GROUP_ID = 35116281  
-TARGET_CHANNEL_ID = 1323070194586882173
-PING_CONTENT = "@here"
+# --- CONFIGURATION (HARDCODED) ---
+TARGET_GROUP_ID = 35116281
+TARGET_CHANNEL_ID = 1323070194586882173  # ✅ Your Specific Channel
+PING_CONTENT = "@here" 
 
+# Tracking variables
 last_shirt_id = None
 last_announcement_id = None
-
+is_first_run = True 
 
 async def fetch_shirts(session, gid):
     try:
-        url = f"https://catalog.roblox.com/v1/search/items/details?category=1&limit=1&salesTypeFilter=1&creatorId={gid}"
+        url = f"https://catalog.roblox.com/v1/search/items/details?category=1&limit=5&salesTypeFilter=Ascending&creatorId={gid}"
         async with session.get(url) as resp:
             if resp.status == 200:
-                return (await resp.json()).get("data", [])
+                data = await resp.json()
+                return data.get("data", [])
     except Exception as e:
-        print("Shirt fetch error:", e)
+        print(f"❌ Shirt Fetch Error: {e}")
     return []
-
 
 async def fetch_announcements(session, gid):
     try:
         url = f"https://groups.roblox.com/v2/groups/{gid}/posts?limit=1"
         async with session.get(url) as resp:
             if resp.status == 200:
-                return (await resp.json()).get("data", [])
+                data = await resp.json()
+                return data.get("data", [])
     except Exception as e:
-        print("Announcement fetch error:", e)
+        print(f"❌ Announcement Fetch Error: {e}")
     return []
 
-
 async def roblox_notifier_task():
-    global last_shirt_id, last_announcement_id
+    global last_shirt_id, last_announcement_id, is_first_run
     await bot.wait_until_ready()
-
-    print("🔥 FAST Notifier Started")
+    
+    print(f"🍬 [START] Antarctic Caramel Notifier Initialized")
+    print(f"🍬 [INFO] Watching Group: {TARGET_GROUP_ID}")
+    print(f"🍬 [INFO] Posting to Channel: {TARGET_CHANNEL_ID}")
+    
+    # Verify Channel Exists
+    channel = bot.get_channel(TARGET_CHANNEL_ID)
+    if not channel:
+        print(f"❌ [CRITICAL] Channel {TARGET_CHANNEL_ID} not found! Is the bot in that server?")
+        return 
 
     async with aiohttp.ClientSession() as session:
-        while True:
+        while not bot.is_closed():
             try:
-                channel = bot.get_channel(TARGET_CHANNEL_ID)
-
-                if not channel:
-                    print("❌ Channel not found")
-                    await asyncio.sleep(10)
-                    continue
-
-                # ⚡ RUN BOTH REQUESTS AT SAME TIME
-                shirts_task = fetch_shirts(session, TARGET_GROUP_ID)
-                posts_task = fetch_announcements(session, TARGET_GROUP_ID)
-
-                shirts, posts = await asyncio.gather(shirts_task, posts_task)
-
-                # =============================
-                # CLOTHING
-                # =============================
+                # --- 1. CHECK CLOTHES ---
+                shirts = await fetch_shirts(session, TARGET_GROUP_ID)
+                
                 if shirts:
                     newest = shirts[0]
-                    curr_id = newest.get("id")
-
-                    if curr_id != last_shirt_id:
+                    curr_id = newest.get('id')
+                    name = newest.get('name', 'Unknown')
+                    
+                    # LOGIC: Post on first run OR if ID changed
+                    if is_first_run or (last_shirt_id is not None and curr_id != last_shirt_id):
+                        reason = "First Run Test" if is_first_run else "New Item Detected"
+                        print(f"✅ [SHIRT] Posting '{name}' ({reason})")
+                        
                         embed = discord.Embed(
-                            title="👕 New Drop!",
-                            description=f"**{newest.get('name')}**",
+                            title="👕 New Clothing Drop!",
+                            description=f"**{name}** is now available in the store!",
                             color=0x00b06f,
                             timestamp=discord.utils.utcnow()
                         )
-
-                        embed.add_field(
-                            name="Buy",
-                            value=f"https://www.roblox.com/catalog/{curr_id}",
-                            inline=False
-                        )
-
+                        img = newest.get('iconImageBaseUrl')
+                        if img: embed.set_thumbnail(url=f"{img}_v1.png")
+                        
+                        embed.add_field(name="💰 Price", value=f"R$ {newest.get('price', 'Free')}", inline=True)
+                        embed.add_field(name="🔗 Link", value=f"[Buy Now](https://www.roblox.com/catalog/{curr_id})", inline=False)
+                        embed.set_footer(text="Antarctic Caramel Store")
+                        
                         try:
                             await channel.send(content=PING_CONTENT, embed=embed)
-                            print("✅ Shirt posted")
+                        except discord.Forbidden:
+                            print("❌ [PERM] Bot cannot send messages/embeds in that channel.")
                         except Exception as e:
-                            print("Send error:", e)
+                            print(f"❌ [ERR] {e}")
+                    
+                    last_shirt_id = curr_id
 
-                        last_shirt_id = curr_id
-
-                # =============================
-                # ANNOUNCEMENTS (WALL POSTS)
-                # =============================
+                # --- 2. CHECK ANNOUNCEMENTS ---
+                posts = await fetch_announcements(session, TARGET_GROUP_ID)
+                
                 if posts:
-                    post = posts[0]
-                    post_id = post.get("id")
-
-                    if post_id != last_announcement_id:
-                        text = post.get("body", "")[:200]
+                    latest = posts[0]
+                    post_id = latest.get('id')
+                    body = latest.get('body', '')
+                    
+                    # LOGIC: Post on first run OR if ID changed
+                    if is_first_run or (last_announcement_id is not None and post_id != last_announcement_id):
+                        reason = "First Run Test" if is_first_run else "New Announcement"
+                        print(f"✅ [ANNOUNCE] Posting update ({reason})")
+                        
+                        clean_text = body.replace('\n', ' ').strip()
+                        if len(clean_text) > 250: clean_text = clean_text[:247] + "..."
 
                         embed = discord.Embed(
-                            title="📢 New Post",
-                            description=text,
+                            title="📢 New Group Announcement!",
+                            description=f"**{clean_text}**",
                             color=0x3498db,
                             timestamp=discord.utils.utcnow()
                         )
+                        embed.add_field(name="🔗 Read More", value=f"[View on Roblox](https://www.roblox.com/communities/{TARGET_GROUP_ID}/Antarctic-Caramel#!/about)", inline=False)
+                        embed.set_footer(text="Antarctic Caramel News")
 
                         try:
                             await channel.send(content=PING_CONTENT, embed=embed)
-                            print("✅ Announcement posted")
+                        except discord.Forbidden:
+                            print("❌ [PERM] Bot cannot send messages/embeds in that channel.")
                         except Exception as e:
-                            print("Send error:", e)
+                            print(f"❌ [ERR] {e}")
 
-                        last_announcement_id = post_id
+                    last_announcement_id = post_id
+
+                # Finish first run flag
+                if is_first_run:
+                    is_first_run = False
+                    print("ℹ️ [INFO] First run complete. Switching to 'New Items Only' mode.")
 
             except Exception as e:
-                print("Loop error:", e)
+                print(f"❌ [LOOP] Critical Error: {e}")
+            
+            await asyncio.sleep(60) # Check every 60 seconds
 
-            # ⚡ FAST CHECK (10 sec)
-            await asyncio.sleep(10)
-
-
+# Ensure this is inside your bot's on_ready event
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
-    asyncio.create_task(roblox_notifier_task())
+    print(f'✅ Bot Logged in as {bot.user}')
+    # Start the notifier task
+    bot.loop.create_task(roblox_notifier_task())
     
 # ============================================================
 # SLASH — SERVER MENU

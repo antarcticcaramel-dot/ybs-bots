@@ -4238,30 +4238,34 @@ async def slash_mod_tools(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=ModToolsView(), ephemeral=True)
 
 # ============================================================
-# ROBLOX GROUP NOTIFIER (ANTARCTIC CARAMEL ONLY)
+# ROBLOX GROUP NOTIFIER (ANTARCTIC CARAMEL)
+# Features: New Clothes + Group Announcements
 # ============================================================
 
 # --- CONFIGURATION ---
-TARGET_GROUP_ID = 35116281  # Antarctic Caramel
-TARGET_CHANNEL_ID = 1323070194586882173  # ⚠️ REPLACE THIS WITH YOUR CHANNEL ID WHERE NOTIFS GO
-PING_ROLE_OR_HERE = "@here"  # Change to "@everyone" or a role ID like "123456" if preferred
+TARGET_GROUP_ID = 35116281  
+TARGET_CHANNEL_ID = 1323070194586882173  # ⚠️ REPLACE WITH YOUR CHANNEL ID
+PING_CONTENT = "@here"  # Change to "@everyone" or "" if no ping wanted
 
-# Tracking to prevent duplicates on restart
-last_known_shirt_id = None
-last_known_status = None
+# Tracking variables
+last_shirt_id = None
+last_announcement_id = None
 
-async def get_group_details(session, gid):
+async def fetch_shirts(session, gid):
+    """Fetches latest shirts from catalog."""
     try:
-        async with session.get(f"https://groups.roblox.com/v1/groups/{gid}") as resp:
-            if resp.status == 200:
-                return await resp.json()
-    except: pass
-    return None
-
-async def get_group_shirts(session, gid):
-    try:
-        # Fetches latest items sorted by newest
         url = f"https://catalog.roblox.com/v1/search/items/details?category=1&limit=5&salesTypeFilter=Ascending&creatorId={gid}"
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("data", [])
+    except: pass
+    return []
+
+async def fetch_announcements(session, gid):
+    """Fetches the latest group announcement."""
+    try:
+        # API v2 for group wall/posts
+        url = f"https://groups.roblox.com/v2/groups/{gid}/posts?limit=1"
         async with session.get(url) as resp:
             if resp.status == 200:
                 data = await resp.json()
@@ -4270,82 +4274,99 @@ async def get_group_shirts(session, gid):
     return []
 
 async def roblox_notifier_task():
-    global last_known_shirt_id, last_known_status
+    global last_shirt_id, last_announcement_id
     await bot.wait_until_ready()
     
-    print(f"🍬 Antarctic Caramel Notifier started (Group: {TARGET_GROUP_ID})")
+    print(f"🍬 Antarctic Caramel Notifier Started (Group: {TARGET_GROUP_ID})")
     
     async with aiohttp.ClientSession() as session:
         while not bot.is_closed():
             try:
-                # 1. Get Channel
                 channel = bot.get_channel(TARGET_CHANNEL_ID)
                 if not channel:
                     await asyncio.sleep(60)
                     continue
 
-                # 2. Fetch Latest Shirts
-                shirts = await get_group_shirts(session, TARGET_GROUP_ID)
-                
+                # ==========================================
+                # 1. CHECK FOR NEW CLOTHES
+                # ==========================================
+                shirts = await fetch_shirts(session, TARGET_GROUP_ID)
                 if shirts:
                     newest = shirts[0]
-                    current_id = newest.get('id')
+                    curr_id = newest.get('id')
                     
-                    # Check if it's a NEW item
-                    if last_known_shirt_id is not None and current_id != last_known_shirt_id:
-                        
-                        # Build the Embed
+                    if last_shirt_id is not None and curr_id != last_shirt_id:
                         embed = discord.Embed(
-                            title="👕 New Drop Detected!",
-                            description=f"**{newest.get('name')}** has just been released in the Antarctic Caramel store!",
-                            color=0x00b06f, # Roblox Green
+                            title="👕 New Clothing Drop!",
+                            description=f"**{newest.get('name')}** is now available!",
+                            color=0x00b06f,
+                            timestamp=discord.utils.utcnow()
+                        )
+                        img = newest.get('iconImageBaseUrl')
+                        if img: embed.set_thumbnail(url=f"{img}_v1.png")
+                        
+                        embed.add_field(name="💰 Price", value=f"R$ {newest.get('price', 'Free')}", inline=True)
+                        embed.add_field(name="🔗 Link", value=f"[Buy Now](https://www.roblox.com/catalog/{curr_id})", inline=False)
+                        embed.set_footer(text="Antarctic Caramel Store")
+                        
+                        try:
+                            await channel.send(content=PING_CONTENT, embed=embed)
+                            print(f"✅ Posted Shirt: {newest.get('name')}")
+                        except Exception as e:
+                            print(f"Error posting shirt: {e}")
+                    
+                    last_shirt_id = curr_id
+
+                # ==========================================
+                # 2. CHECK FOR NEW ANNOUNCEMENTS
+                # ==========================================
+                posts = await fetch_announcements(session, TARGET_GROUP_ID)
+                if posts:
+                    latest_post = posts[0]
+                    post_id = latest_post.get('id')
+                    post_title = latest_post.get('body')[:100] # Title is often the first line of body in v2, or use 'title' if available in newer updates
+                    # Note: Roblox API v2 'posts' usually returns 'body' as the content. 
+                    # We treat the unique ID as the trigger.
+                    
+                    # Clean up body text (remove excess newlines for embed)
+                    clean_body = latest_post.get('body', '').replace('\n', ' ').strip()
+                    if len(clean_body) > 250:
+                        clean_body = clean_body[:247] + "..."
+
+                    if last_announcement_id is not None and post_id != last_announcement_id:
+                        
+                        embed = discord.Embed(
+                            title="📢 New Group Announcement!",
+                            description=f"**{clean_body}**",
+                            color=0x3498db, # Blue for announcements
                             timestamp=discord.utils.utcnow()
                         )
                         
-                        # Thumbnail
-                        img_url = newest.get('iconImageBaseUrl')
-                        if img_url:
-                            embed.set_thumbnail(url=f"{img_url}_v1.png") # Approximate high-res
+                        # Add a link to the group page since direct link to specific post is tricky
+                        embed.add_field(name="🔗 Read More", value=f"[View on Roblox](https://www.roblox.com/communities/{TARGET_GROUP_ID}/Antarctic-Caramel#!/about)", inline=False)
+                        embed.set_footer(text="Antarctic Caramel News")
                         
-                        # Fields
-                        embed.add_field(name="💰 Price", value=f"R$ {newest.get('price', 'Free')}", inline=True)
-                        embed.add_field(name="👤 Creator", value="Antarctic Caramel", inline=True)
-                        embed.add_field(name="🔗 Link", value=f"[View Item](https://www.roblox.com/catalog/{current_id})", inline=False)
-                        
-                        embed.set_footer(text="Antarctic Caramel Auto-Notifier", icon_url="https://tr.rbxcdn.com/180DAY-35116281-GroupIcon-Png/Png") # Generic group icon placeholder
+                        # Optional: Add Group Icon if you have the URL cached, otherwise generic
+                        # embed.set_thumbnail(url="GROUP_ICON_URL_HERE")
 
-                        # Send Message with Ping
                         try:
-                            await channel.send(content=f"{PING_ROLE_OR_HERE} A new item is out!", embed=embed)
-                            print(f"✅ Posted new shirt: {newest.get('name')}")
-                        except discord.Forbidden:
-                            print("❌ Cannot send message to channel (check permissions).")
+                            await channel.send(content=PING_CONTENT, embed=embed)
+                            print(f"✅ Posted Announcement ID: {post_id}")
                         except Exception as e:
-                            print(f"Error sending embed: {e}")
-                    
-                    # Update tracker
-                    last_known_shirt_id = current_id
+                            print(f"Error posting announcement: {e}")
 
-                # Optional: Check Group Status/Description changes (Uncomment if wanted)
-                # details = await get_group_details(session, TARGET_GROUP_ID)
-                # if details and details.get('description') != last_known_status:
-                #     ... logic to post status update ...
-                #     last_known_status = details.get('description')
+                    last_announcement_id = post_id
 
             except Exception as e:
-                print(f"Roblox Notifier Error: {e}")
+                print(f"Roblox Notifier Loop Error: {e}")
             
-            # Check every 60 seconds
-            await asyncio.sleep(60)
+            await asyncio.sleep(60) # Check every minute
 
-# Add this to your existing on_ready event
-# If you don't have an on_ready, create one. If you do, just add the task line inside it.
+# Ensure this task is started in your on_ready event
 @bot.event
 async def on_ready():
-    # Your existing on_ready code here...
-    print(f'Logged in as {bot.user}')
-    
-    # Start the notifier
+    # ... any other on_ready code ...
+    print(f'Bot Logged in as {bot.user}')
     bot.loop.create_task(roblox_notifier_task())
     
 # ============================================================

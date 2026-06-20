@@ -966,7 +966,7 @@ class ApplicationReviewView(View):
         await interaction.message.edit(content=f"✅ Accepted by {interaction.user.mention}", view=None)
         await interaction.response.send_message("✅ Accepted!", ephemeral=True)
 
-    @discord.ui.button(label="❌ Decline", style=discord.ButtonStyle.red)
+@discord.ui.button(label="❌ Decline", style=discord.ButtonStyle.red)
     async def decline(self, interaction, button):
         if not self.is_staff(interaction):
             return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
@@ -981,7 +981,7 @@ class ApplicationReviewView(View):
         await interaction.message.edit(content=f"❌ Declined by {interaction.user.mention}", view=None)
         await interaction.response.send_message("❌ Declined.", ephemeral=True)
 
-   @discord.ui.button(label="⏳ Interview", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="⏳ Interview", style=discord.ButtonStyle.blurple)
     async def interview(self, interaction, button):
         if not self.is_staff(interaction):
             return await interaction.response.send_message("❌ Staff only!", ephemeral=True)

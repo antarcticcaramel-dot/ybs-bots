@@ -3,263 +3,338 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YBS · {{ page|title }} · Dashboard</title>
-<!-- Icons & Fonts -->
+<title>YBS · {{ page|title }} · Control Panel</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* --- VARIABLES & RESET --- */
+/* ============================================================
+   DESIGN TOKENS
+   Display:  Space Grotesk  — headings, numerics, identity
+   Body:     Inter          — UI copy, labels, content
+   Mono:     JetBrains Mono — ids, timestamps, code-like data
+   ============================================================ */
 :root{
-  --bg:#05070a;--s1:#0b0e16;--s2:#111520;--s3:#181d2c;
-  --bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.12);--bd3:rgba(255,255,255,0.18);
-  --ac:#6d5dfc;--ac2:#9b8aff;--ac-g:rgba(109,93,252,0.15);
-  --gn:#00dc82;--rd:#fa5252;--yw:#fcc419;--cy:#22b8cf;--or:#ff922b;--pk:#e64980;
-  --tx:#c9ceeb;--tx2:#8a91b4;--mt:#535978;
-  --sw:260px;--r:14px;--rb:10px;
-  --shadow:0 10px 30px -10px rgba(0,0,0,0.5);
+  --bg:       #07080c;
+  --s0:       #0a0b11;
+  --s1:       #0d0f17;
+  --s2:       #12141e;
+  --s3:       #181b28;
+  --s4:       #1f2333;
+  --bd:       rgba(255,255,255,0.06);
+  --bd2:      rgba(255,255,255,0.11);
+  --bd3:      rgba(255,255,255,0.18);
+
+  --ac:       #5b5bf0;
+  --ac2:      #8c84ff;
+  --ac-soft:  rgba(91,91,240,0.14);
+  --ac-line:  rgba(91,91,240,0.32);
+
+  --gn:       #2bd47d;
+  --gn-soft:  rgba(43,212,125,0.13);
+  --rd:       #f1556c;
+  --rd-soft:  rgba(241,85,108,0.13);
+  --yw:       #f0b73f;
+  --yw-soft:  rgba(240,183,63,0.13);
+  --cy:       #38bdf8;
+  --cy-soft:  rgba(56,189,248,0.13);
+  --or:       #fb923c;
+  --or-soft:  rgba(251,146,60,0.13);
+  --pk:       #f472b6;
+  --pk-soft:  rgba(244,114,182,0.13);
+
+  --tx:       #e6e8f4;
+  --tx2:      #9398b8;
+  --mt:       #565c7c;
+
+  --sw:       268px;
+  --r-lg:     16px;
+  --r-md:     12px;
+  --r-sm:     8px;
+  --shadow:   0 16px 40px -16px rgba(0,0,0,0.6);
+  --shadow-sm:0 6px 16px -6px rgba(0,0,0,0.5);
+  --font-d:   'Space Grotesk', sans-serif;
+  --font-b:   'Inter', sans-serif;
+  --font-m:   'JetBrains Mono', monospace;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;overflow-x:hidden;line-height:1.5;scroll-behavior:smooth}
-button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:none;color:inherit}
+html,body{height:100%;font-family:var(--font-b);background:var(--bg);color:var(--tx);font-size:13px;overflow-x:hidden;line-height:1.55}
+body{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 12% -8%, rgba(91,91,240,0.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(56,189,248,0.05), transparent 55%);
+  background-attachment:fixed;
+}
+button{font-family:var(--font-b);cursor:pointer;border:none;background:none;color:inherit}
 a{text-decoration:none;color:inherit}
-::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar{width:7px;height:7px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--s3);border-radius:99px}
-::-webkit-scrollbar-thumb:hover{background:var(--bd2)}
-::selection{background:var(--ac-g);color:#fff}
+::-webkit-scrollbar-thumb{background:var(--s4);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--bd3)}
+::selection{background:var(--ac-line);color:#fff}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important}}
 
-/* --- LAYOUT --- */
+/* ============================================================
+   LAYOUT
+   ============================================================ */
 .wrap{display:flex;min-height:100vh}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
-.sb{width:var(--sw);background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:100;transition:transform .3s}
-.sb-brand{padding:20px 16px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.sb-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--ac),#a890ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;box-shadow:0 4px 15px rgba(109,93,252,0.3)}
-.sb-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.3px}
-.sb-tag{font-size:10px;color:var(--mt);margin-top:2px;font-weight:500}
 
-/* --- NAVIGATION --- */
-.sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
-.nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;padding:16px 12px 6px;display:flex;align-items:center;gap:6px}
-.nl i{font-size:12px;opacity:.5}
-.na{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rb);color:var(--tx2);width:100%;text-align:left;font-size:13px;font-weight:500;transition:all .2s;margin-bottom:2px;position:relative;overflow:hidden}
-.na:hover{background:var(--s2);color:var(--tx);transform:translateX(2px)}
-.na.on{background:var(--ac-g);color:var(--ac);font-weight:600}
-.na.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac);border-radius:0 4px 4px 0}
-.na i{font-size:18px;width:22px;flex-shrink:0;opacity:.7;transition:opacity .2s}
-.na.on i{opacity:1}
+/* --- SIDEBAR --- */
+.sb{width:var(--sw);background:linear-gradient(180deg,var(--s0),var(--s1));border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:100}
+.sb-brand{padding:22px 18px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd)}
+.sb-logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,var(--ac),#3b3bd0);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-d);font-weight:800;font-size:16px;color:#fff;box-shadow:0 6px 18px rgba(91,91,240,0.35);position:relative}
+.sb-logo::after{content:'';position:absolute;inset:0;border-radius:11px;border:1px solid rgba(255,255,255,0.25)}
+.sb-name{font-family:var(--font-d);font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.sb-tag{font-size:9.5px;color:var(--mt);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.9px}
+
+.sb-nav{flex:1;padding:14px 10px;overflow-y:auto}
+.nl{font-size:9.5px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.1px;padding:16px 10px 7px;display:flex;align-items:center;gap:6px}
+.na{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);color:var(--tx2);width:100%;text-align:left;font-size:12.5px;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative}
+.na:hover{background:var(--s2);color:var(--tx)}
+.na.on{background:var(--ac-soft);color:#fff;font-weight:600}
+.na.on::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:16px;background:var(--ac);border-radius:0 4px 4px 0}
+.na i{font-size:16.5px;width:20px;flex-shrink:0;opacity:.65;transition:opacity .15s}
+.na.on i{opacity:1;color:var(--ac2)}
 .na-lbl{flex:1}
-.na-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.05);color:var(--tx2)}
-.nba{background:var(--ac-g);color:var(--ac2)}
-.nbr{background:rgba(250,82,82,0.15);color:var(--rd)}
-.nbg{background:rgba(0,220,130,0.15);color:var(--gn)}
-.nby{background:rgba(252,196,25,0.15);color:var(--yw)}
-.nbc{background:rgba(34,184,207,0.15);color:var(--cy)}
-.nbp{background:rgba(230,73,128,0.15);color:var(--pk)}
+.na-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.05);color:var(--tx2);font-family:var(--font-m)}
+.nba{background:var(--ac-soft);color:var(--ac2)}
+.nbr{background:var(--rd-soft);color:var(--rd)}
+.nbg{background:var(--gn-soft);color:var(--gn)}
+.nby{background:var(--yw-soft);color:var(--yw)}
+.nbc{background:var(--cy-soft);color:var(--cy)}
+.nbp{background:var(--pk-soft);color:var(--pk)}
 
-/* --- SIDEBAR FOOTER --- */
-.sb-foot{padding:16px;border-top:1px solid var(--bd);flex-shrink:0;background:var(--s1)}
-.bot-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;transition:border-color .2s}
-.bot-pill:hover{border-color:var(--bd2)}
-.pulse{width:8px;height:8px;border-radius:50%;background:var(--gn);flex-shrink:0;position:relative}
-.pulse::after{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;border-radius:50%;border:2px solid var(--gn);animation:pulse 2s infinite}
-.pulse.off{background:var(--rd);animation:none}
+.sb-foot{padding:14px;border-top:1px solid var(--bd);flex-shrink:0;background:var(--s0)}
+.bot-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);padding:10px 12px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0;position:relative}
+.pulse::after{content:'';position:absolute;top:-3px;left:-3px;right:-3px;bottom:-3px;border-radius:50%;border:1.5px solid var(--gn);animation:pulse 2s infinite}
+.pulse.off{background:var(--rd)}
 .pulse.off::after{display:none}
-@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
-.bot-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
-.bot-st{font-size:10px;color:var(--gn);font-weight:500}
+@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.7);opacity:0}}
+.bot-name{font-family:var(--font-d);font-size:12.5px;font-weight:700;color:#fff}
+.bot-st{font-size:10px;color:var(--gn);font-weight:500;font-family:var(--font-m)}
 .bot-st.off{color:var(--rd)}
 
-/* --- TICKER --- */
-.ticker-wrap{border-bottom:1px solid var(--bd);overflow:hidden;height:32px;display:flex;align-items:center;background:linear-gradient(90deg,rgba(0,220,130,0.05),transparent);flex-shrink:0}
-.ticker-label{font-size:9px;font-weight:800;color:var(--gn);text-transform:uppercase;letter-spacing:1px;padding:0 10px;white-space:nowrap;border-right:1px solid var(--bd);height:100%;display:flex;align-items:center;gap:4px;flex-shrink:0;background:rgba(0,220,130,0.08)}
-.ticker-label i{font-size:10px;animation:spin 4s linear infinite}
-@keyframes spin{100%{transform:rotate(360deg)}}
+/* --- LIVE TICKER --- */
+.ticker-wrap{border-bottom:1px solid var(--bd);overflow:hidden;height:30px;display:flex;align-items:center;background:linear-gradient(90deg,rgba(43,212,125,0.06),transparent 60%);flex-shrink:0}
+.ticker-label{font-size:8.5px;font-weight:800;color:var(--gn);text-transform:uppercase;letter-spacing:1px;padding:0 10px;white-space:nowrap;border-right:1px solid var(--bd);height:100%;display:flex;align-items:center;gap:4px;flex-shrink:0;background:rgba(43,212,125,0.06)}
+.ticker-label i{font-size:9px}
 .ticker-scroll{flex:1;overflow:hidden;mask-image:linear-gradient(to right,transparent,black 5%,black 95%,transparent)}
-.ticker-inner{display:flex;align-items:center;height:32px;white-space:nowrap;animation:ticker 30s linear infinite}
-.ticker-item{font-size:11px;color:var(--tx2);padding:0 16px;display:flex;align-items:center;gap:6px}
-.ticker-item i{font-size:12px;color:var(--ac)}
+.ticker-inner{display:flex;align-items:center;height:30px;white-space:nowrap;animation:ticker 32s linear infinite}
+.ticker-item{font-size:10.5px;color:var(--tx2);padding:0 16px;display:flex;align-items:center;gap:6px;font-family:var(--font-m)}
+.ticker-item i{font-size:11px;color:var(--ac2);font-family:var(--font-b)}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
 /* --- TOPBAR --- */
-.topbar{background:rgba(11,14,22,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:90;flex-shrink:0}
-.tb-crumb{display:flex;align-items:center;gap:8px}
-.tbc-root{font-size:11px;color:var(--mt);font-weight:600}
+.topbar{background:rgba(10,11,17,0.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--bd);padding:14px 26px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:90;flex-shrink:0}
+.tb-crumb{display:flex;align-items:center;gap:8px;min-width:0}
+.tbc-root{font-size:10.5px;color:var(--mt);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
 .tbc-sep{font-size:10px;color:var(--mt);opacity:.5}
-.tbc-page{font-size:16px;font-family:'Syne',sans-serif;font-weight:800;color:#fff;letter-spacing:-.3px}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.tb-clock{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt);background:var(--s2);border:1px solid var(--bd);padding:6px 12px;border-radius:99px;font-weight:600}
-.tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:6px 12px;border-radius:var(--rb);font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .2s}
-.tb-btn:hover{border-color:var(--ac);color:var(--ac);background:var(--ac-g)}
+.tbc-page{font-size:17px;font-family:var(--font-d);font-weight:700;color:#fff;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.status-strip{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:99px;padding:5px 6px 5px 12px}
+.status-chip{display:flex;align-items:center;gap:5px;font-family:var(--font-m);font-size:10.5px;color:var(--tx2);padding-right:10px;border-right:1px solid var(--bd)}
+.status-chip:last-child{border-right:none;padding-right:0}
+.status-chip i{font-size:11px;color:var(--ac2)}
+.status-chip.live i{color:var(--gn)}
+.tb-clock{font-family:var(--font-m);font-size:11px;color:var(--tx2);font-weight:600;padding-right:2px}
+.tb-btn{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);padding:7px 13px;border-radius:99px;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .15s}
+.tb-btn:hover{border-color:var(--ac-line);color:#fff;background:var(--ac-soft)}
 .tb-btn i{font-size:14px}
-.guild-pill{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:6px 12px;font-size:12px;color:var(--tx2);cursor:pointer;transition:all .2s;font-weight:500}
-.guild-pill:hover{border-color:var(--ac);color:#fff;box-shadow:0 0 0 2px var(--ac-g)}
-.guild-pill .gp-name{font-weight:600;color:#fff;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.guild-pill{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:99px;padding:6px 14px 6px 8px;font-size:11.5px;color:var(--tx2);cursor:pointer;transition:all .15s;font-weight:500}
+.guild-pill:hover{border-color:var(--ac-line);box-shadow:0 0 0 3px var(--ac-soft)}
+.guild-pill-ic{width:22px;height:22px;border-radius:7px;background:linear-gradient(155deg,var(--ac),#3b3bd0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;font-family:var(--font-d)}
+.guild-pill .gp-name{font-weight:700;color:#fff;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* --- CONTENT GRID --- */
-.content{padding:24px;flex:1;overflow-y:auto}
-.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+/* ============================================================
+   CONTENT
+   ============================================================ */
+.content{padding:26px;flex:1;overflow-y:auto}
+.page-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.page-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ac2)}
+.page-eyebrow span{font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px}
+
+.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
 .sg.sg-4{grid-template-columns:repeat(4,1fr)}
 .sg.sg-2{grid-template-columns:repeat(2,1fr)}
 .sg.sg-6{grid-template-columns:repeat(6,1fr)}
-.sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:all .2s;cursor:default}
-.sc:hover{transform:translateY(-2px);border-color:var(--bd2);box-shadow:var(--shadow)}
-.sc-top-bar{position:absolute;top:0;left:0;right:0;height:3px}
-.sc-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:16px}
-.sc-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
-.sc-lbl{font-size:10px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-top:4px;font-weight:700}
 
-/* --- PANELS & LISTS --- */
-.g2{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-bottom:16px}
+.sc{background:linear-gradient(165deg,var(--s1),var(--s0));border:1px solid var(--bd);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;transition:all .2s}
+.sc:hover{transform:translateY(-2px);border-color:var(--bd2);box-shadow:var(--shadow-sm)}
+.sc-top-bar{position:absolute;top:0;left:0;right:0;height:2.5px}
+.sc-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:15px;border:1px solid var(--bd)}
+.sc-val{font-family:var(--font-d);font-size:25px;font-weight:700;color:#fff;letter-spacing:-.5px;line-height:1;font-variant-numeric:tabular-nums}
+.sc-lbl{font-size:9.5px;color:var(--mt);text-transform:uppercase;letter-spacing:.9px;margin-top:5px;font-weight:700}
+
+.g2{display:grid;grid-template-columns:1fr 330px;gap:16px;margin-bottom:16px}
 .g22{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:16px;transition:border-color .2s}
+
+.pn{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;transition:border-color .2s}
 .pn:hover{border-color:var(--bd2)}
-.ph{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02)}
-.pt{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
-.pt i{font-size:15px;color:var(--ac)}
-.al{max-height:380px;overflow-y:auto}
-.ai{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bd);transition:background .15s;position:relative}
+.pn.mb0{margin-bottom:0}
+.ph{padding:15px 19px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.015)}
+.pt{font-family:var(--font-d);font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;letter-spacing:-.1px}
+.pt i{font-size:15px;color:var(--ac2)}
+.ph-meta{font-size:10.5px;color:var(--mt);font-family:var(--font-m)}
+
+.al{max-height:390px;overflow-y:auto}
+.ai{display:flex;align-items:center;gap:12px;padding:12px 19px;border-bottom:1px solid var(--bd);transition:background .15s;position:relative}
 .ai:last-child{border-bottom:none}
 .ai:hover{background:var(--s2)}
-.ai.live-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gn);border-radius:0 4px 4px 0}
-.ai-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;background:var(--ac-g);color:var(--ac)}
+.ai.live-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2.5px;background:var(--gn)}
+.ai-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;background:var(--ac-soft);color:var(--ac2);border:1px solid var(--bd)}
 .ai-main{flex:1;min-width:0}
-.ai-act{font-size:13px;color:var(--tx);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-act{font-size:12.5px;color:var(--tx);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ai-det{font-size:11px;color:var(--mt);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ai-time{font-size:10px;color:var(--mt);white-space:nowrap;flex-shrink:0;font-family:'JetBrains Mono',monospace}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(0,220,130,0.7);animation:livePulse 1.5s infinite}
-@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(0,220,130,0.7)}70%{box-shadow:0 0 0 8px rgba(0,220,130,0)}100%{box-shadow:0 0 0 0 rgba(0,220,130,0)}}
+.ai-time{font-size:10px;color:var(--mt);white-space:nowrap;flex-shrink:0;font-family:var(--font-m)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gn);flex-shrink:0;box-shadow:0 0 0 0 rgba(43,212,125,0.7);animation:livePulse 1.6s infinite}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(43,212,125,0.6)}70%{box-shadow:0 0 0 7px rgba(43,212,125,0)}100%{box-shadow:0 0 0 0 rgba(43,212,125,0)}}
 
-/* --- MEMBER ROWS --- */
-.mr{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bd);transition:background .15s}
+/* --- MEMBER / LEADERBOARD ROWS --- */
+.mr{display:flex;align-items:center;gap:12px;padding:12px 19px;border-bottom:1px solid var(--bd);transition:background .15s}
 .mr:last-child{border-bottom:none}
 .mr:hover{background:var(--s2)}
-.rk{width:28px;text-align:center;font-size:13px;font-weight:800;color:var(--mt);flex-shrink:0}
-.av{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif;background:var(--ac)}
+.rk{width:26px;text-align:center;font-size:12.5px;font-weight:800;color:var(--mt);flex-shrink:0;font-family:var(--font-d)}
+.av{width:33px;height:33px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:var(--font-d);background:linear-gradient(155deg,var(--ac),#3b3bd0);border:1px solid rgba(255,255,255,0.15)}
 .m-info{flex:1;min-width:0}
-.m-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m-sub{font-size:11px;color:var(--mt);margin-top:2px}
+.m-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-sub{font-size:10.5px;color:var(--mt);margin-top:2px;font-family:var(--font-m)}
 .xpb{height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-top:6px}
-.xpf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),#a890ff)}
-.bg{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap}
-.bb{background:var(--ac-g);color:var(--ac2)}
-.bgg{background:rgba(0,220,130,0.15);color:var(--gn)}
-.br{background:rgba(250,82,82,0.15);color:var(--rd)}
-.by{background:rgba(252,196,25,0.15);color:var(--yw)}
-.bc{background:rgba(34,184,207,0.15);color:var(--cy)}
-.bp{background:rgba(230,73,128,0.15);color:var(--pk)}
-.bo{background:rgba(255,146,43,0.15);color:var(--or)}
+.xpf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.bg{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:9.5px;font-weight:700;white-space:nowrap;border:1px solid transparent;font-family:var(--font-m)}
+.bb{background:var(--ac-soft);color:var(--ac2);border-color:var(--ac-line)}
+.bgg{background:var(--gn-soft);color:var(--gn);border-color:rgba(43,212,125,0.3)}
+.br{background:var(--rd-soft);color:var(--rd);border-color:rgba(241,85,108,0.3)}
+.by{background:var(--yw-soft);color:var(--yw);border-color:rgba(240,183,63,0.3)}
+.bc{background:var(--cy-soft);color:var(--cy);border-color:rgba(56,189,248,0.3)}
+.bp{background:var(--pk-soft);color:var(--pk);border-color:rgba(244,114,182,0.3)}
+.bo{background:var(--or-soft);color:var(--or);border-color:rgba(251,146,60,0.3)}
 
 /* --- TABLES --- */
 .tbl{width:100%;border-collapse:collapse}
-.tbl th{padding:10px 18px;text-align:left;font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--bd)}
-.tbl td{padding:12px 18px;border-bottom:1px solid var(--bd);font-size:12px;color:var(--tx)}
+.tbl th{padding:10px 19px;text-align:left;font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,0.025);border-bottom:1px solid var(--bd)}
+.tbl td{padding:12px 19px;border-bottom:1px solid var(--bd);font-size:12px;color:var(--tx)}
 .tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr{transition:background .12s}
 .tbl tbody tr:hover td{background:rgba(255,255,255,0.02)}
-.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mt)}
+.mono{font-family:var(--font-m);font-size:11px;color:var(--mt)}
 
-/* --- CHARTS & WIDGETS --- */
-.cw{padding:18px}.cw canvas{max-height:200px;width:100% !important}
-.tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:4px;width:fit-content}
-.tab{padding:6px 16px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--mt);transition:all .2s;border:none;background:none}
-.tab.on{background:var(--ac);color:#fff;box-shadow:0 2px 8px rgba(109,93,252,0.3)}
+/* --- CHARTS / TABS / SEARCH --- */
+.cw{padding:18px}.cw canvas{max-height:210px;width:100% !important}
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:var(--s1);border:1px solid var(--bd);border-radius:11px;padding:4px;width:fit-content}
+.tab{padding:7px 18px;border-radius:7px;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--mt);transition:all .15s;border:none;background:none}
+.tab.on{background:var(--ac);color:#fff;box-shadow:0 3px 10px rgba(91,91,240,0.35)}
 .tab:hover:not(.on){color:var(--tx)}
-.srch{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 14px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.srch{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:9px 14px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:var(--font-b)}
 .srch:focus{border-color:var(--ac)}
 .srch::placeholder{color:var(--mt)}
-.empty{text-align:center;padding:40px 20px;color:var(--mt)}
-.empty i{font-size:42px;opacity:.15;display:block;margin-bottom:12px}
-.empty p{font-size:13px;line-height:1.6}
 
-/* --- CARDS (Notes, Bugs, etc) --- */
-.note-card{margin:8px 18px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;transition:border-color .2s}
+/* --- EMPTY STATE --- */
+.empty{text-align:center;padding:46px 20px;color:var(--mt)}
+.empty i{font-size:40px;opacity:.18;display:block;margin-bottom:12px}
+.empty p{font-size:12.5px;line-height:1.6;font-weight:500}
+
+/* --- CARDS: NOTES / BUGS / TICKETS / GIVEAWAYS --- */
+.note-card{margin:8px 19px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);padding:12px 14px;transition:border-color .2s}
 .note-card:hover{border-color:var(--bd2)}
-.note-by{font-size:11px;font-weight:700;color:var(--ac)}
-.note-time{font-size:10px;color:var(--mt)}
+.note-by{font-size:11px;font-weight:700;color:var(--ac2)}
+.note-time{font-size:10px;color:var(--mt);font-family:var(--font-m)}
 .note-text{font-size:12px;color:var(--tx);line-height:1.6;margin-top:6px}
-.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+
+.bug-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
 .bug-card:hover{border-color:var(--bd2)}
-.bug-hd{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
-.bug-id{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--rd);background:rgba(250,82,82,0.1);padding:3px 8px;border-radius:6px}
+.bug-hd{padding:14px 19px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bug-id{font-family:var(--font-m);font-size:10px;font-weight:700;color:var(--rd);background:var(--rd-soft);padding:3px 9px;border-radius:6px;border:1px solid rgba(241,85,108,0.25)}
 .bug-title{font-size:13px;font-weight:600;color:#fff;flex:1}
-.bug-body{padding:14px 18px}
+.bug-body{padding:14px 19px}
 .bug-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .bug-field label{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;font-weight:700}
 .bug-field p{font-size:12px;color:var(--tx)}
 .bug-field.full{grid-column:1/-1}
-.giveaway-card{margin:10px 18px;background:linear-gradient(135deg,rgba(230,73,128,0.08),rgba(109,93,252,0.08));border:1px solid rgba(230,73,128,0.2);border-radius:10px;padding:14px 16px}
-.gw-prize{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
-.gw-meta{font-size:11px;color:var(--mt)}
-.ticket-card{margin:8px 18px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}
+
+.giveaway-card{margin:10px 19px;background:linear-gradient(135deg,var(--pk-soft),var(--ac-soft));border:1px solid rgba(244,114,182,0.22);border-radius:var(--r-md);padding:14px 16px}
+.gw-prize{font-family:var(--font-d);font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.gw-meta{font-size:11px;color:var(--mt);font-family:var(--font-m)}
+
+.ticket-card{margin:8px 19px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);padding:12px 14px}
 .tc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.tc-id{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--gn)}
-.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:16px}
-.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:all .2s}
-.roblox-card:hover{border-color:var(--cy);transform:translateY(-2px);box-shadow:0 4px 20px rgba(34,184,207,0.1)}
-.rb-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
+.tc-id{font-family:var(--font-m);font-size:10px;font-weight:700;color:var(--gn)}
+
+.roblox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;margin-bottom:16px}
+.roblox-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);padding:16px;transition:all .2s}
+.roblox-card:hover{border-color:var(--cy);transform:translateY(-2px);box-shadow:0 8px 26px rgba(56,189,248,0.12)}
+.rb-name{font-family:var(--font-d);font-size:13px;font-weight:700;color:#fff}
 .rb-user{font-size:11px;color:var(--mt)}
-.rb-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cy);margin-top:4px}
-.rb-link{display:block;margin-top:12px;background:rgba(34,184,207,0.1);border:1px solid rgba(34,184,207,0.2);color:var(--cy);border-radius:8px;padding:8px;font-size:11px;font-weight:600;text-align:center;transition:all .2s}
-.rb-link:hover{background:var(--cy);color:#000}
-.word-list{display:flex;flex-wrap:wrap;gap:8px;padding:16px 18px}
-.word-tag{background:rgba(250,82,82,0.1);color:var(--rd);border:1px solid rgba(250,82,82,0.2);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
-.foot{text-align:center;padding:16px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s1);letter-spacing:.5px;flex-shrink:0}
-.page-section{display:none;animation:fadeIn .3s ease-out}
+.rb-id{font-family:var(--font-m);font-size:10px;color:var(--cy);margin-top:4px}
+.rb-link{display:block;margin-top:12px;background:var(--cy-soft);border:1px solid rgba(56,189,248,0.25);color:var(--cy);border-radius:var(--r-sm);padding:8px;font-size:11px;font-weight:700;text-align:center;transition:all .2s}
+.rb-link:hover{background:var(--cy);color:#04141c}
+
+.word-list{display:flex;flex-wrap:wrap;gap:8px;padding:16px 19px}
+.word-tag{background:var(--rd-soft);color:var(--rd);border:1px solid rgba(241,85,108,0.25);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--font-m)}
+
+.foot{text-align:center;padding:18px;color:var(--mt);font-size:10px;border-top:1px solid var(--bd);background:var(--s0);letter-spacing:.6px;flex-shrink:0;font-family:var(--font-m)}
+.page-section{display:none;animation:fadeIn .25s ease-out}
 .page-section.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .flex-col{display:flex;flex-direction:column;gap:12px}
 
-/* --- MODAL --- */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay{position:fixed;inset:0;background:rgba(4,5,9,0.82);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal-box{background:var(--s1);border:1px solid var(--bd2);border-radius:18px;padding:24px;width:440px;max-width:calc(100vw - 32px);max-height:85vh;overflow-y:auto;transform:scale(0.95);transition:transform .25s cubic-bezier(0.34,1.56,0.64,1)}
+.modal-box{background:var(--s1);border:1px solid var(--bd2);border-radius:18px;padding:24px;width:440px;max-width:calc(100vw - 32px);max-height:85vh;overflow-y:auto;transform:scale(0.96);transition:transform .22s cubic-bezier(0.34,1.56,0.64,1);box-shadow:var(--shadow)}
 .modal-overlay.open .modal-box{transform:scale(1)}
-.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.modal-title{font-family:var(--font-d);font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
 .modal-sub{font-size:11px;color:var(--mt);margin-bottom:18px;line-height:1.5}
-.guild-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;cursor:pointer;transition:all .2s;margin-bottom:8px}
-.guild-item:hover{border-color:var(--ac);background:rgba(109,93,252,0.08)}
-.guild-item.selected{border-color:var(--ac);background:var(--ac-g)}
-.guild-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--ac),#a890ff);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;overflow:hidden}
+.guild-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);cursor:pointer;transition:all .15s;margin-bottom:8px}
+.guild-item:hover{border-color:var(--ac-line);background:var(--ac-soft)}
+.guild-item.selected{border-color:var(--ac);background:var(--ac-soft)}
+.guild-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(155deg,var(--ac),#3b3bd0);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;font-family:var(--font-d);font-weight:700;overflow:hidden}
 .guild-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
-.guild-name{font-size:13px;font-weight:600;color:#fff}
-.guild-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mt);margin-top:2px}
-.guild-check{margin-left:auto;color:var(--ac);font-size:18px;opacity:0;transition:opacity .2s}
+.guild-name{font-size:12.5px;font-weight:600;color:#fff}
+.guild-id{font-family:var(--font-m);font-size:10px;color:var(--mt);margin-top:2px}
+.guild-check{margin-left:auto;color:var(--ac2);font-size:17px;opacity:0;transition:opacity .15s}
 .guild-item.selected .guild-check{opacity:1}
 .modal-input-wrap{position:relative;margin-bottom:16px}
-.modal-input-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--mt);pointer-events:none}
-.modal-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:9px 12px 9px 36px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.modal-input-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--mt);pointer-events:none}
+.modal-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:9px 12px 9px 36px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:var(--font-b)}
 .modal-input:focus{border-color:var(--ac)}
 .modal-btn-row{display:flex;gap:10px;margin-top:18px}
-.modal-btn{flex:1;padding:10px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal-btn{flex:1;padding:10px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
 .modal-btn-pri{background:var(--ac);color:#fff}
-.modal-btn-pri:hover{background:#8575ff;box-shadow:0 4px 12px rgba(109,93,252,0.4)}
+.modal-btn-pri:hover{background:#6c6cf5;box-shadow:0 6px 16px rgba(91,91,240,0.4)}
 .modal-btn-sec{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
 .modal-btn-sec:hover{color:var(--tx);border-color:var(--bd2)}
 
-/* --- CONFIG PANEL --- */
-.cfg-wrap{display:grid;grid-template-columns:220px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:16px;min-height:600px}
-.cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column;background:rgba(0,0,0,0.2)}
+/* ============================================================
+   CONFIG PANEL
+   ============================================================ */
+.cfg-wrap{display:grid;grid-template-columns:224px 1fr;gap:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;min-height:600px}
+.cfg-sidebar{border-right:1px solid var(--bd);display:flex;flex-direction:column;background:rgba(0,0,0,0.18)}
 .cfg-sidebar-head{padding:16px 16px 10px;font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1.2px;border-bottom:1px solid var(--bd)}
-.cfg-nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .2s;position:relative;border-left:3px solid transparent}
+.cfg-nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .15s;position:relative;border-left:2.5px solid transparent}
 .cfg-nav-item:hover{background:var(--s2);color:var(--tx)}
-.cfg-nav-item.cfg-on{background:var(--ac-g);color:var(--ac);border-left-color:var(--ac)}
+.cfg-nav-item.cfg-on{background:var(--ac-soft);color:#fff;border-left-color:var(--ac)}
 .cfg-nav-item i{font-size:15px;opacity:.7;flex-shrink:0}
-.cfg-nav-item.cfg-on i{opacity:1}
+.cfg-nav-item.cfg-on i{opacity:1;color:var(--ac2)}
 .cfg-nl{font-size:9px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px}
 .cfg-content{display:flex;flex-direction:column}
 .cfg-tab{display:none;flex:1;flex-direction:column}
 .cfg-tab.cfg-tab-on{display:flex}
 .cfg-tab-head{padding:18px 24px 14px;border-bottom:1px solid var(--bd);flex-shrink:0;background:rgba(255,255,255,0.01)}
-.cfg-tab-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.cfg-tab-title i{font-size:16px;color:var(--ac)}
+.cfg-tab-title{font-family:var(--font-d);font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cfg-tab-title i{font-size:16px;color:var(--ac2)}
 .cfg-tab-desc{font-size:11px;color:var(--mt);line-height:1.5}
-.cfg-guild-banner{margin:14px 24px 0;background:var(--ac-g);border:1px solid rgba(109,93,252,0.2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px}
-.cfg-guild-banner i{font-size:16px;color:var(--ac);flex-shrink:0}
+.cfg-guild-banner{margin:14px 24px 0;background:var(--ac-soft);border:1px solid var(--ac-line);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.cfg-guild-banner i{font-size:16px;color:var(--ac2);flex-shrink:0}
 .cfg-guild-banner-text{flex:1;font-size:11px;color:var(--tx2)}
-.cfg-guild-banner-text strong{color:var(--ac);font-size:12px}
-.cfg-guild-change{font-size:11px;color:var(--ac);font-weight:600;cursor:pointer;white-space:nowrap;background:rgba(109,93,252,0.15);padding:4px 10px;border-radius:6px;border:1px solid rgba(109,93,252,0.25);transition:all .2s}
-.cfg-guild-change:hover{background:rgba(109,93,252,0.25)}
+.cfg-guild-banner-text strong{color:#fff;font-size:12px}
+.cfg-guild-change{font-size:11px;color:var(--ac2);font-weight:700;cursor:pointer;white-space:nowrap;background:rgba(91,91,240,0.18);padding:4px 10px;border-radius:6px;border:1px solid var(--ac-line);transition:all .15s}
+.cfg-guild-change:hover{background:rgba(91,91,240,0.28)}
 .cfg-body{padding:20px 24px;flex:1;overflow-y:auto}
 .cfg-group{margin-bottom:24px}
 .cfg-group-label{font-size:9px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -275,58 +350,62 @@ a{text-decoration:none;color:inherit}
 .cfg-select-wrap i.dd-icon.hash{color:var(--cy)}
 .cfg-select-wrap i.dd-icon.shield{color:var(--gn)}
 .cfg-select-wrap i.dd-chevron{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--mt);pointer-events:none}
-.cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 30px 8px 32px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif;appearance:none;cursor:pointer}
+.cfg-dd{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 30px 8px 32px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:var(--font-b);appearance:none;cursor:pointer}
 .cfg-dd:focus{border-color:var(--ac)}
-.cfg-dd option{background:#111520;color:var(--tx)}
-.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rb);padding:8px 12px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.cfg-dd option{background:#12141e;color:var(--tx)}
+.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 12px;color:var(--tx);font-size:12px;width:100%;outline:none;transition:border-color .15s;font-family:var(--font-b)}
 .cfg-input:focus{border-color:var(--ac)}
 .cfg-input::placeholder{color:var(--mt)}
-.cfg-toggle{position:relative;width:44px;height:24px;background:var(--s3);border:1px solid var(--bd);border-radius:99px;cursor:pointer;transition:all .2s;flex-shrink:0}
-.cfg-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--mt);border-radius:50%;transition:all .2s}
+.cfg-toggle{position:relative;width:42px;height:23px;background:var(--s4);border:1px solid var(--bd);border-radius:99px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.cfg-toggle::after{content:'';position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;background:var(--mt);border-radius:50%;transition:all .15s}
 .cfg-toggle.on{background:var(--ac);border-color:var(--ac)}
-.cfg-toggle.on::after{left:23px;background:#fff}
-.cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--yw);color:#000;margin-left:6px}
+.cfg-toggle.on::after{left:22.5px;background:#fff}
+.cfg-dirty-badge{display:none;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--yw);color:#1a1200;margin-left:6px}
 .cfg-dirty-badge.show{display:inline-flex;align-items:center;gap:3px}
-.cfg-actions{padding:14px 24px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(255,255,255,0.02)}
-.cfg-btn{padding:8px 16px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'DM Sans',sans-serif}
+.cfg-actions{padding:14px 24px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;background:rgba(255,255,255,0.015)}
+.cfg-btn{padding:8px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;font-family:var(--font-b)}
 .cfg-btn i{font-size:14px}
 .cfg-btn-save{background:var(--ac);color:#fff}
-.cfg-btn-save:hover{background:#8575ff;box-shadow:0 4px 12px rgba(109,93,252,0.3)}
+.cfg-btn-save:hover{background:#6c6cf5;box-shadow:0 6px 16px rgba(91,91,240,0.35)}
 .cfg-btn-save:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(1)}
 .cfg-btn-secondary{background:var(--s2);color:var(--tx2);border:1px solid var(--bd)}
 .cfg-btn-secondary:hover{color:var(--tx);border-color:var(--bd2)}
-.cfg-save-status{font-size:11px;color:var(--mt);display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s;margin-left:auto}
+.cfg-save-status{font-size:11px;color:var(--mt);display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s;margin-left:auto;font-weight:600}
 .cfg-save-status.visible{opacity:1}
 .cfg-save-status.ok{color:var(--gn)}
 .cfg-save-status.err{color:var(--rd)}
-.cfg-danger-zone{background:rgba(250,82,82,0.05);border:1px solid rgba(250,82,82,0.15);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.cfg-danger-zone{background:var(--rd-soft);border:1px solid rgba(241,85,108,0.18);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px}
 .cfg-danger-title{font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .cfg-danger-desc{font-size:11px;color:var(--mt);margin-bottom:12px;line-height:1.5}
-.cfg-danger-btn{background:rgba(250,82,82,0.12);color:var(--rd);border:1px solid rgba(250,82,82,0.25);padding:8px 14px;border-radius:var(--rb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'DM Sans',sans-serif}
-.cfg-danger-btn:hover{background:rgba(250,82,82,0.22)}
+.cfg-danger-btn{background:rgba(241,85,108,0.14);color:var(--rd);border:1px solid rgba(241,85,108,0.28);padding:8px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;font-family:var(--font-b)}
+.cfg-danger-btn:hover{background:rgba(241,85,108,0.24)}
 .cfg-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.cfg-stat-mini{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;text-align:center}
-.cfg-stat-mini-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1}
-.cfg-stat-mini-lbl{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-top:4px}
+.cfg-stat-mini{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);padding:12px 14px;text-align:center}
+.cfg-stat-mini-val{font-family:var(--font-d);font-size:19px;font-weight:700;color:#fff;line-height:1}
+.cfg-stat-mini-lbl{font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.6px;margin-top:4px;font-weight:600}
 
-/* --- TOAST NOTIFICATIONS --- */
+/* ============================================================
+   TOAST
+   ============================================================ */
 .toast-container{position:fixed;bottom:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
-.toast{background:var(--s1);border:1px solid var(--bd2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:12px;min-width:260px;max-width:340px;transform:translateX(120%);transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:all;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+.toast{background:var(--s1);border:1px solid var(--bd2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:12px;min-width:260px;max-width:340px;transform:translateX(120%);transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);pointer-events:all;box-shadow:var(--shadow)}
 .toast.show{transform:translateX(0)}
-.toast.toast-ok{border-color:rgba(0,220,130,0.3)}
-.toast.toast-err{border-color:rgba(250,82,82,0.3)}
-.toast.toast-info{border-color:rgba(109,93,252,0.3)}
+.toast.toast-ok{border-color:rgba(43,212,125,0.32)}
+.toast.toast-err{border-color:rgba(241,85,108,0.32)}
+.toast.toast-info{border-color:var(--ac-line)}
 .toast i{font-size:16px;flex-shrink:0}
 .toast.toast-ok i{color:var(--gn)}
 .toast.toast-err i{color:var(--rd)}
-.toast.toast-info i{color:var(--ac)}
+.toast.toast-info i{color:var(--ac2)}
 .toast-msg{flex:1;color:var(--tx);font-weight:500}
-.toast-close{font-size:14px;color:var(--mt);cursor:pointer;padding:2px;transition:color .2s;background:none;border:none}
+.toast-close{font-size:14px;color:var(--mt);cursor:pointer;padding:2px;transition:color .15s;background:none;border:none}
 .toast-close:hover{color:var(--tx)}
 
-/* --- RESPONSIVE --- */
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media(max-width:1200px){.g2{grid-template-columns:1fr}.sg{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}.g22{grid-template-columns:1fr}.cfg-wrap{grid-template-columns:1fr}.cfg-sidebar{display:none}:root{--sw:220px}}
+@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}.g22{grid-template-columns:1fr}.cfg-wrap{grid-template-columns:1fr}.cfg-sidebar{display:none}:root{--sw:220px}.status-strip{display:none}}
 @media(max-width:640px){.sb{display:none}.sg{grid-template-columns:1fr}.content{padding:16px}}
 </style>
 </head>
@@ -337,8 +416,8 @@ a{text-decoration:none;color:inherit}
 <!-- GUILD SELECTOR MODAL -->
 <div class="modal-overlay" id="guildModal">
   <div class="modal-box">
-    <div class="modal-title">Select Server</div>
-    <div class="modal-sub">Choose which Discord server to manage configurations for.</div>
+    <div class="modal-title">Select server</div>
+    <div class="modal-sub">Choose which Discord server this control panel manages.</div>
     <div class="modal-input-wrap">
       <i class="ti ti-search"></i>
       <input class="modal-input" type="text" placeholder="Search servers..." oninput="filterGuilds(this.value)" id="guildSearch">
@@ -346,7 +425,7 @@ a{text-decoration:none;color:inherit}
     <div id="guildList"><div style="text-align:center;padding:24px;color:var(--mt);font-size:12px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i></div></div>
     <div class="modal-btn-row">
       <button class="modal-btn modal-btn-sec" onclick="closeGuildModal()">Cancel</button>
-      <button class="modal-btn modal-btn-pri" onclick="confirmGuild()"><i class="ti ti-check" style="font-size:14px"></i> Confirm Selection</button>
+      <button class="modal-btn modal-btn-pri" onclick="confirmGuild()"><i class="ti ti-check" style="font-size:14px"></i> Confirm selection</button>
     </div>
   </div>
 </div>
@@ -355,16 +434,15 @@ a{text-decoration:none;color:inherit}
 <!-- SIDEBAR -->
 <aside class="sb">
   <div class="sb-brand">
-    <div class="sb-logo">🎮</div>
+    <div class="sb-logo">YB</div>
     <div>
       <div class="sb-name">Young Boy Studios</div>
       <div class="sb-tag">Control Panel</div>
     </div>
   </div>
-  
-  <!-- LIVE TICKER -->
+
   <div class="ticker-wrap">
-    <div class="ticker-label"><i class="ti ti-bolt"></i> Live</div>
+    <div class="ticker-label"><i class="ti ti-broadcast"></i> Live</div>
     <div class="ticker-scroll">
       <div class="ticker-inner" id="tickerInner">
         {% for e in activity[:6] %}<div class="ticker-item"><i class="ti {{ e.icon }}"></i> {{ e.action }} · {{ e.time }}</div>{% endfor %}
@@ -377,30 +455,30 @@ a{text-decoration:none;color:inherit}
     <div class="nl"><i class="ti ti-layout-dashboard"></i> General</div>
     <button class="na {% if page=='home' %}on{% endif %}" onclick="showPage('home',this)"><i class="ti ti-layout-dashboard"></i><span class="na-lbl">Overview</span></button>
     <button class="na {% if page=='activity' %}on{% endif %}" onclick="showPage('activity',this)"><i class="ti ti-bolt"></i><span class="na-lbl">Live Activity</span><span class="na-badge nba">{{ activity|length }}</span></button>
-    
+
     <div class="nl"><i class="ti ti-users"></i> Members</div>
     <button class="na {% if page=='applications' %}on{% endif %}" onclick="showPage('applications',this)"><i class="ti ti-file-description"></i><span class="na-lbl">Applications</span><span class="na-badge nba">{{ app_count }}</span></button>
     <button class="na {% if page=='warnings' %}on{% endif %}" onclick="showPage('warnings',this)"><i class="ti ti-alert-triangle"></i><span class="na-lbl">Warnings</span>{% if warn_count %}<span class="na-badge nbr">{{ warn_count }}</span>{% endif %}</button>
     <button class="na {% if page=='notes' %}on{% endif %}" onclick="showPage('notes',this)"><i class="ti ti-notes"></i><span class="na-lbl">Staff Notes</span>{% if notes_count %}<span class="na-badge nbp">{{ notes_count }}</span>{% endif %}</button>
     <button class="na {% if page=='members' %}on{% endif %}" onclick="showPage('members',this)"><i class="ti ti-users"></i><span class="na-lbl">Members</span></button>
     <button class="na {% if page=='leaderboard' %}on{% endif %}" onclick="showPage('leaderboard',this)"><i class="ti ti-trophy"></i><span class="na-lbl">Leaderboard</span></button>
-    
+
     <div class="nl"><i class="ti ti-shield"></i> Moderation</div>
     <button class="na {% if page=='modlogs' %}on{% endif %}" onclick="showPage('modlogs',this)"><i class="ti ti-scroll"></i><span class="na-lbl">Mod Logs</span>{% if mod_log_count %}<span class="na-badge nbr">{{ mod_log_count }}</span>{% endif %}</button>
     <button class="na {% if page=='automod' %}on{% endif %}" onclick="showPage('automod',this)"><i class="ti ti-robot"></i><span class="na-lbl">Auto-Mod</span></button>
     <button class="na {% if page=='tickets' %}on{% endif %}" onclick="showPage('tickets',this)"><i class="ti ti-ticket"></i><span class="na-lbl">Tickets</span>{% if ticket_count %}<span class="na-badge nbg">{{ ticket_count }}</span>{% endif %}</button>
     <button class="na {% if page=='bugs' %}on{% endif %}" onclick="showPage('bugs',this)"><i class="ti ti-bug"></i><span class="na-lbl">Bug Reports</span>{% if bug_count %}<span class="na-badge nbr">{{ bug_count }}</span>{% endif %}</button>
-    
+
     <div class="nl"><i class="ti ti-calendar-event"></i> Events</div>
     <button class="na {% if page=='giveaways' %}on{% endif %}" onclick="showPage('giveaways',this)"><i class="ti ti-confetti"></i><span class="na-lbl">Giveaways</span>{% if giveaway_count %}<span class="na-badge nbp">{{ giveaway_count }}</span>{% endif %}</button>
     <button class="na {% if page=='voice' %}on{% endif %}" onclick="showPage('voice',this)"><i class="ti ti-microphone"></i><span class="na-lbl">Voice Log</span></button>
     <button class="na {% if page=='economy' %}on{% endif %}" onclick="showPage('economy',this)"><i class="ti ti-coin"></i><span class="na-lbl">Economy</span></button>
     <button class="na {% if page=='analytics' %}on{% endif %}" onclick="showPage('analytics',this)"><i class="ti ti-chart-bar"></i><span class="na-lbl">Analytics</span></button>
-    
+
     <div class="nl"><i class="ti ti-brand-google-play"></i> Roblox</div>
     <button class="na {% if page=='roblox' %}on{% endif %}" onclick="showPage('roblox',this)"><i class="ti ti-brand-google-play"></i><span class="na-lbl">Roblox Profiles</span><span class="na-badge nbc">{{ roblox_count }}</span></button>
     <button class="na {% if page=='premium' %}on{% endif %}" onclick="showPage('premium',this)"><i class="ti ti-crown"></i><span class="na-lbl">Premium</span>{% if premium_count %}<span class="na-badge nby">{{ premium_count }}</span>{% endif %}</button>
-    
+
     <div class="nl"><i class="ti ti-settings"></i> System</div>
     <button class="na {% if page=='config' %}on{% endif %}" onclick="showPage('config',this)"><i class="ti ti-settings-2"></i><span class="na-lbl">Configuration</span><span class="na-badge nbg">Live</span></button>
   </nav>
@@ -410,13 +488,13 @@ a{text-decoration:none;color:inherit}
       <div class="pulse {% if not bot_online %}off{% endif %}"></div>
       <div>
         <div class="bot-name">{{ bot_name }}</div>
-        <div class="bot-st {% if not bot_online %}off{% endif %}">{{ 'Online · ' + uptime if uptime else 'Offline' }}</div>
+        <div class="bot-st {% if not bot_online %}off{% endif %}">{{ 'ONLINE · ' + uptime if uptime else 'OFFLINE' }}</div>
       </div>
     </div>
   </div>
 </aside>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 <div class="main">
   <div class="topbar">
     <div class="tb-crumb">
@@ -425,9 +503,14 @@ a{text-decoration:none;color:inherit}
       <span class="tbc-page" id="pageTitle">{{ page|title }}</span>
     </div>
     <div class="tb-right">
-      <div class="guild-pill" onclick="openGuildModal()" id="guildPill" title="Switch Server">
-        <i class="ti ti-server"></i>
-        <span class="gp-name" id="guildPillName">No Server</span>
+      <div class="status-strip">
+        <div class="status-chip live"><i class="ti ti-circle-filled" style="font-size:7px"></i> {{ 'ONLINE' if bot_online else 'OFFLINE' }}</div>
+        <div class="status-chip"><i class="ti ti-clock"></i> {{ uptime or '—' }}</div>
+        <div class="status-chip"><i class="ti ti-server-2"></i> v1</div>
+      </div>
+      <div class="guild-pill" onclick="openGuildModal()" id="guildPill" title="Switch server">
+        <div class="guild-pill-ic" id="guildPillIc">?</div>
+        <span class="gp-name" id="guildPillName">No server</span>
         <i class="ti ti-chevron-down" style="font-size:10px;opacity:.5"></i>
       </div>
       <div class="tb-clock" id="liveClock">00:00:00</div>
@@ -437,15 +520,16 @@ a{text-decoration:none;color:inherit}
 
   <div class="content">
 
-    <!-- HOME PAGE -->
+    <!-- HOME -->
     <div class="page-section {% if page=='home' %}active{% endif %}" id="sec-home">
+      <div class="page-eyebrow"><div class="dot"></div><span>System overview</span></div>
       <div class="sg">
-        {% for icon,lbl,val,col in [('ti-file-description','Applications',app_count,'#6d5dfc'),('ti-alert-triangle','Warnings',warn_count,'#fa5252'),('ti-ticket','Open Tickets',ticket_count,'#00dc82'),('ti-users','XP Members',xp_count,'#fcc419'),('ti-coin','Eco Users',eco_count,'#22b8cf'),('ti-scroll','Mod Actions',mod_log_count,'#ff922b'),('ti-bug','Bug Reports',bug_count,'#fa5252'),('ti-brand-google-play','Roblox Linked',roblox_count,'#22b8cf'),('ti-crown','Premium',premium_count,'#fcc419'),('ti-confetti','Giveaways',giveaway_count,'#e64980')] %}
-        <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}20"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
+        {% for icon,lbl,val,col in [('ti-file-description','Applications',app_count,'#5b5bf0'),('ti-alert-triangle','Warnings',warn_count,'#f1556c'),('ti-ticket','Open Tickets',ticket_count,'#2bd47d'),('ti-users','XP Members',xp_count,'#f0b73f'),('ti-coin','Eco Users',eco_count,'#38bdf8'),('ti-scroll','Mod Actions',mod_log_count,'#fb923c'),('ti-bug','Bug Reports',bug_count,'#f1556c'),('ti-brand-google-play','Roblox Linked',roblox_count,'#38bdf8'),('ti-crown','Premium',premium_count,'#f0b73f'),('ti-confetti','Giveaways',giveaway_count,'#f472b6')] %}
+        <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}1c;border-color:{{ col }}33"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
         {% endfor %}
       </div>
       <div class="g2">
-        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Live Activity</div></div>
+        <div class="pn mb0"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Live Activity</div><span class="ph-meta">real-time feed</span></div>
           <div class="al">{% for e in activity[:12] %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico"><i class="ti {{ e.icon }}"></i></div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No recent activity.</p></div>{% endfor %}</div>
         </div>
         <div class="flex-col">
@@ -461,41 +545,41 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ACTIVITY PAGE -->
+    <!-- ACTIVITY -->
     <div class="page-section {% if page=='activity' %}active{% endif %}" id="sec-activity">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div><span style="font-size:11px;color:var(--mt)">{{ activity|length }} events</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-bolt"></i>Full Activity Log</div><span class="ph-meta">{{ activity|length }} events</span></div>
         <div class="al" style="max-height:none">{% for e in activity %}<div class="ai {% if loop.first %}live-row{% endif %}">{% if loop.first %}<div class="live-dot"></div>{% endif %}<div class="ai-ico"><i class="ti {{ e.icon }}"></i></div><div class="ai-main"><div class="ai-act">{{ e.action }}</div><div class="ai-det">{{ e.detail }}</div></div><div class="ai-time">{{ e.time }}</div></div>{% else %}<div class="empty"><i class="ti ti-bolt"></i><p>No activity recorded.</p></div>{% endfor %}</div>
       </div>
     </div>
 
-    <!-- APPLICATIONS PAGE -->
+    <!-- APPLICATIONS -->
     <div class="page-section {% if page=='applications' %}active{% endif %}" id="sec-applications">
       {% if applications %}{% for uid, a in applications.items() %}{% set sc={'accepted':'bgg','declined':'br','interview':'by','pending':'bb'}.get(a.status,'bb') %}
-      <div class="pn"><div class="ph"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="background:var(--ac);width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div><div><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div><div style="font-size:11px;color:var(--mt);margin-top:2px">Status: <span class="bg {{ sc }}">{{ a.status|title }}</span></div></div></div><span class="bg bb">{{ a.role }}</span></div>
-        <div style="padding:16px 18px"><div class="bug-fields"><div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div><div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div><div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div><div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div><div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div></div></div>
+      <div class="pn"><div class="ph"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="width:36px;height:36px;font-size:14px">{{ a.real_name[0]|upper if a.real_name else '?' }}</div><div><div style="font-family:var(--font-d);font-size:14px;font-weight:700;color:#fff">{{ a.real_name }} <span style="color:var(--mt);font-weight:400;font-size:12px">· {{ a.roblox_name }}</span></div><div style="font-size:11px;color:var(--mt);margin-top:2px">Status: <span class="bg {{ sc }}">{{ a.status|title }}</span></div></div></div><span class="bg bb">{{ a.role }}</span></div>
+        <div style="padding:16px 19px"><div class="bug-fields"><div class="bug-field"><label>Age</label><p>{{ a.age }}</p></div><div class="bug-field"><label>Role</label><p>{{ a.role }}</p></div><div class="bug-field"><label>Portfolio</label><p>{{ a.portfolio or '—' }}</p></div><div class="bug-field full"><label>Experience</label><p>{{ a.experience }}</p></div><div class="bug-field full"><label>Why Join + Availability</label><p>{{ a.why_join }}</p></div></div></div>
       </div>{% endfor %}{% else %}<div class="pn"><div class="empty"><i class="ti ti-file-description"></i><p>No applications submitted yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- WARNINGS PAGE -->
+    <!-- WARNINGS -->
     <div class="page-section {% if page=='warnings' %}active{% endif %}" id="sec-warnings">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div><span style="font-size:11px;color:var(--mt)">{{ warnings|length }} users warned</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-alert-triangle"></i>All Warnings</div><span class="ph-meta">{{ warnings|length }} users warned</span></div>
         {% if warnings %}<table class="tbl"><thead><tr><th>User ID</th><th>Total</th><th>#</th><th>Reason</th><th>By</th><th>Date</th></tr></thead><tbody>
         {% for uid, wlist in warnings.items() %}{% for w in wlist %}<tr><td class="mono">{{ uid }}</td><td>{% if loop.first %}<span class="bg {% if wlist|length >= 3 %}br{% else %}by{% endif %}">{{ wlist|length }} total</span>{% endif %}</td><td style="color:var(--mt)">#{{ loop.index }}</td><td>{{ w.reason }}</td><td style="color:var(--mt)">{{ w.by }}</td><td class="mono">{{ w.time[:10] }}</td></tr>{% endfor %}{% endfor %}
-        </tbody></table>{% else %}<div class="empty"><i class="ti ti-circle-check"></i><p>No warnings issued yet!</p></div>{% endif %}
+        </tbody></table>{% else %}<div class="empty"><i class="ti ti-circle-check"></i><p>No warnings issued yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- NOTES PAGE -->
+    <!-- NOTES -->
     <div class="page-section {% if page=='notes' %}active{% endif %}" id="sec-notes">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-notes"></i>Staff Notes</div><span style="font-size:11px;color:var(--mt)">{{ notes_count }} notes</span></div>
-        {% if all_notes %}{% for uid, nlist in all_notes.items() %}<div style="border-bottom:1px solid var(--bd)"><div style="padding:10px 18px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>{% for n in nlist %}<div class="note-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="note-by">{{ n.by }}</span><span class="note-time">{{ n.time }}</span></div><div class="note-text">{{ n.note }}</div></div>{% endfor %}</div>{% endfor %}
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-notes"></i>Staff Notes</div><span class="ph-meta">{{ notes_count }} notes</span></div>
+        {% if all_notes %}{% for uid, nlist in all_notes.items() %}<div style="border-bottom:1px solid var(--bd)"><div style="padding:10px 19px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:1px;font-weight:700">User ID: {{ uid }}</div>{% for n in nlist %}<div class="note-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="note-by">{{ n.by }}</span><span class="note-time">{{ n.time }}</span></div><div class="note-text">{{ n.note }}</div></div>{% endfor %}</div>{% endfor %}
         {% else %}<div class="empty"><i class="ti ti-notes"></i><p>No staff notes yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- MEMBERS PAGE -->
+    <!-- MEMBERS -->
     <div class="page-section {% if page=='members' %}active{% endif %}" id="sec-members">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-users"></i>All Members</div><span style="font-size:11px;color:var(--mt)">{{ members|length }} tracked</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-users"></i>All Members</div><span class="ph-meta">{{ members|length }} tracked</span></div>
         <div style="padding:10px 16px;border-bottom:1px solid var(--bd)"><input class="srch" type="text" placeholder="Search members..." oninput="filterMembers(this.value)"></div>
         <table class="tbl" id="membersTable"><thead><tr><th>Member</th><th>Level</th><th>XP</th><th>Balance</th><th>Messages</th><th>Warns</th></tr></thead><tbody>
           {% for m in members %}<tr class="member-row" data-name="{{ m.name|lower }}"><td><div style="display:flex;align-items:center;gap:10px"><div class="av">{{ m.name[0]|upper }}</div><span style="font-weight:500;color:#fff">{{ m.name.split('#')[0] }}</span></div></td><td><span class="bg bb">Lv {{ m.level }}</span></td><td>{{ m.xp|int }} XP<div class="xpb" style="margin-top:4px"><div class="xpf" style="width:{{ m.pct }}%"></div></div></td><td style="color:var(--yw)">💰 {{ m.balance|int }}</td><td class="mono">{{ m.messages }}</td><td>{% if m.warnings %}<span class="bg {% if m.warnings >= 3 %}br{% else %}by{% endif %}">{{ m.warnings }}</span>{% else %}<span style="color:var(--mt)">0</span>{% endif %}</td></tr>
@@ -504,45 +588,45 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- LEADERBOARD PAGE -->
+    <!-- LEADERBOARD -->
     <div class="page-section {% if page=='leaderboard' %}active{% endif %}" id="sec-leaderboard">
       <div class="tabs"><button class="tab on" onclick="lbSwitch('xp',this)">XP Rankings</button><button class="tab" onclick="lbSwitch('eco',this)">Rich List</button></div>
       <div id="lb-xp"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-trophy"></i>XP Leaderboard</div></div>{% for m in xp_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">{{ m.xp|int }} XP · {{ m.messages }} messages</div><div class="xpb"><div class="xpf" style="width:{{ m.pct }}%"></div></div></div><span class="bg bb">Lv {{ m.level }}</span></div>{% else %}<div class="empty"><i class="ti ti-trophy"></i><p>No XP data yet.</p></div>{% endfor %}</div></div>
-      <div id="lb-eco" style="display:none"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#fcc419;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div></div>
+      <div id="lb-eco" style="display:none"><div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Rich List</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:linear-gradient(155deg,#f0b73f,#d99820);color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div></div>
     </div>
 
-    <!-- MOD LOGS PAGE -->
+    <!-- MOD LOGS -->
     <div class="page-section {% if page=='modlogs' %}active{% endif %}" id="sec-modlogs">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Mod Log</div><span style="font-size:11px;color:var(--mt)">{{ mod_logs|length }} actions</span></div>
-        {% for m in mod_logs %}<div class="ai"><div class="ai-ico" style="background:{{ m.color }}20;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">⚡</div><div class="ai-main"><div class="ai-act" style="font-weight:600">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ai-det">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div></div></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-scroll"></i>Mod Log</div><span class="ph-meta">{{ mod_logs|length }} actions</span></div>
+        {% for m in mod_logs %}<div class="ai"><div class="ai-ico" style="background:{{ m.color }}1c;border-color:{{ m.color }}40"><i class="ti ti-bolt" style="color:{{ m.color }}"></i></div><div class="ai-main"><div class="ai-act" style="font-weight:600">{{ m.action }}: <strong>{{ m.target }}</strong></div><div class="ai-det">by {{ m.by }} · "{{ m.reason }}" · {{ m.time }}</div></div></div>
         {% else %}<div class="empty"><i class="ti ti-scroll"></i><p>No moderation actions logged yet.</p></div>{% endfor %}
       </div>
     </div>
 
-    <!-- AUTOMOD PAGE -->
+    <!-- AUTOMOD -->
     <div class="page-section {% if page=='automod' %}active{% endif %}" id="sec-automod">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div><span style="font-size:11px;color:var(--mt)">{{ total_words }} words</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-robot"></i>Auto-Mod Word Filter</div><span class="ph-meta">{{ total_words }} words</span></div>
         {% if automod_guilds %}{% for gid, words in automod_guilds.items() %}{% if words %}<div style="padding:8px 14px 4px;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:1px solid var(--bd)">Guild {{ gid }}</div><div class="word-list">{% for w in words %}<span class="word-tag">{{ w }}</span>{% endfor %}</div>{% endif %}{% endfor %}
         {% else %}<div class="empty"><i class="ti ti-robot"></i><p>No words in the filter yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- TICKETS PAGE -->
+    <!-- TICKETS -->
     <div class="page-section {% if page=='tickets' %}active{% endif %}" id="sec-tickets">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div><span style="font-size:11px;color:var(--mt)">{{ ticket_count }} open</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-ticket"></i>Support Tickets</div><span class="ph-meta">{{ ticket_count }} open</span></div>
         {% for ch_id, t in tickets.items() %}<div class="ticket-card"><div class="tc-head"><span class="tc-id">#{{ loop.index }}</span><div style="font-size:12px;font-weight:600;color:#fff">{{ t.user_name }}</div><span class="bg {% if t.status=='open' %}bgg{% else %}br{% endif %}">{{ t.status }}</span></div><div style="font-size:11px;color:var(--mt)">{{ t.reason }} · {{ t.created }}</div></div>
         {% else %}<div class="empty"><i class="ti ti-ticket"></i><p>No open tickets.</p></div>{% endfor %}
       </div>
     </div>
 
-    <!-- BUGS PAGE -->
+    <!-- BUGS -->
     <div class="page-section {% if page=='bugs' %}active{% endif %}" id="sec-bugs">
       {% if bug_reports %}{% for r in bug_reports %}{% set stCls={'fixed':'bgg','open':'br','in_progress':'bc'}.get(r.status,'by') %}{% set svCls={'critical':'br','high':'bo','medium':'by','low':'bgg'}.get(r.severity,'by') %}
       <div class="bug-card"><div class="bug-hd"><span class="bug-id">{{ r.id }}</span><span class="bug-title">{{ r.title }}</span><span class="bg {{ stCls }}">{{ r.status.replace('_',' ') }}</span><span class="bg {{ svCls }}">{{ r.severity }}</span></div><div class="bug-body"><div class="bug-fields"><div class="bug-field"><label>Area</label><p>{{ r.game_area }}</p></div><div class="bug-field"><label>Reporter</label><p>{{ r.reporter_name }}</p></div><div class="bug-field"><label>Status</label><p>{{ r.status }}</p></div><div class="bug-field full"><label>Description</label><p>{{ r.description }}</p></div><div class="bug-field full"><label>Steps</label><p>{{ r.steps }}</p></div></div></div></div>
       {% endfor %}{% else %}<div class="pn"><div class="empty"><i class="ti ti-bug"></i><p>No bug reports yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- GIVEAWAYS PAGE -->
+    <!-- GIVEAWAYS -->
     <div class="page-section {% if page=='giveaways' %}active{% endif %}" id="sec-giveaways">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-confetti"></i>Active Giveaways</div></div>
         {% for msg_id, g in giveaways.items() %}<div class="giveaway-card"><div class="gw-prize">🎁 {{ g.prize }}</div><div class="gw-meta">Hosted by {{ g.host }} · Ends {{ g.ends[:16].replace('T',' ') }}</div></div>
@@ -550,7 +634,7 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- VOICE PAGE -->
+    <!-- VOICE -->
     <div class="page-section {% if page=='voice' %}active{% endif %}" id="sec-voice">
       <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-microphone"></i>Voice Activity</div></div>
         {% if voice_events %}<table class="tbl"><thead><tr><th>Action</th><th>Member</th><th>Channel</th><th>Time</th></tr></thead><tbody>{% for v in voice_events %}<tr><td><span class="bg {% if v.action=='joined' %}bgg{% elif v.action=='left' %}br{% else %}by{% endif %}">{{ v.action|title }}</span></td><td>{{ v.member }}</td><td style="color:var(--mt)">#{{ v.channel }}</td><td class="mono">{{ v.time }}</td></tr>{% endfor %}</tbody></table>
@@ -558,22 +642,22 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ECONOMY PAGE -->
+    <!-- ECONOMY -->
     <div class="page-section {% if page=='economy' %}active{% endif %}" id="sec-economy">
       <div class="sg sg-4">
-        <div class="sc"><div class="sc-top-bar" style="background:#fcc419"></div><div class="sc-icon" style="background:#fcc41915"><i class="ti ti-coin" style="color:#fcc419"></i></div><div class="sc-val">{{ total_coins|int }}</div><div class="sc-lbl">Circulating</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#00dc82"></div><div class="sc-icon" style="background:#00dc8215"><i class="ti ti-users" style="color:#00dc82"></i></div><div class="sc-val">{{ eco_count }}</div><div class="sc-lbl">Eco Users</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#6d5dfc"></div><div class="sc-icon" style="background:#6d5dfc15"><i class="ti ti-trending-up" style="color:#6d5dfc"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Earned</div></div>
-        <div class="sc"><div class="sc-top-bar" style="background:#ff922b"></div><div class="sc-icon" style="background:#ff922b15"><i class="ti ti-trophy" style="color:#ff922b"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#f0b73f"></div><div class="sc-icon" style="background:#f0b73f1c;border-color:#f0b73f33"><i class="ti ti-coin" style="color:#f0b73f"></i></div><div class="sc-val">{{ total_coins|int }}</div><div class="sc-lbl">Circulating</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#2bd47d"></div><div class="sc-icon" style="background:#2bd47d1c;border-color:#2bd47d33"><i class="ti ti-users" style="color:#2bd47d"></i></div><div class="sc-val">{{ eco_count }}</div><div class="sc-lbl">Eco Users</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#5b5bf0"></div><div class="sc-icon" style="background:#5b5bf01c;border-color:#5b5bf033"><i class="ti ti-trending-up" style="color:#5b5bf0"></i></div><div class="sc-val">{{ total_earned_ever|int }}</div><div class="sc-lbl">Total Earned</div></div>
+        <div class="sc"><div class="sc-top-bar" style="background:#fb923c"></div><div class="sc-icon" style="background:#fb923c1c;border-color:#fb923c33"><i class="ti ti-trophy" style="color:#fb923c"></i></div><div class="sc-val">{{ richest|int }}</div><div class="sc-lbl">Richest Balance</div></div>
       </div>
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:#fcc419;color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-coin"></i>Economy Leaderboard</div></div>{% for m in eco_lb %}{% set medals=['🥇','🥈','🥉'] %}<div class="mr"><div class="rk">{% if loop.index0 < 3 %}{{ medals[loop.index0] }}{% else %}{{ loop.index }}{% endif %}</div><div class="av" style="background:linear-gradient(155deg,#f0b73f,#d99820);color:#1a1200">{{ m.name[0]|upper }}</div><div class="m-info"><div class="m-name">{{ m.name.split('#')[0] }}</div><div class="m-sub">Total earned: {{ m.total_earned|int }}</div></div><span class="bg by">💰 {{ m.balance|int }}</span></div>{% else %}<div class="empty"><i class="ti ti-coin"></i><p>No economy data yet.</p></div>{% endfor %}</div>
     </div>
 
-    <!-- ANALYTICS PAGE -->
+    <!-- ANALYTICS -->
     <div class="page-section {% if page=='analytics' %}active{% endif %}" id="sec-analytics">
       <div class="sg sg-6">
-        {% for icon,lbl,val,col in [('ti-bolt','Events',activity|length,'#6d5dfc'),('ti-brand-google-play','Roblox',roblox_count,'#22b8cf'),('ti-file-description','Applications',app_count,'#00dc82'),('ti-alert-triangle','Warns',warn_count,'#fa5252'),('ti-scroll','Mod Actions',mod_log_count,'#ff922b'),('ti-crown','Premium',premium_count,'#fcc419')] %}
-        <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}15"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
+        {% for icon,lbl,val,col in [('ti-bolt','Events',activity|length,'#5b5bf0'),('ti-brand-google-play','Roblox',roblox_count,'#38bdf8'),('ti-file-description','Applications',app_count,'#2bd47d'),('ti-alert-triangle','Warns',warn_count,'#f1556c'),('ti-scroll','Mod Actions',mod_log_count,'#fb923c'),('ti-crown','Premium',premium_count,'#f0b73f')] %}
+        <div class="sc"><div class="sc-top-bar" style="background:{{ col }}"></div><div class="sc-icon" style="background:{{ col }}1c;border-color:{{ col }}33"><i class="ti {{ icon }}" style="color:{{ col }}"></i></div><div class="sc-val">{{ val }}</div><div class="sc-lbl">{{ lbl }}</div></div>
         {% endfor %}
       </div>
       <div class="g22">
@@ -582,22 +666,22 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ROBLOX PAGE -->
+    <!-- ROBLOX -->
     <div class="page-section {% if page=='roblox' %}active{% endif %}" id="sec-roblox">
-      <div class="sg sg-2"><div class="sc"><div class="sc-top-bar" style="background:#22b8cf"></div><div class="sc-icon" style="background:#22b8cf15"><i class="ti ti-brand-google-play" style="color:#22b8cf"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Linked Accounts</div></div><div class="sc"><div class="sc-top-bar" style="background:#00dc82"></div><div class="sc-icon" style="background:#00dc8215"><i class="ti ti-shield-check" style="color:#00dc82"></i></div><div class="sc-val">{{ roblox_accounts|selectattr('verified')|list|length }}</div><div class="sc-lbl">Verified</div></div></div>
-      {% if roblox_accounts %}<div class="roblox-grid">{% for a in roblox_accounts %}<div class="roblox-card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">{% if a.thumb %}<img src="{{ a.thumb }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">{% else %}<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎮</div>{% endif %}<div><div class="rb-name">{{ a.display }}</div><div class="rb-user">@{{ a.username }}</div><div class="rb-id">ID: {{ a.roblox_id }}</div></div></div><div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;font-size:10px;color:var(--mt)"><span>{{ a.discord_name }}</span><span>{% if a.verified %}✅ Verified{% else %}🔗 Manual{% endif %}</span></div><a href="https://www.roblox.com/users/{{ a.roblox_id }}/profile" target="_blank" class="rb-link">View Profile →</a></div>{% endfor %}</div>
+      <div class="sg sg-2"><div class="sc"><div class="sc-top-bar" style="background:#38bdf8"></div><div class="sc-icon" style="background:#38bdf81c;border-color:#38bdf833"><i class="ti ti-brand-google-play" style="color:#38bdf8"></i></div><div class="sc-val">{{ roblox_count }}</div><div class="sc-lbl">Linked Accounts</div></div><div class="sc"><div class="sc-top-bar" style="background:#2bd47d"></div><div class="sc-icon" style="background:#2bd47d1c;border-color:#2bd47d33"><i class="ti ti-shield-check" style="color:#2bd47d"></i></div><div class="sc-val">{{ roblox_accounts|selectattr('verified')|list|length }}</div><div class="sc-lbl">Verified</div></div></div>
+      {% if roblox_accounts %}<div class="roblox-grid">{% for a in roblox_accounts %}<div class="roblox-card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">{% if a.thumb %}<img src="{{ a.thumb }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="">{% else %}<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(155deg,var(--cy),var(--ac));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎮</div>{% endif %}<div><div class="rb-name">{{ a.display }}</div><div class="rb-user">@{{ a.username }}</div><div class="rb-id">ID: {{ a.roblox_id }}</div></div></div><div style="display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;font-size:10px;color:var(--mt)"><span>{{ a.discord_name }}</span><span>{% if a.verified %}✅ Verified{% else %}🔗 Manual{% endif %}</span></div><a href="https://www.roblox.com/users/{{ a.roblox_id }}/profile" target="_blank" class="rb-link">View Profile →</a></div>{% endfor %}</div>
       {% else %}<div class="pn"><div class="empty"><i class="ti ti-brand-google-play"></i><p>No Roblox accounts linked yet.</p></div></div>{% endif %}
     </div>
 
-    <!-- PREMIUM PAGE -->
+    <!-- PREMIUM -->
     <div class="page-section {% if page=='premium' %}active{% endif %}" id="sec-premium">
-      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div><span style="font-size:11px;color:var(--mt)">{{ premium_count }} members</span></div>
+      <div class="pn"><div class="ph"><div class="pt"><i class="ti ti-crown"></i>Premium Members</div><span class="ph-meta">{{ premium_count }} members</span></div>
         {% if premium_members %}<table class="tbl"><thead><tr><th>User ID</th><th>Tier</th><th>Granted By</th><th>Granted At</th><th>Expires</th></tr></thead><tbody>{% for uid, p in premium_members.items() %}<tr><td class="mono">{{ uid }}</td><td><span class="bg by">👑 {{ p.tier|title }}</span></td><td style="color:var(--mt)">{{ p.granted_by }}</td><td class="mono">{{ p.granted_at[:10] if p.granted_at else '—' }}</td><td class="mono">{{ p.expires[:10] if p.expires != 'permanent' else 'Permanent' }}</td></tr>{% endfor %}</tbody></table>
         {% else %}<div class="empty"><i class="ti ti-crown"></i><p>No premium members yet.</p></div>{% endif %}
       </div>
     </div>
 
-    <!-- CONFIGURATION PAGE -->
+    <!-- CONFIGURATION -->
     <div class="page-section {% if page=='config' %}active{% endif %}" id="sec-config">
       <div class="cfg-stats-grid">
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ app_count }}</div><div class="cfg-stat-mini-lbl">Applications</div></div>
@@ -605,7 +689,7 @@ a{text-decoration:none;color:inherit}
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ mod_log_count }}</div><div class="cfg-stat-mini-lbl">Mod Actions</div></div>
         <div class="cfg-stat-mini"><div class="cfg-stat-mini-val">{{ premium_count }}</div><div class="cfg-stat-mini-lbl">Premium</div></div>
       </div>
-      
+
       <div class="cfg-wrap">
         <div class="cfg-sidebar">
           <div class="cfg-sidebar-head">Configuration</div>
@@ -621,7 +705,7 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-nav-item" onclick="cfgSwitch('danger',this)"><i class="ti ti-alert-triangle" style="color:var(--rd)"></i> <span style="color:var(--rd)">Danger Zone</span></div>
         </div>
 
-        <!-- GENERAL TAB -->
+        <!-- GENERAL -->
         <div class="cfg-tab cfg-tab-on" id="cfg-general">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-settings"></i> General Settings <span class="cfg-dirty-badge" id="dirty-general"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -631,44 +715,32 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">Bot Prefix</div>
               <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Command Prefix</div><div class="cfg-field-desc">Prefix for text commands (e.g., !, ?, >)</div></div>
-                <div class="cfg-field-control">
-                  <input type="text" class="cfg-input" id="bot_prefix" data-key="bot_prefix" placeholder="!" maxlength="5" oninput="markDirty('general')">
-                </div>
+                <div class="cfg-field-info"><div class="cfg-field-name">Command Prefix</div><div class="cfg-field-desc">Prefix for text commands (e.g., !, ?, &gt;)</div></div>
+                <div class="cfg-field-control"><input type="text" class="cfg-input" id="bot_prefix" data-key="bot_prefix" placeholder="!" maxlength="5" oninput="markDirty('general')"></div>
               </div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Welcome System</div>
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">Welcome Messages</div><div class="cfg-field-desc">Send welcome messages when members join</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle" id="welcome_enabled" data-key="welcome_enabled" onclick="toggleSwitch(this);markDirty('general')"></div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-toggle" id="welcome_enabled" data-key="welcome_enabled" onclick="toggleSwitch(this);markDirty('general')"></div></div>
               </div>
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">Welcome Message</div><div class="cfg-field-desc">Use {user} for mention, {server} for server name</div></div>
-                <div class="cfg-field-control">
-                  <input type="text" class="cfg-input" id="welcome_message" data-key="welcome_message" placeholder="Welcome {user} to {server}!" oninput="markDirty('general')">
-                </div>
+                <div class="cfg-field-control"><input type="text" class="cfg-input" id="welcome_message" data-key="welcome_message" placeholder="Welcome {user} to {server}!" oninput="markDirty('general')"></div>
               </div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Logging</div>
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">Log Message Deletes</div><div class="cfg-field-desc">Log deleted messages to logs channel</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle" id="log_deletes" data-key="log_deletes" onclick="toggleSwitch(this);markDirty('general')"></div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-toggle" id="log_deletes" data-key="log_deletes" onclick="toggleSwitch(this);markDirty('general')"></div></div>
               </div>
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">Log Message Edits</div><div class="cfg-field-desc">Log edited messages to logs channel</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle" id="log_edits" data-key="log_edits" onclick="toggleSwitch(this);markDirty('general')"></div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-toggle" id="log_edits" data-key="log_edits" onclick="toggleSwitch(this);markDirty('general')"></div></div>
               </div>
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">Log Member Joins/Leaves</div><div class="cfg-field-desc">Log member join/leave events</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle" id="log_members" data-key="log_members" onclick="toggleSwitch(this);markDirty('general')"></div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-toggle" id="log_members" data-key="log_members" onclick="toggleSwitch(this);markDirty('general')"></div></div>
               </div>
             </div>
           </div>
@@ -679,7 +751,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- CHANNELS TAB -->
+        <!-- CHANNELS -->
         <div class="cfg-tab" id="cfg-channels">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-hash"></i> Channel Configuration <span class="cfg-dirty-badge" id="dirty-channels"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -696,15 +768,7 @@ a{text-decoration:none;color:inherit}
               {% for dd_id, key, name, desc in ch_fields %}
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-select-wrap">
-                    <i class="ti ti-hash dd-icon hash"></i>
-                    <select class="cfg-dd ch-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')">
-                      <option value="">— not set —</option>
-                    </select>
-                    <i class="ti ti-chevron-down dd-chevron"></i>
-                  </div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div>
               </div>
               {% endfor %}
             </div>
@@ -722,15 +786,7 @@ a{text-decoration:none;color:inherit}
               {% for dd_id, key, name, desc in ch_fields2 %}
               <div class="cfg-field">
                 <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-select-wrap">
-                    <i class="ti ti-hash dd-icon hash"></i>
-                    <select class="cfg-dd ch-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')">
-                      <option value="">— not set —</option>
-                    </select>
-                    <i class="ti ti-chevron-down dd-chevron"></i>
-                  </div>
-                </div>
+                <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-hash dd-icon hash"></i><select class="cfg-dd ch-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('channels')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div>
               </div>
               {% endfor %}
             </div>
@@ -742,7 +798,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- ROLES TAB -->
+        <!-- ROLES -->
         <div class="cfg-tab" id="cfg-roles">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-shield"></i> Role Configuration <span class="cfg-dirty-badge" id="dirty-roles"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -766,15 +822,7 @@ a{text-decoration:none;color:inherit}
             {% if group != last_group.v %}<div class="cfg-group-label">{{ group }}</div>{% set last_group.v = group %}{% endif %}
             <div class="cfg-field">
               <div class="cfg-field-info"><div class="cfg-field-name">{{ name }}</div><div class="cfg-field-desc">{{ desc }}</div></div>
-              <div class="cfg-field-control">
-                <div class="cfg-select-wrap">
-                  <i class="ti ti-shield-check dd-icon shield"></i>
-                  <select class="cfg-dd rl-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('roles')">
-                    <option value="">— not set —</option>
-                  </select>
-                  <i class="ti ti-chevron-down dd-chevron"></i>
-                </div>
-              </div>
+              <div class="cfg-field-control"><div class="cfg-select-wrap"><i class="ti ti-shield-check dd-icon shield"></i><select class="cfg-dd rl-select" id="{{ dd_id }}" data-key="{{ key }}" onchange="markDirty('roles')"><option value="">— not set —</option></select><i class="ti ti-chevron-down dd-chevron"></i></div></div>
             </div>
             {% endfor %}
           </div>
@@ -785,7 +833,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- LEVELING TAB -->
+        <!-- LEVELING -->
         <div class="cfg-tab" id="cfg-leveling">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-trophy"></i> Leveling System <span class="cfg-dirty-badge" id="dirty-leveling"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -794,52 +842,17 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName4">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">XP Settings</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">XP System Enabled</div><div class="cfg-field-desc">Enable or disable the leveling system</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle on" id="xp_enabled" data-key="xp_enabled" onclick="toggleSwitch(this);markDirty('leveling')"></div>
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">XP Per Message</div><div class="cfg-field-desc">Base XP awarded per message (randomized ±30%)</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="xp_per_message" data-key="xp_per_message" placeholder="15" min="1" max="100" oninput="markDirty('leveling')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">XP Cooldown (seconds)</div><div class="cfg-field-desc">Cooldown between XP gain from messages</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="xp_cooldown" data-key="xp_cooldown" placeholder="60" min="10" max="300" oninput="markDirty('leveling')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">XP System Enabled</div><div class="cfg-field-desc">Enable or disable the leveling system</div></div><div class="cfg-field-control"><div class="cfg-toggle on" id="xp_enabled" data-key="xp_enabled" onclick="toggleSwitch(this);markDirty('leveling')"></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">XP Per Message</div><div class="cfg-field-desc">Base XP awarded per message (randomized ±30%)</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="xp_per_message" data-key="xp_per_message" placeholder="15" min="1" max="100" oninput="markDirty('leveling')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">XP Cooldown (seconds)</div><div class="cfg-field-desc">Cooldown between XP gain from messages</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="xp_cooldown" data-key="xp_cooldown" placeholder="60" min="10" max="300" oninput="markDirty('leveling')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Level-Up Notifications</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Level-Up Messages</div><div class="cfg-field-desc">Send messages when members level up</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle on" id="levelup_messages" data-key="levelup_messages" onclick="toggleSwitch(this);markDirty('leveling')"></div>
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Level-Up Message</div><div class="cfg-field-desc">Use {user} for mention, {level} for level number</div></div>
-                <div class="cfg-field-control">
-                  <input type="text" class="cfg-input" id="levelup_message" data-key="levelup_message" placeholder="GG {user}, you reached level {level}!" oninput="markDirty('leveling')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level-Up Messages</div><div class="cfg-field-desc">Send messages when members level up</div></div><div class="cfg-field-control"><div class="cfg-toggle on" id="levelup_messages" data-key="levelup_messages" onclick="toggleSwitch(this);markDirty('leveling')"></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Level-Up Message</div><div class="cfg-field-desc">Use {user} for mention, {level} for level number</div></div><div class="cfg-field-control"><input type="text" class="cfg-input" id="levelup_message" data-key="levelup_message" placeholder="GG {user}, you reached level {level}!" oninput="markDirty('leveling')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">XP Multipliers</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Voice XP Multiplier</div><div class="cfg-field-desc">XP multiplier for voice chat activity</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="voice_xp_multi" data-key="voice_xp_multi" placeholder="1.5" step="0.1" min="0" max="10" oninput="markDirty('leveling')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Boost XP Multiplier</div><div class="cfg-field-desc">Extra XP for server boosters</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="boost_xp_multi" data-key="boost_xp_multi" placeholder="2.0" step="0.1" min="0" max="10" oninput="markDirty('leveling')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Voice XP Multiplier</div><div class="cfg-field-desc">XP multiplier for voice chat activity</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="voice_xp_multi" data-key="voice_xp_multi" placeholder="1.5" step="0.1" min="0" max="10" oninput="markDirty('leveling')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Boost XP Multiplier</div><div class="cfg-field-desc">Extra XP for server boosters</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="boost_xp_multi" data-key="boost_xp_multi" placeholder="2.0" step="0.1" min="0" max="10" oninput="markDirty('leveling')"></div></div>
             </div>
           </div>
           <div class="cfg-actions">
@@ -849,7 +862,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- MODERATION TAB -->
+        <!-- MODERATION -->
         <div class="cfg-tab" id="cfg-moderation">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-gavel"></i> Moderation <span class="cfg-dirty-badge" id="dirty-moderation"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -858,52 +871,17 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName5">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">Auto-Moderation</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Auto-Mod Enabled</div><div class="cfg-field-desc">Automatically filter bad words and spam</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle on" id="automod_enabled" data-key="automod_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div>
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Anti-Spam</div><div class="cfg-field-desc">Detect and punish message spam</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle on" id="antispam_enabled" data-key="antispam_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div>
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Spam Threshold (msgs/5s)</div><div class="cfg-field-desc">Messages allowed within 5 seconds before triggering</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="spam_threshold" data-key="spam_threshold" placeholder="5" min="3" max="20" oninput="markDirty('moderation')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Auto-Mod Enabled</div><div class="cfg-field-desc">Automatically filter bad words and spam</div></div><div class="cfg-field-control"><div class="cfg-toggle on" id="automod_enabled" data-key="automod_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Anti-Spam</div><div class="cfg-field-desc">Detect and punish message spam</div></div><div class="cfg-field-control"><div class="cfg-toggle on" id="antispam_enabled" data-key="antispam_enabled" onclick="toggleSwitch(this);markDirty('moderation')"></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Spam Threshold (msgs/5s)</div><div class="cfg-field-desc">Messages allowed within 5 seconds before triggering</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="spam_threshold" data-key="spam_threshold" placeholder="5" min="3" max="20" oninput="markDirty('moderation')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Warning System</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Timeout</div><div class="cfg-field-desc">Warnings before auto-timeout (0 = disabled)</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="warns_before_timeout" data-key="warns_before_timeout" placeholder="3" min="0" max="10" oninput="markDirty('moderation')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Kick</div><div class="cfg-field-desc">Warnings before auto-kick (0 = disabled)</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="warns_before_kick" data-key="warns_before_kick" placeholder="5" min="0" max="10" oninput="markDirty('moderation')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Warns Before Ban</div><div class="cfg-field-desc">Warnings before auto-ban (0 = disabled)</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="warns_before_ban" data-key="warns_before_ban" placeholder="7" min="0" max="15" oninput="markDirty('moderation')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Warns Before Timeout</div><div class="cfg-field-desc">Warnings before auto-timeout (0 = disabled)</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="warns_before_timeout" data-key="warns_before_timeout" placeholder="3" min="0" max="10" oninput="markDirty('moderation')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Warns Before Kick</div><div class="cfg-field-desc">Warnings before auto-kick (0 = disabled)</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="warns_before_kick" data-key="warns_before_kick" placeholder="5" min="0" max="10" oninput="markDirty('moderation')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Warns Before Ban</div><div class="cfg-field-desc">Warnings before auto-ban (0 = disabled)</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="warns_before_ban" data-key="warns_before_ban" placeholder="7" min="0" max="15" oninput="markDirty('moderation')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Invite Protection</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Block Discord Invites</div><div class="cfg-field-desc">Auto-delete messages containing invite links</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle" id="block_invites" data-key="block_invites" onclick="toggleSwitch(this);markDirty('moderation')"></div>
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Block Discord Invites</div><div class="cfg-field-desc">Auto-delete messages containing invite links</div></div><div class="cfg-field-control"><div class="cfg-toggle" id="block_invites" data-key="block_invites" onclick="toggleSwitch(this);markDirty('moderation')"></div></div></div>
             </div>
           </div>
           <div class="cfg-actions">
@@ -913,7 +891,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- ECONOMY TAB -->
+        <!-- ECONOMY -->
         <div class="cfg-tab" id="cfg-economy">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title"><i class="ti ti-coin"></i> Economy System <span class="cfg-dirty-badge" id="dirty-economy"><i class="ti ti-circle-dot" style="font-size:9px"></i> Unsaved</span></div>
@@ -922,52 +900,17 @@ a{text-decoration:none;color:inherit}
           <div class="cfg-guild-banner"><i class="ti ti-server"></i><div class="cfg-guild-banner-text">Configuring: <strong id="cfgGuildName6">No server selected — click Change</strong></div><span class="cfg-guild-change" onclick="openGuildModal()">Change</span></div>
           <div class="cfg-body">
             <div class="cfg-group"><div class="cfg-group-label">Currency Settings</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Economy Enabled</div><div class="cfg-field-desc">Enable or disable the economy system</div></div>
-                <div class="cfg-field-control">
-                  <div class="cfg-toggle on" id="economy_enabled" data-key="economy_enabled" onclick="toggleSwitch(this);markDirty('economy')"></div>
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Currency Name</div><div class="cfg-field-desc">Name of your server currency (e.g., coins, credits)</div></div>
-                <div class="cfg-field-control">
-                  <input type="text" class="cfg-input" id="currency_name" data-key="currency_name" placeholder="coins" maxlength="20" oninput="markDirty('economy')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Currency Symbol</div><div class="cfg-field-desc">Symbol/emoji for currency (e.g., 💰, $, ⭐)</div></div>
-                <div class="cfg-field-control">
-                  <input type="text" class="cfg-input" id="currency_symbol" data-key="currency_symbol" placeholder="💰" maxlength="5" oninput="markDirty('economy')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Economy Enabled</div><div class="cfg-field-desc">Enable or disable the economy system</div></div><div class="cfg-field-control"><div class="cfg-toggle on" id="economy_enabled" data-key="economy_enabled" onclick="toggleSwitch(this);markDirty('economy')"></div></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Currency Name</div><div class="cfg-field-desc">Name of your server currency (e.g., coins, credits)</div></div><div class="cfg-field-control"><input type="text" class="cfg-input" id="currency_name" data-key="currency_name" placeholder="coins" maxlength="20" oninput="markDirty('economy')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Currency Symbol</div><div class="cfg-field-desc">Symbol/emoji for currency (e.g., 💰, $, ⭐)</div></div><div class="cfg-field-control"><input type="text" class="cfg-input" id="currency_symbol" data-key="currency_symbol" placeholder="💰" maxlength="5" oninput="markDirty('economy')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Earning Rates</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Coins Per Message</div><div class="cfg-field-desc">Currency earned per message (randomized ±20%)</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="coins_per_message" data-key="coins_per_message" placeholder="5" min="1" max="100" oninput="markDirty('economy')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Daily Reward</div><div class="cfg-field-desc">Currency given for /daily command</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="daily_reward" data-key="daily_reward" placeholder="500" min="0" max="10000" oninput="markDirty('economy')">
-                </div>
-              </div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">Weekly Reward</div><div class="cfg-field-desc">Currency given for /weekly command</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="weekly_reward" data-key="weekly_reward" placeholder="2500" min="0" max="50000" oninput="markDirty('economy')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Coins Per Message</div><div class="cfg-field-desc">Currency earned per message (randomized ±20%)</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="coins_per_message" data-key="coins_per_message" placeholder="5" min="1" max="100" oninput="markDirty('economy')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Daily Reward</div><div class="cfg-field-desc">Currency given for /daily command</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="daily_reward" data-key="daily_reward" placeholder="500" min="0" max="10000" oninput="markDirty('economy')"></div></div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">Weekly Reward</div><div class="cfg-field-desc">Currency given for /weekly command</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="weekly_reward" data-key="weekly_reward" placeholder="2500" min="0" max="50000" oninput="markDirty('economy')"></div></div>
             </div>
             <div class="cfg-group"><div class="cfg-group-label">Starting Balance</div>
-              <div class="cfg-field">
-                <div class="cfg-field-info"><div class="cfg-field-name">New Member Balance</div><div class="cfg-field-desc">Currency given to new members automatically</div></div>
-                <div class="cfg-field-control">
-                  <input type="number" class="cfg-input" id="starting_balance" data-key="starting_balance" placeholder="100" min="0" max="10000" oninput="markDirty('economy')">
-                </div>
-              </div>
+              <div class="cfg-field"><div class="cfg-field-info"><div class="cfg-field-name">New Member Balance</div><div class="cfg-field-desc">Currency given to new members automatically</div></div><div class="cfg-field-control"><input type="number" class="cfg-input" id="starting_balance" data-key="starting_balance" placeholder="100" min="0" max="10000" oninput="markDirty('economy')"></div></div>
             </div>
           </div>
           <div class="cfg-actions">
@@ -977,7 +920,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
 
-        <!-- DANGER ZONE TAB -->
+        <!-- DANGER ZONE -->
         <div class="cfg-tab" id="cfg-danger">
           <div class="cfg-tab-head">
             <div class="cfg-tab-title" style="color:var(--rd)"><i class="ti ti-alert-triangle"></i> Danger Zone</div>
@@ -996,9 +939,7 @@ a{text-decoration:none;color:inherit}
 
   </div><!-- /content -->
 
-  <div class="foot">
-    Young Boy Studios · Dashboard · Uptime: <span>{{ uptime or '—' }}</span>
-  </div>
+  <div class="foot">YOUNG BOY STUDIOS · CONTROL PANEL · UPTIME {{ uptime or '—' }}</div>
 </div><!-- /main -->
 </div><!-- /wrap -->
 
@@ -1007,24 +948,19 @@ const CFG_SECRET = '{{ dashboard_secret }}';
 const STORAGE_KEY = 'ybs_active_guild';
 let autoRefreshInterval = null;
 
-// ── CLOCK ────────────────────────────────────────────────────
 function tick() {
   document.getElementById('liveClock').textContent =
     new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 tick(); setInterval(tick, 1000);
 
-// ── AUTO REFRESH ─────────────────────────────────────────────
 function startAutoRefresh() {
   if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-  autoRefreshInterval = setInterval(() => {
-    if (!document.hidden) location.reload();
-  }, 30000); // 30 seconds
+  autoRefreshInterval = setInterval(() => { if (!document.hidden) location.reload(); }, 30000);
 }
 function manualRefresh() { location.reload(); }
 startAutoRefresh();
 
-// ── TOAST NOTIFICATIONS ──────────────────────────────────────
 function showToast(type, msg, icon='ti-info-circle', duration=3500) {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
@@ -1035,7 +971,6 @@ function showToast(type, msg, icon='ti-info-circle', duration=3500) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, duration);
 }
 
-// ── PAGE NAVIGATION ──────────────────────────────────────────
 const PAGE_TITLES = {
   home:'Overview', activity:'Live Activity', applications:'Applications',
   warnings:'Warnings', notes:'Staff Notes', members:'Members',
@@ -1070,7 +1005,6 @@ function lbSwitch(tab, btn) {
   document.getElementById('lb-eco').style.display = tab === 'eco' ? '' : 'none';
 }
 
-// ── GUILD SELECTOR LOGIC ─────────────────────────────────────
 let allGuilds = [], activeGuildId = null, activeGuildName = 'No Server', pendingGuildId = null;
 let cachedChannels = [], cachedRoles = [];
 
@@ -1133,9 +1067,9 @@ async function confirmGuild() {
 
 function updateGuildUI() {
   document.getElementById('guildPillName').textContent = activeGuildName;
-  document.querySelectorAll('[id^="cfgGuildName"]').forEach(el => {
-    if (el) el.textContent = activeGuildName;
-  });
+  const ic = document.getElementById('guildPillIc');
+  if (ic) ic.textContent = (activeGuildName || '?')[0].toUpperCase();
+  document.querySelectorAll('[id^="cfgGuildName"]').forEach(el => { if (el) el.textContent = activeGuildName; });
 }
 
 function openGuildModal() {
@@ -1143,16 +1077,9 @@ function openGuildModal() {
   document.getElementById('guildSearch').value = '';
   fetchGuilds();
 }
+function closeGuildModal() { document.getElementById('guildModal').classList.remove('open'); }
+document.getElementById('guildModal').addEventListener('click', function(e) { if (e.target === this) closeGuildModal(); });
 
-function closeGuildModal() {
-  document.getElementById('guildModal').classList.remove('open');
-}
-
-document.getElementById('guildModal').addEventListener('click', function(e) {
-  if (e.target === this) closeGuildModal();
-});
-
-// ── CONFIG SYSTEM LOGIC ──────────────────────────────────────
 const TAB_KEYS = {
   general: ['bot_prefix','welcome_enabled','welcome_message','log_deletes','log_edits','log_members'],
   channels: ['welcome_channel','logs_channel','mod_channel','apply_channel','applications_channel','verify_channel','announcements_channel','giveaway_channel','levelup_channel','general_channel','rank_channel'],
@@ -1163,20 +1090,9 @@ const TAB_KEYS = {
 };
 
 const dirtyTabs = {};
-function markDirty(t) {
-  dirtyTabs[t] = true;
-  const b = document.getElementById('dirty-' + t);
-  if (b) b.classList.add('show');
-}
-function clearDirty(t) {
-  dirtyTabs[t] = false;
-  const b = document.getElementById('dirty-' + t);
-  if (b) b.classList.remove('show');
-}
-
-function toggleSwitch(el) {
-  el.classList.toggle('on');
-}
+function markDirty(t) { dirtyTabs[t] = true; const b = document.getElementById('dirty-' + t); if (b) b.classList.add('show'); }
+function clearDirty(t) { dirtyTabs[t] = false; const b = document.getElementById('dirty-' + t); if (b) b.classList.remove('show'); }
+function toggleSwitch(el) { el.classList.toggle('on'); }
 
 function cfgSetStatus(tabId, ok, msg) {
   const el = document.getElementById('cfg-status-' + tabId);
@@ -1252,9 +1168,7 @@ async function cfgSave(tabId) {
 
 async function loadGuildDropdowns() {
   if (!activeGuildId) return;
-  document.querySelectorAll('.ch-select, .rl-select').forEach(dd => {
-    dd.disabled = true; dd.style.opacity = '.5';
-  });
+  document.querySelectorAll('.ch-select, .rl-select').forEach(dd => { dd.disabled = true; dd.style.opacity = '.5'; });
   try {
     const [chRes, roRes] = await Promise.all([
       fetch(`/api/guild/channels?secret=${encodeURIComponent(CFG_SECRET)}&guild_id=${activeGuildId}`),
@@ -1301,7 +1215,7 @@ async function cfgLoadCurrent() {
       const el = document.querySelector(`[data-key="${key}"]`);
       if (!el) return;
       if (el.classList && el.classList.contains('cfg-toggle')) {
-        if (value) el.classList.add('on'); else el.classList.remove('on');
+        if (value === 'true' || value === true) el.classList.add('on'); else el.classList.remove('on');
       } else if (el.tagName === 'SELECT') {
         const strVal = String(value);
         el.dataset.savedVal = strVal;
@@ -1320,7 +1234,6 @@ async function cfgLoadCurrent() {
   }
 }
 
-// ── DANGER ZONE ACTIONS ──────────────────────────────────────
 async function dangerAction(action) {
   const labels = {
     lockdown:       'Lock ALL channels instantly?',
@@ -1363,10 +1276,9 @@ async function dangerAction(action) {
   } catch { showToast('err', 'Network error.', 'ti-wifi-off'); }
 }
 
-// ── ANALYTICS CHARTS ─────────────────────────────────────────
-const CC = ['#6d5dfc','#00dc82','#fcc419','#e64980','#22b8cf','#ff922b','#fa5252','#a890ff'];
-const GRID = 'rgba(255,255,255,0.045)';
-const TICK = '#535978';
+const CC = ['#5b5bf0','#2bd47d','#f0b73f','#f472b6','#38bdf8','#fb923c','#f1556c','#8c84ff'];
+const GRID = 'rgba(255,255,255,0.05)';
+const TICK = '#565c7c';
 const builtCharts = {};
 
 function mkChart(id, cfg) {
@@ -1391,7 +1303,7 @@ function buildAnalyticsCharts() {
 
   mkChart('anActivityLine', {
     type: 'line',
-    data: { labels: days, datasets: [{ label: 'Events', data: vals, borderColor: '#6d5dfc', backgroundColor: 'rgba(109,93,252,0.10)', fill: true, tension: .42, pointBackgroundColor: '#6d5dfc', pointRadius: 3, borderWidth: 2 }] },
+    data: { labels: days, datasets: [{ label: 'Events', data: vals, borderColor: '#5b5bf0', backgroundColor: 'rgba(91,91,240,0.12)', fill: true, tension: .42, pointBackgroundColor: '#5b5bf0', pointRadius: 3, borderWidth: 2 }] },
     options: { plugins: {legend: {display: false}}, scales: { x: {ticks: {color: TICK, font:{size:10}}, grid: {display:false}, border:{color:'transparent'}}, y: {ticks: {color: TICK, font:{size:10}}, grid: {color: GRID}, border:{color:'transparent'}, beginAtZero: true} } }
   });
 
@@ -1404,7 +1316,6 @@ function buildAnalyticsCharts() {
   }
 }
 
-// ── INITIALIZATION ───────────────────────────────────────────
 (async () => {
   await fetchGuilds();
   if (!activeGuildId && allGuilds.length) {

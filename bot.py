@@ -963,7 +963,7 @@ class ApplicationReviewView(View):
                 applications_data[self.applicant_id]["status"] = "accepted"
             add_mod_log("Accept", str(member), str(interaction.user), "Application accepted", "#3ba55c")
             add_activity("✅", f"{member.display_name}'s application was accepted")
-     await interaction.message.edit(content=f"✅ Accepted by {interaction.user.mention}", view=None)
+        await interaction.message.edit(content=f"✅ Accepted by {interaction.user.mention}", view=None)
         await interaction.response.send_message("✅ Accepted!", ephemeral=True)
 
     @discord.ui.button(label="❌ Decline", style=discord.ButtonStyle.red)

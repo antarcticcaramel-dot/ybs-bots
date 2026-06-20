@@ -155,6 +155,7 @@ xp_cooldowns = {}
 economy_data = {}
 snipe_data = {}
 ticket_data = {}
+interview_data = {}  # channel_id -> {"applicant_id": int}
 automod_data = {}
 mod_log_data = []
 voice_log = []
@@ -851,6 +852,85 @@ class ApplicationModal(Modal):
         add_activity("📋", f"New application from {real_name}", self.role_value)
         await interaction.response.send_message("🎉 **Application submitted!** Our team will review it soon. Good luck! 🚀", ephemeral=True)
 
+class InterviewDecisionView(View):
+    def __init__(self, applicant_id):
+        super().__init__(timeout=None)
+        self.applicant_id = applicant_id
+
+    def is_staff(self, interaction):
+        staff_id = get(interaction.guild.id, "admin_role")
+        return (interaction.user.guild_permissions.kick_members
+                or (staff_id and staff_id in [r.id for r in interaction.user.roles]))
+
+    @discord.ui.button(label="✅ Accept", style=discord.ButtonStyle.green, custom_id="interview_accept_btn")
+    async def accept(self, interaction: discord.Interaction, button: Button):
+        if not self.is_staff(interaction):
+            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
+        member = interaction.guild.get_member(self.applicant_id)
+        if member:
+            role_id = get(interaction.guild.id, "member_role")
+            role = interaction.guild.get_role(role_id) if role_id else None
+            if role:
+                await member.add_roles(role)
+            pending_id = get(interaction.guild.id, "pending_role")
+            if pending_id:
+                pending = interaction.guild.get_role(pending_id)
+                if pending and pending in member.roles:
+                    await member.remove_roles(pending)
+            try:
+                await member.send("🎉 Following your interview, your application to **Young Boy Studios** has been **accepted!** Welcome to the team! 🚀")
+            except:
+                pass
+            if self.applicant_id in applications_data:
+                applications_data[self.applicant_id]["status"] = "accepted"
+            add_mod_log("Accept", str(member), str(interaction.user), "Accepted after interview", "#3ba55c")
+            add_activity("✅", f"{member.display_name}'s application accepted after interview")
+
+        embed = discord.Embed(
+            title="✅ Application Accepted",
+            description=f"**{member.mention if member else 'Applicant'}** was accepted by {interaction.user.mention}.\n\nThis channel will be deleted shortly.",
+            color=0x3BA55C
+        )
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        interview_data.pop(interaction.channel.id, None)
+        await asyncio.sleep(15)
+        try:
+            await interaction.channel.delete()
+        except:
+            pass
+
+    @discord.ui.button(label="❌ Deny", style=discord.ButtonStyle.red, custom_id="interview_deny_btn")
+    async def deny(self, interaction: discord.Interaction, button: Button):
+        if not self.is_staff(interaction):
+            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
+        member = interaction.guild.get_member(self.applicant_id)
+        if member:
+            try:
+                await member.send("😔 Following your interview, your application to **Young Boy Studios** was not accepted this time. Feel free to reapply in 2 weeks!")
+            except:
+                pass
+            if self.applicant_id in applications_data:
+                applications_data[self.applicant_id]["status"] = "declined"
+            add_mod_log("Decline", str(member), str(interaction.user), "Declined after interview", "#ed4245")
+            add_activity("❌", f"{member.display_name}'s application declined after interview")
+
+        embed = discord.Embed(
+            title="❌ Application Denied",
+            description=f"**{member.mention if member else 'Applicant'}** was denied by {interaction.user.mention}.\n\nThis channel will be deleted shortly.",
+            color=0xED4245
+        )
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        interview_data.pop(interaction.channel.id, None)
+        await asyncio.sleep(15)
+        try:
+            await interaction.channel.delete()
+        except:
+            pass
+
 class ApplicationReviewView(View):
     def __init__(self, applicant_id):
         super().__init__(timeout=None)
@@ -901,20 +981,68 @@ class ApplicationReviewView(View):
         await interaction.message.edit(content=f"❌ Declined by {interaction.user.mention}", view=None)
         await interaction.response.send_message("❌ Declined.", ephemeral=True)
 
-    @discord.ui.button(label="⏳ Interview", style=discord.ButtonStyle.blurple)
+   @discord.ui.button(label="⏳ Interview", style=discord.ButtonStyle.blurple)
     async def interview(self, interaction, button):
         if not self.is_staff(interaction):
             return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
-        member = interaction.guild.get_member(self.applicant_id)
-        if member:
-            try:
-                await member.send("👋 Your application looks great! A staff member will DM you to arrange an interview.")
-            except:
-                pass
-            if self.applicant_id in applications_data:
-                applications_data[self.applicant_id]["status"] = "interview"
-        await interaction.message.edit(content=f"⏳ Interview — {interaction.user.mention}", view=None)
-        await interaction.response.send_message("⏳ Moved to interview.", ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
+
+        guild = interaction.guild
+        member = guild.get_member(self.applicant_id)
+        if not member:
+            return await interaction.followup.send("❌ That member is no longer in the server.", ephemeral=True)
+
+        app = applications_data.get(self.applicant_id, {})
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            member: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        }
+        staff_id = get(guild.id, "admin_role")
+        if staff_id:
+            staff_role = guild.get_role(staff_id)
+            if staff_role:
+                overwrites[staff_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        for role in guild.roles:
+            if role.permissions.kick_members:
+                overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
+        ch_name = f"interview-{member.name.lower()[:20]}"
+        try:
+            channel = await guild.create_text_channel(ch_name, overwrites=overwrites, reason=f"Interview for {member}")
+        except Exception:
+            return await interaction.followup.send("❌ Failed to create interview channel (check my permissions).", ephemeral=True)
+
+        interview_data[channel.id] = {"applicant_id": self.applicant_id}
+        if self.applicant_id in applications_data:
+            applications_data[self.applicant_id]["status"] = "interview"
+
+        embed = discord.Embed(
+            title=f"⏳ Interview — {app.get('real_name', member.display_name)}",
+            description=f"Hey {member.mention}! {interaction.user.mention} will be conducting your interview here.\n\n**Staff:** use the buttons below once the interview is complete.",
+            color=0x5865F2
+        )
+        embed.add_field(name="🔨 Role", value=app.get("role", "—"), inline=True)
+        embed.add_field(name="🎮 Roblox", value=app.get("roblox_name", "—"), inline=True)
+        embed.add_field(name="⚙️ Experience", value=(app.get("experience") or "—")[:500], inline=False)
+        embed.set_footer(text=f"Applicant ID: {self.applicant_id}")
+
+        await channel.send(
+            content=f"{member.mention} {interaction.user.mention}",
+            embed=embed,
+            view=InterviewDecisionView(self.applicant_id)
+        )
+
+        try:
+            await member.send(f"👋 Your application looks great! Head to {channel.mention} in **{guild.name}** for your interview.")
+        except:
+            pass
+
+        await interaction.message.edit(content=f"⏳ Interview channel: {channel.mention} (started by {interaction.user.mention})", view=None)
+        await interaction.followup.send(f"✅ Interview channel created: {channel.mention}", ephemeral=True)
+        add_activity("⏳", f"Interview started for {member.display_name}", channel.name)
 
 class ApplicationRoleDropdown(Select):
     def __init__(self):
